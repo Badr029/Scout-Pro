@@ -1,0 +1,390 @@
+<!-- User Type Selection Slider -->
+<div class="user-type-slider" [class.selected]="formData.user_type || socialUserType">
+    <h2>Choose Your Role</h2>
+    <div class="filter-switch">
+        <input [checked]="formData.user_type === 'player' || socialUserType === 'player'"
+               id="option1"
+               name="options"
+               type="radio"
+               (change)="selectUserType('player')" />
+        <label class="option" for="option1">
+            <!-- <i class="fas fa-futbol"></i> -->
+            Player
+        </label>
+        <input [checked]="formData.user_type === 'scout' || socialUserType === 'scout'"
+               id="option2"
+               name="options"
+               type="radio"
+               (change)="selectUserType('scout')" />
+        <label class="option" for="option2">
+            <!-- <i class="fas fa-search"></i> -->
+            Scout
+        </label>
+        <span class="background"></span>
+    </div>
+</div>
+
+<!-- Registration Container - Only shown after role selection -->
+<div class="registration-container" *ngIf="formData.user_type || socialUserType">
+<div class="container">
+    <h2>Create Your Account</h2>
+
+    <!-- Error Message Display -->
+    <div *ngIf="errorMessage" class="error-message" role="alert">
+        <ng-container *ngFor="let message of errorMessage.split('\n')">
+            <div class="error-item">• {{ message }}</div>
+        </ng-container>
+    </div>
+
+    <!-- Success Message Display -->
+    <div *ngIf="successMessage" class="success-message" role="alert">
+        {{ successMessage }}
+    </div>
+
+    <form #registerForm="ngForm" (ngSubmit)="onSubmit()" novalidate>
+        <div class="input-group">
+            <!-- Name Fields -->
+            <div class="name-fields">
+                <div class="input-field">
+                    <label for="first_name">First Name</label>
+                    <input type="text"
+                           id="first_name"
+                           name="first_name"
+                           [(ngModel)]="formData.first_name"
+                           placeholder="Enter your first name"
+                           required
+                           maxlength="255"
+                           #firstName="ngModel">
+                    <div class="validation-error" *ngIf="firstName.invalid && (firstName.dirty || firstName.touched) || hasFieldError('first_name')">
+                        <span *ngIf="firstName.errors?.['required']">First name is required</span>
+                        <span *ngIf="firstName.errors?.['maxlength']">First name cannot exceed 255 characters</span>
+                        <span *ngIf="hasFieldError('first_name')">{{getFieldError('first_name')}}</span>
+                    </div>
+                </div>
+
+                <div class="input-field">
+                    <label for="last_name">Last Name</label>
+                    <input type="text"
+                           id="last_name"
+                           name="last_name"
+                           [(ngModel)]="formData.last_name"
+                           placeholder="Enter your last name"
+                           required
+                           maxlength="255"
+                           #lastName="ngModel">
+                    <div class="validation-error" *ngIf="lastName.invalid && (lastName.dirty || lastName.touched) || hasFieldError('last_name')">
+                        <span *ngIf="lastName.errors?.['required']">Last name is required</span>
+                        <span *ngIf="lastName.errors?.['maxlength']">Last name cannot exceed 255 characters</span>
+                        <span *ngIf="hasFieldError('last_name')">{{getFieldError('last_name')}}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Username -->
+            <div class="input-field">
+                <label for="username">Username</label>
+                <input type="text"
+                       id="username"
+                       name="username"
+                       [(ngModel)]="formData.username"
+                       placeholder="Choose a username"
+                       required
+                       maxlength="255"
+                       #username="ngModel">
+                <div class="validation-error" *ngIf="username.invalid && (username.dirty || username.touched) || hasFieldError('username')">
+                    <span *ngIf="username.errors?.['required']">Username is required</span>
+                    <span *ngIf="username.errors?.['maxlength']">Username cannot exceed 255 characters</span>
+                    <span *ngIf="hasFieldError('username')">{{getFieldError('username')}}</span>
+                </div>
+            </div>
+
+            <!-- Email -->
+            <div class="input-field">
+                <label for="email">Email Address</label>
+                <input type="email"
+                       id="email"
+                       name="email"
+                       [(ngModel)]="formData.email"
+                       placeholder="Enter your email"
+                       required
+                       maxlength="255"
+                       pattern="[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
+                       #email="ngModel">
+                <div class="validation-error" *ngIf="email.invalid && (email.dirty || email.touched) || hasFieldError('email')">
+                    <span *ngIf="email.errors?.['required']">Email is required</span>
+                    <span *ngIf="email.errors?.['pattern']">Please enter a valid email address</span>
+                    <span *ngIf="email.errors?.['maxlength']">Email cannot exceed 255 characters</span>
+                    <span *ngIf="hasFieldError('email')">{{getFieldError('email')}}</span>
+                </div>
+            </div>
+
+            <!-- Password Fields -->
+            <div class="input-field">
+                <label for="password">Password</label>
+                <div class="password-input">
+                    <input
+                        type="password"
+                        id="password"
+                        name="password"
+                        [(ngModel)]="formData.password"
+                        required
+                        minlength="8"
+                        [type]="showPassword ? 'text' : 'password'"
+                        placeholder="Enter your password"
+                    >
+                    <button
+                        type="button"
+                        class="toggle-password"
+                        (click)="togglePasswordVisibility()"
+                    >
+                        <i class="fas" [class.fa-eye]="!showPassword" [class.fa-eye-slash]="showPassword"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="input-field">
+                <label for="confirmPassword">Confirm Password</label>
+                <div class="password-input">
+                    <input
+                        type="password"
+                        id="confirmPassword"
+                        name="confirmPassword"
+                        [(ngModel)]="formData.confirmPassword"
+                        required
+                        [type]="showConfirmPassword ? 'text' : 'password'"
+                        placeholder="Confirm your password"
+                    >
+                    <button
+                        type="button"
+                        class="toggle-password"
+                        (click)="toggleConfirmPasswordVisibility()"
+                    >
+                        <i class="fas" [class.fa-eye]="!showConfirmPassword" [class.fa-eye-slash]="showConfirmPassword"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Submit Button -->
+            <button type="submit"
+                    class="register-btn"
+                    [disabled]="!registerForm.form.valid || loading || formData.password !== formData.confirmPassword">
+                <span *ngIf="!loading">Register</span>
+                <span *ngIf="loading">Registering...</span>
+            </button>
+        </div>
+    </form>
+
+    <div class="login-link">
+        Already have an account? <a routerLink="/login">Log in</a>
+    </div>
+
+    <!-- Social Login -->
+    <div class="divider">or continue with</div>
+
+    <div id="google-btn" class="social-login-container">
+        <asl-google-signin-button
+            type="icon"
+            size="large"
+            [width]="280"
+            theme="filled_black">
+        </asl-google-signin-button>
+        <div class="custom-google-button">
+            <i class="fab fa-google"></i>
+            <span>Continue with Google</span>
+        </div>
+    </div>
+    </div>
+</div>
+
+<style>
+.error-message {
+    background-color: #fff2f2;
+    color: #dc3545;
+    padding: 12px 15px;
+    border-radius: 4px;
+    margin-bottom: 20px;
+    border: 1px solid #ffcdd2;
+}
+
+.error-item {
+    margin: 4px 0;
+    font-size: 14px;
+    display: flex;
+    align-items: flex-start;
+}
+
+.success-message {
+    background-color: #f0fff0;
+    color: #28a745;
+    padding: 12px 15px;
+    border-radius: 4px;
+    margin-bottom: 20px;
+    border: 1px solid #c3e6cb;
+    font-size: 14px;
+}
+
+.password-input-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.password-input-container input {
+    flex: 1;
+    padding-right: 40px;
+}
+
+.password-toggle {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    color: #666;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+}
+
+.password-toggle:hover {
+    color: #333;
+}
+
+.password-toggle:focus {
+    outline: none;
+    color: #000;
+}
+
+.password-toggle i {
+    font-size: 16px;
+}
+
+.social-login-container {
+    margin: 15px 0;
+    display: flex;
+    justify-content: center;
+}
+
+/* Add these styles to your existing styles */
+.input-field input.ng-invalid.ng-touched,
+.input-field select.ng-invalid.ng-touched {
+    border-color: #dc3545;
+}
+
+.input-field input.ng-valid.ng-touched,
+.input-field select.ng-valid.ng-touched {
+    border-color: #28a745;
+}
+
+.social-user-type {
+    margin: 15px 0;
+    text-align: center;
+}
+
+.social-user-type label {
+    display: block;
+    margin-bottom: 10px;
+    color: #e0e0e0;
+    font-size: 14px;
+}
+
+.user-type-buttons {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-bottom: 15px;
+}
+
+.user-type-buttons button {
+    padding: 8px 20px;
+    border: 1px solid #4a6cf7;
+    background: transparent;
+    color: #4a6cf7;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.user-type-buttons button.active {
+    background: #4a6cf7;
+    color: white;
+}
+
+.user-type-buttons button:hover {
+    background: #4a6cf7;
+    color: white;
+}
+
+.error-message-small {
+    color: #dc3545;
+    font-size: 12px;
+    margin-bottom: 8px;
+    text-align: center;
+}
+
+.user-type-slider {
+    margin: 15px 0;
+    text-align: center;
+}
+
+.user-type-slider h2 {
+    margin-bottom: 10px;
+    color: #e0e0e0;
+    font-size: 14px;
+}
+
+.filter-switch {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.filter-switch input[type="radio"] {
+    display: none;
+}
+
+.filter-switch label.option {
+    padding: 8px 20px;
+    border: none;
+    background: transparent;
+    color: #4a6cf7;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.filter-switch label.option:hover {
+    background: #4a6cf7;
+    color: white;
+}
+
+.filter-switch input[type="radio"]:checked + label.option {
+    background: #4a6cf7;
+    color: white;
+}
+
+.filter-switch input[type="radio"]:checked + label.option i {
+    margin-right: 8px;
+}
+
+.filter-switch .background {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: transparent;
+    border-radius: 4px;
+    transition: all 0.3s;
+}
+
+.filter-switch input[type="radio"]:checked + label.option + .background {
+    background: #4a6cf7;
+}
+</style>

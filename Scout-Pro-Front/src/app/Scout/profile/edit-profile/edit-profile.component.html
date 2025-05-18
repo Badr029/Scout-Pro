@@ -1,0 +1,137 @@
+<div class="profile-container">
+    <div class="profile-header">
+        <h1>Edit Scout Profile</h1>
+    </div>
+
+    <div class="profile-picture">
+        <img src="https://via.placeholder.com/120" alt="Profile Picture" id="profile-image">
+        <button class="change-photo-btn">Change Photo</button>
+        <input type="file" id="photo-upload" accept="image/*" style="display: none;">
+    </div>
+
+    <form id="scout-profile-form">
+        <div class="form-grid">
+            <!-- City -->
+            <div class="form-group">
+                <label for="city">City</label>
+                <input type="text" id="city">
+            </div>
+            <!-- Country -->
+            <div class="form-group">
+                <label for="country">Country</label>
+                <input type="text" id="country">
+            </div>
+            <!-- Languages Spoken -->
+            <div class="form-group">
+                <label for="languagesSpoken">Languages Spoken</label>
+                <input type="text" id="languagesSpoken">
+            </div>
+            <!-- Scouting Role -->
+            <div class="form-group">
+                <label for="scoutingRole">Scouting Role</label>
+                <input type="text" id="scoutingRole">
+            </div>
+            <!-- Affiliation -->
+            <div class="form-group">
+                <label for="affiliation">Affiliation</label>
+                <input type="text" id="affiliation">
+            </div>
+            <!-- Experience Years -->
+            <div class="form-group">
+                <label for="experienceYears">Years of Experience</label>
+                <input type="number" id="experienceYears">
+            </div>
+            <!-- Player Levels -->
+            <div class="form-group">
+                <label for="playerLevels">Player Levels</label>
+                <input type="text" id="playerLevels">
+            </div>
+            <!-- Regions Covered -->
+            <div class="form-group">
+                <label for="regionsCovered">Regions Covered</label>
+                <input type="text" id="regionsCovered">
+            </div>
+            <!-- Age Groups -->
+            <div class="form-group">
+                <label for="ageGroups">Age Groups</label>
+                <input type="text" id="ageGroups">
+            </div>
+            <!-- Positions Focused -->
+            <div class="form-group">
+                <label for="positionsFocused">Positions Focused</label>
+                <input type="text" id="positionsFocused">
+            </div>
+            <!-- Scouting Criteria -->
+            <div class="form-group">
+                <label for="scoutingCriteria">Scouting Criteria</label>
+                <input type="text" id="scoutingCriteria">
+            </div>
+            <!-- Preferred Playing Style -->
+            <div class="form-group">
+                <label for="preferredPlayingStyle">Preferred Playing Style</label>
+                <input type="text" id="preferredPlayingStyle">
+            </div>
+            <!-- Players Discovered -->
+            <div class="form-group">
+                <label for="playersDiscovered">Players Discovered</label>
+                <input type="text" id="playersDiscovered">
+            </div>
+            <!-- Clubs Worked With -->
+            <div class="form-group">
+                <label for="clubsWorkedWith">Clubs Worked With</label>
+                <input type="text" id="clubsWorkedWith">
+            </div>
+            <!-- Achievements -->
+            <div class="form-group">
+                <label for="achievements">Achievements</label>
+                <input type="text" id="achievements">
+            </div>
+            <!-- References -->
+            <div class="form-group">
+                <label for="references">References</label>
+                <input type="text" id="references">
+            </div>
+            <!-- Certifications -->
+            <div class="form-group">
+                <label for="certifications">Certifications</label>
+                <input type="text" id="certifications">
+            </div>
+            <!-- Contact Email -->
+            <div class="form-group">
+                <label for="contactEmail">Contact Email</label>
+                <input type="email" id="contactEmail">
+            </div>
+            <!-- Contact Phone -->
+            <div class="form-group">
+                <label for="contactPhone">Contact Phone</label>
+                <input type="tel" id="contactPhone">
+            </div>
+            <!-- Social Links -->
+            <div class="form-group">
+                <label for="socialLinks">Social Links</label>
+                <input type="text" id="socialLinks">
+            </div>
+            <!-- Available for Events -->
+            <div class="form-group">
+                <label for="availableForEvents">Available for Events</label>
+                <select id="availableForEvents">
+                    <option value="yes">Yes</option>
+                    <option value="no">No</option>
+                </select>
+            </div>
+            <!-- Willing to Travel -->
+            <div class="form-group">
+                <label for="willingToTravel">Willing to Travel</label>
+                <select id="willingToTravel">
+                    <option value="yes">Yes</option>
+                    <option value="no">No</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="form-actions">
+            <button type="button" class="btn btn-secondary">Cancel</button>
+            <button type="submit" class="btn btn-primary">Save Changes</button>
+        </div>
+    </form>
+</div>

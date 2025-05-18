@@ -1,0 +1,42 @@
+<div class="verification-container">
+  <div class="verification-box">
+    <h2>Email Verification</h2>
+
+    <!-- Loading State -->
+    <div *ngIf="loading" class="loading-state">
+      <div class="spinner"></div>
+      <p>Verifying your email...</p>
+    </div>
+
+    <!-- Success State -->
+    <div *ngIf="!loading && success" class="success-state">
+      <div class="icon-circle success">
+        <i class="fas fa-check"></i>
+      </div>
+      <h3>Email Verified!</h3>
+      <p>{{ message }}</p>
+      <p class="subtitle">You can now log in to your account.</p>
+
+      <div class="action-buttons">
+        <button class="btn btn-primary" (click)="backToLogin()">
+          Go to Login
+        </button>
+      </div>
+    </div>
+
+    <!-- Error State -->
+    <div *ngIf="!loading && !success" class="error-state">
+      <div class="icon-circle error">
+        <i class="fas fa-times"></i>
+      </div>
+      <h3>Verification Failed</h3>
+      <p class="error-message">{{ message }}</p>
+
+      <div class="action-buttons">
+        <button class="btn btn-primary" (click)="backToLogin()">
+          Back to Login
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

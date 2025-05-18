@@ -1,0 +1,341 @@
+<body>
+    <div class="container">
+        <h2>Scout Registration</h2>
+
+        <div *ngIf="errorMessage" class="error-message">
+            {{ errorMessage }}
+        </div>
+        <div *ngIf="successMessage" class="success-message">
+            {{ successMessage }}
+        </div>
+
+        <form class="scout-form" (ngSubmit)="onSubmit()" #scoutForm="ngForm">
+            <!-- Basic Information -->
+            <div class="section">
+                <h3>Basic Information</h3>
+
+                <!-- Profile Image -->
+                <div class="input-field">
+                    <label>Profile Image (Optional)</label>
+                    <div class="profile-image-container">
+                        <div class="preview" (click)="triggerFileInput('profile_image')" [class.has-image]="previewUrl">
+                            <img *ngIf="previewUrl" [src]="previewUrl" alt="Profile preview">
+                            <span *ngIf="!previewUrl" class="upload-placeholder">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                                    <circle cx="12" cy="7" r="4" />
+                                </svg>
+                                <span>Click to upload</span>
+                            </span>
+                        </div>
+                        <div class="profile-image-actions" *ngIf="previewUrl">
+                            <button type="button" class="action-btn edit-btn" (click)="triggerFileInput('profile_image')">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                                </svg>
+                                Change Photo
+                            </button>
+                            <button type="button" class="action-btn remove-btn" (click)="removeFile($event, 'profile_image')">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                    <path d="M3 6h18" />
+                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                                </svg>
+                                Remove
+                            </button>
+                        </div>
+                        <input
+                            type="file"
+                            id="profile_image"
+                            (change)="onFileSelected($event, 'profile_image')"
+                            accept="image/jpeg,image/png,image/jpg"
+                            style="display: none;">
+                    </div>
+                </div>
+
+                <!-- Contact Information -->
+                <div class="input-field">
+                    <label for="city">City *</label>
+                    <input
+                        type="text"
+                        id="city"
+                        name="city"
+                        [(ngModel)]="formData.city"
+                        required
+                        #cityInput="ngModel">
+                    <div class="error" *ngIf="cityInput.invalid && (cityInput.dirty || cityInput.touched)">
+                        City is required
+                    </div>
+                </div>
+
+                <div class="input-field">
+                    <label for="country">Country *</label>
+                    <input
+                        type="text"
+                        id="country"
+                        name="country"
+                        [(ngModel)]="formData.country"
+                        required
+                        #countryInput="ngModel">
+                    <div class="error" *ngIf="countryInput.invalid && (countryInput.dirty || countryInput.touched)">
+                        Country is required
+                    </div>
+                </div>
+
+                <div class="input-field">
+                    <label for="contact_email">Contact Email *</label>
+                    <input
+                        type="email"
+                        id="contact_email"
+                        name="contact_email"
+                        [(ngModel)]="formData.contact_email"
+                        required
+                        email
+                        #emailInput="ngModel">
+                    <div class="error" *ngIf="emailInput.invalid && (emailInput.dirty || emailInput.touched)">
+                        Please enter a valid email address
+                    </div>
+                </div>
+
+                <div class="input-field">
+                    <label for="contact_phone">Contact Phone *</label>
+                    <input
+                        type="tel"
+                        id="contact_phone"
+                        name="contact_phone"
+                        [(ngModel)]="formData.contact_phone"
+                        required
+                        #phoneInput="ngModel">
+                    <div class="error" *ngIf="phoneInput.invalid && (phoneInput.dirty || phoneInput.touched)">
+                        Phone number is required
+                    </div>
+                </div>
+            </div>
+
+            <!-- Organization and Role Information -->
+            <div class="section">
+                <h3>Organization & Role Information</h3>
+
+                <div class="input-field">
+                    <label for="organization">Organization/Club *</label>
+                    <input
+                        type="text"
+                        id="organization"
+                        name="organization"
+                        [(ngModel)]="formData.organization"
+                        required
+                        #orgInput="ngModel">
+                    <div class="error" *ngIf="orgInput.invalid && (orgInput.dirty || orgInput.touched)">
+                        Organization is required
+                    </div>
+                </div>
+
+                <div class="input-field">
+                    <label for="position_title">Position/Title *</label>
+                    <input
+                        type="text"
+                        id="position_title"
+                        name="position_title"
+                        [(ngModel)]="formData.position_title"
+                        required
+                        #positionInput="ngModel">
+                    <div class="error" *ngIf="positionInput.invalid && (positionInput.dirty || positionInput.touched)">
+                        Position/Title is required
+                    </div>
+                </div>
+
+                <!-- Scouting Regions -->
+                <div class="input-field">
+                    <label>Scouting Regions *</label>
+                    <div class="multi-select">
+                        <select [(ngModel)]="newRegion" name="newRegion">
+                            <option value="">Select a region</option>
+                            <option *ngFor="let region of regionsList" [value]="region">{{region}}</option>
+                        </select>
+                        <button type="button" (click)="addItem(newRegion, 'scouting_regions')" [disabled]="!newRegion">Add</button>
+                    </div>
+                    <div class="tags">
+                        <span *ngFor="let region of formData.scouting_regions" class="tag">
+                            {{region}}
+                            <button type="button" (click)="removeItem(region, 'scouting_regions')">&times;</button>
+                        </span>
+                    </div>
+                    <div class="error" *ngIf="formData.scouting_regions.length === 0">
+                        At least one scouting region is required
+                    </div>
+                </div>
+
+                <!-- Age Groups -->
+                <div class="input-field">
+                    <label>Age Groups *</label>
+                    <div class="multi-select">
+                        <select [(ngModel)]="newAgeGroup" name="newAgeGroup">
+                            <option value="">Select an age group</option>
+                            <option *ngFor="let age of ageGroupsList" [value]="age">{{age}}</option>
+                        </select>
+                        <button type="button" (click)="addItem(newAgeGroup, 'age_groups')" [disabled]="!newAgeGroup">Add</button>
+                    </div>
+                    <div class="tags">
+                        <span *ngFor="let age of formData.age_groups" class="tag">
+                            {{age}}
+                            <button type="button" (click)="removeItem(age, 'age_groups')">&times;</button>
+                        </span>
+                    </div>
+                    <div class="error" *ngIf="formData.age_groups.length === 0">
+                        At least one age group is required
+                    </div>
+                </div>
+
+                <!-- Preferred Roles -->
+                <div class="input-field">
+                    <label>Player Roles Preferred *</label>
+                    <div class="multi-select">
+                        <select [(ngModel)]="newRole" name="newRole">
+                            <option value="">Select a role</option>
+                            <option *ngFor="let role of playerRolesList" [value]="role">{{role}}</option>
+                        </select>
+                        <button type="button" (click)="addItem(newRole, 'preferred_roles')" [disabled]="!newRole">Add</button>
+                    </div>
+                    <div class="tags">
+                        <span *ngFor="let role of formData.preferred_roles" class="tag">
+                            {{role}}
+                            <button type="button" (click)="removeItem(role, 'preferred_roles')">&times;</button>
+                        </span>
+                    </div>
+                    <div class="error" *ngIf="formData.preferred_roles.length === 0">
+                        At least one preferred role is required
+                    </div>
+                </div>
+
+                <div class="input-field">
+                    <label for="clubs_worked_with">Clubs Worked With *</label>
+                    <textarea
+                        id="clubs_worked_with"
+                        name="clubs_worked_with"
+                        [(ngModel)]="formData.clubs_worked_with"
+                        required
+                        #clubsInput="ngModel"
+                        placeholder="List the clubs you've worked with"></textarea>
+                    <div class="error" *ngIf="clubsInput.invalid && (clubsInput.dirty || clubsInput.touched)">
+                        Please list the clubs you've worked with
+                    </div>
+                </div>
+            </div>
+
+            <!-- Professional Information -->
+            <div class="section">
+                <h3>Professional Information</h3>
+
+                <div class="input-field">
+                    <label for="linkedin_url">LinkedIn Profile (Optional)</label>
+                    <input
+                        type="url"
+                        id="linkedin_url"
+                        name="linkedin_url"
+                        [(ngModel)]="formData.linkedin_url"
+                        placeholder="https://www.linkedin.com/in/your-profile">
+                </div>
+                <!-- From Uiverse.io by Yaya12085 -->
+
+                <!-- ID Proof -->
+                <div class="input-field">
+                    <label>ID/Certification Proof *</label>
+                    <div class="containerr" (click)="triggerFileInput('id_proof')" [class.has-file]="formData.id_proof">
+                        <div class="headerr">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" stroke-width="2" stroke-linecap="round"/>
+                                <polyline points="17 8 12 3 7 8" stroke-width="2" stroke-linecap="round"/>
+                                <line x1="12" y1="3" x2="12" y2="15" stroke-width="2" stroke-linecap="round"/>
+                            </svg>
+                            <p class="upload-text">{{ formData.id_proof ? formData.id_proof.name : 'Click to upload ID/Certification Proof' }}</p>
+                            <button *ngIf="formData.id_proof" type="button" class="remove-file" (click)="removeFile($event, 'id_proof')">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                    <circle cx="12" cy="12" r="10" stroke-width="2"/>
+                                    <line x1="15" y1="9" x2="9" y2="15" stroke-width="2"/>
+                                    <line x1="9" y1="9" x2="15" y2="15" stroke-width="2"/>
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="footerr">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="file-type-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke-width="2"/>
+                                <polyline points="14 2 14 8 20 8" stroke-width="2"/>
+                                <line x1="16" y1="13" x2="8" y2="13" stroke-width="2"/>
+                                <line x1="16" y1="17" x2="8" y2="17" stroke-width="2"/>
+                                <line x1="10" y1="9" x2="8" y2="9" stroke-width="2"/>
+                            </svg>
+                            <p class="supported-text">Supported formats: PDF, JPEG, PNG</p>
+                        </div>
+                        <input
+                            type="file"
+                            id="id_proof"
+                            (change)="onFileSelected($event, 'id_proof')"
+                            accept=".pdf,image/jpeg,image/png,image/jpg"
+                            style="display: none;">
+                    </div>
+                    <div class="error" *ngIf="!formData.id_proof">
+                        ID/Certification proof is required
+                    </div>
+                </div>
+
+                <!-- Certifications -->
+                <div class="input-field">
+                    <label>Certifications *</label>
+                    <div class="containerr" (click)="triggerFileInput('certifications')" [class.has-files]="formData.certifications.length > 0">
+                        <div class="headerr">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" stroke-width="2" stroke-linecap="round"/>
+                                <polyline points="17 8 12 3 7 8" stroke-width="2" stroke-linecap="round"/>
+                                <line x1="12" y1="3" x2="12" y2="15" stroke-width="2" stroke-linecap="round"/>
+                            </svg>
+                            <p class="upload-text">Click to upload Certifications</p>
+                        </div>
+                        <div class="footerr">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="file-type-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke-width="2"/>
+                                <polyline points="14 2 14 8 20 8" stroke-width="2"/>
+                                <line x1="16" y1="13" x2="8" y2="13" stroke-width="2"/>
+                                <line x1="16" y1="17" x2="8" y2="17" stroke-width="2"/>
+                                <line x1="10" y1="9" x2="8" y2="9" stroke-width="2"/>
+                            </svg>
+                            <p class="supported-text">Supported formats: PDF, JPEG, PNG</p>
+                        </div>
+                        <input
+                            type="file"
+                            id="certifications"
+                            (change)="onFileSelected($event, 'certifications')"
+                            accept=".pdf,image/jpeg,image/png,image/jpg"
+                            multiple
+                            style="display: none;">
+                    </div>
+                    <div class="certification-list" *ngIf="formData.certifications.length > 0">
+                        <div *ngFor="let cert of formData.certifications; let i = index" class="certification-item">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="cert-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke-width="2"/>
+                                <polyline points="14 2 14 8 20 8" stroke-width="2"/>
+                            </svg>
+                            <span class="cert-name">{{cert.name}}</span>
+                            <button type="button" class="remove-cert" (click)="removeCertification(i)">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                    <circle cx="12" cy="12" r="10" stroke-width="2"/>
+                                    <line x1="15" y1="9" x2="9" y2="15" stroke-width="2"/>
+                                    <line x1="9" y1="9" x2="15" y2="15" stroke-width="2"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="error" *ngIf="formData.certifications.length === 0">
+                        At least one certification is required
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="submit-btn" [disabled]="loading">
+                    {{ loading ? 'Submitting...' : 'Complete Registration' }}
+                </button>
+            </div>
+        </form>
+    </div>
+</body>

@@ -1,0 +1,426 @@
+<body>
+    <div class="container">
+        <h2>Player Registration</h2>
+
+        <div *ngIf="errorMessage" class="error-message">
+            {{ errorMessage }}
+        </div>
+        <div *ngIf="successMessage" class="success-message">
+            {{ successMessage }}
+        </div>
+
+        <form class="player-form" (ngSubmit)="onSubmit()" #playerForm="ngForm">
+            <!-- Basic Information -->
+            <div class="section">
+                <h3>Basic Information</h3>
+
+                <!-- Profile Image -->
+                <div class="input-field">
+                    <label>Profile Image (Optional)</label>
+                    <div class="profile-image-container">
+                        <div class="preview" (click)="triggerFileInput('profile_image')" [class.has-image]="previewUrl">
+                            <img *ngIf="previewUrl" [src]="previewUrl" alt="Profile preview">
+                            <span *ngIf="!previewUrl" class="upload-placeholder">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                                    <circle cx="12" cy="7" r="4" />
+                                </svg>
+                                <span>Click to upload</span>
+                            </span>
+                        </div>
+                        <div class="profile-image-actions" *ngIf="previewUrl">
+                            <button type="button" class="action-btn edit-btn" (click)="triggerFileInput('profile_image')">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                                </svg>
+                                Change Photo
+                            </button>
+                            <button type="button" class="action-btn remove-btn" (click)="removeFile($event, 'profile_image')">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                    <path d="M3 6h18" />
+                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                                </svg>
+                                Remove
+                            </button>
+                        </div>
+                        <input
+                            type="file"
+                            id="profile_image"
+                            (change)="onFileSelected($event)"
+                            accept="image/jpeg,image/png,image/jpg"
+                            style="display: none;">
+                    </div>
+                </div>
+
+                <!-- Personal Information -->
+                <div class="input-field">
+                    <label for="DateofBirth">Date of Birth *</label>
+                    <input
+                        type="date"
+                        id="DateofBirth"
+                        name="DateofBirth"
+                        [(ngModel)]="formData.DateofBirth"
+                        #dob="ngModel"
+                        required>
+                    <div class="error" *ngIf="dob.invalid && (dob.dirty || dob.touched)">
+                        Date of birth is required
+                    </div>
+                </div>
+
+                <div class="input-field">
+                    <label for="phone_number">Phone Number *</label>
+                    <input
+                        type="tel"
+                        id="phone_number"
+                        name="phone_number"
+                        [(ngModel)]="formData.phone_number"
+                        #phone="ngModel"
+                        required
+                        pattern="[0-9]{11}"
+                        maxlength="15">
+                    <div class="error" *ngIf="phone.invalid && (phone.dirty || phone.touched)">
+                        <span *ngIf="phone.errors?.['required']">Phone number is required</span>
+                        <span *ngIf="phone.errors?.['pattern']">Please enter a valid phone number</span>
+                    </div>
+                </div>
+
+                <div class="input-field">
+                    <label for="nationality">Nationality *</label>
+                    <input
+                        type="text"
+                        id="nationality"
+                        name="nationality"
+                        [(ngModel)]="formData.nationality"
+                        #nationality="ngModel"
+                        required
+                        maxlength="255">
+                    <div class="error" *ngIf="nationality.invalid && (nationality.dirty || nationality.touched)">
+                        <span *ngIf="nationality.errors?.['required']">Nationality is required</span>
+                    </div>
+                </div>
+
+                <div class="input-field">
+                    <label for="current_city">Current City *</label>
+                    <input
+                        type="text"
+                        id="current_city"
+                        name="current_city"
+                        [(ngModel)]="formData.current_city"
+                        #city="ngModel"
+                        required
+                        maxlength="255">
+                    <div class="error" *ngIf="city.invalid && (city.dirty || city.touched)">
+                        <span *ngIf="city.errors?.['required']">Current city is required</span>
+                    </div>
+                </div>
+
+                <div class="input-field">
+                    <label for="gender">Gender *</label>
+                    <select
+                        id="gender"
+                        name="gender"
+                        [(ngModel)]="formData.gender"
+                        #gender="ngModel"
+                        required>
+                        <option value="" selected disabled>Select Your Gender</option>
+                        <option value="male">Male</option>
+                        <option value="female">Female</option>
+                    </select>
+                    <div class="error" *ngIf="gender.invalid && (gender.dirty || gender.touched)">
+                        Gender is required
+                    </div>
+                </div>
+            </div>
+
+            <!-- Physical Attributes -->
+            <div class="section">
+                <h3>Physical Attributes</h3>
+
+                <div class="input-field">
+                    <label for="height">Height (cm) *</label>
+                    <input
+                        type="number"
+                        id="height"
+                        name="height"
+                        [(ngModel)]="formData.height"
+                        #height="ngModel"
+                        required
+                        min="100"
+                        max="250">
+                    <div class="error" *ngIf="height.invalid && (height.dirty || height.touched)">
+                        <span *ngIf="height.errors?.['required']">Height is required</span>
+                        <span *ngIf="height.errors?.['min']">Height must be at least 100 cm</span>
+                        <span *ngIf="height.errors?.['max']">Height cannot exceed 250 cm</span>
+                    </div>
+                </div>
+
+                <div class="input-field">
+                    <label for="weight">Weight (kg) *</label>
+                    <input
+                        type="number"
+                        id="weight"
+                        name="weight"
+                        [(ngModel)]="formData.weight"
+                        #weight="ngModel"
+                        required
+                        min="30"
+                        max="200">
+                    <div class="error" *ngIf="weight.invalid && (weight.dirty || weight.touched)">
+                        <span *ngIf="weight.errors?.['required']">Weight is required</span>
+                        <span *ngIf="weight.errors?.['min']">Weight must be at least 30 kg</span>
+                        <span *ngIf="weight.errors?.['max']">Weight cannot exceed 200 kg</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Playing Information -->
+            <div class="section">
+                <h3>Playing Information</h3>
+
+                <div class="input-field">
+                    <label for="preferred_foot">Preferred Foot *</label>
+                    <select
+                        id="preferred_foot"
+                        name="preferred_foot"
+                        [(ngModel)]="formData.preferred_foot"
+                        #foot="ngModel"
+                        required>
+                        <option value="" selected disabled>Select Your Preferred Foot</option>
+                        <option value="Left">Left</option>
+                        <option value="Right">Right</option>
+                        <option value="Both">Both</option>
+                    </select>
+                    <div class="error" *ngIf="foot.invalid && (foot.dirty || foot.touched)">
+                        Preferred foot is required
+                    </div>
+                </div>
+
+                <div class="input-field">
+                    <label for="position">Primary Position *</label>
+                    <select
+                        id="position"
+                        name="position"
+                        [(ngModel)]="formData.position"
+                        #position="ngModel"
+                        required>
+                        <option value="" selected disabled>Select Your Primary Position</option>
+                        <option *ngFor="let pos of footballPositions" [value]="pos">{{pos}}</option>
+                    </select>
+                    <div class="error" *ngIf="position.invalid && (position.dirty || position.touched)">
+                        Primary position is required
+                    </div>
+                </div>
+
+                <div class="input-field">
+                    <label>Secondary Positions</label>
+                    <div class="multi-select">
+                        <select [(ngModel)]="newSecondaryPosition" name="new_secondary_position">
+                            <option value="">Select a secondary position</option>
+                            <option *ngFor="let pos of availableSecondaryPositions" [value]="pos">{{pos}}</option>
+                        </select>
+                        <button type="button" (click)="addSecondaryPosition()" [disabled]="!newSecondaryPosition">Add</button>
+                    </div>
+                    <div class="tags">
+                        <span *ngFor="let pos of formData.secondary_position" class="tag">
+                            {{pos}}
+                            <button type="button" (click)="removeSecondaryPosition(pos)">&times;</button>
+                        </span>
+                    </div>
+                </div>
+
+                <div class="input-field">
+                    <label for="playing_style">Playing Style</label>
+                    <textarea
+                        id="playing_style"
+                        name="playing_style"
+                        [(ngModel)]="formData.playing_style"
+                        #style="ngModel"
+                        placeholder="Describe your playing style..."
+                        rows="4"></textarea>
+                </div>
+            </div>
+
+            <!-- Club Information -->
+            <div class="section">
+                <h3>Club Information</h3>
+
+                <div class="input-field">
+                    <label for="current_club">Current Club *</label>
+                    <select
+                        id="current_club"
+                        name="current_club"
+                        [(ngModel)]="formData.current_club"
+                        (ngModelChange)="onCurrentClubChange()"
+                        #club="ngModel"
+                        required>
+                        <option value="" selected disabled>Select Your Current Club</option>
+                        <option *ngFor="let club of egyptianClubs" [value]="club">{{club}}</option>
+                        <option value="Other">Other Club</option>
+                    </select>
+                    <input
+                        type="text"
+                        *ngIf="formData.current_club === 'Other'"
+                        [(ngModel)]="formData.current_club"
+                        name="current_club_other"
+                        placeholder="Enter club name"
+                        maxlength="255"
+                        required>
+                    <div class="error" *ngIf="club.invalid && (club.dirty || club.touched)">
+                        Current club is required
+                    </div>
+                </div>
+
+                <div class="input-field">
+                    <label for="transfer_status">Transfer Status *</label>
+                    <select
+                        id="transfer_status"
+                        name="transfer_status"
+                        [(ngModel)]="formData.transfer_status"
+                        #transfer="ngModel"
+                        required>
+                        <option value="" selected disabled>Select Transfer Status</option>
+                        <option *ngFor="let status of availableTransferStatuses" [value]="status">{{status}}</option>
+                    </select>
+                    <div class="error" *ngIf="transfer.invalid && (transfer.dirty || transfer.touched)">
+                        Transfer status is required
+                    </div>
+                </div>
+
+                <div class="input-field">
+                    <label>Previous Clubs</label>
+                    <div class="multi-select">
+                        <select [(ngModel)]="newClub" name="new_club">
+                            <option value="">Select a club</option>
+                            <option *ngFor="let club of egyptianClubs" [value]="club">{{club}}</option>
+                            <option value="Other">Other Club</option>
+                        </select>
+                        <input
+                            type="text"
+                            *ngIf="newClub === 'Other'"
+                            [(ngModel)]="newClub"
+                            name="new_club_other"
+                            placeholder="Enter club name"
+                            maxlength="255">
+                        <button type="button" (click)="addPreviousClub()" [disabled]="!newClub.trim()">Add</button>
+                    </div>
+                    <div class="tags">
+                        <span *ngFor="let club of formData.previous_clubs" class="tag">
+                            {{club}}
+                            <button type="button" (click)="removePreviousClub(club)">&times;</button>
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="submit-btn" [disabled]="playerForm.invalid || loading">
+                    {{ loading ? 'Submitting...' : 'Complete Registration' }}
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <div id="datePickerModal"
+        style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center;">
+        <div style="background: white; padding: 20px; border-radius: 8px; width: 300px;">
+            <h2 style="margin-top: 0;">Select Date</h2>
+            <div style="margin-bottom: 20px;">
+                <input type="date" id="dateInput" style="width: 100%; padding: 10px;">
+            </div>
+            <div style="display: flex; justify-content: flex-end;">
+                <button onclick="closeDatePicker()" style="margin-right: 10px; padding: 8px 16px;">Cancel</button>
+                <button onclick="selectDate()"
+                    style="padding: 8px 16px; background: #1976D2; color: white; border: none; border-radius: 4px;">Select</button>
+            </div>
+        </div>
+    </div>
+</body>
+
+<!-- <script>
+        function showDatePicker() {
+            document.getElementById('datePickerModal').style.display = 'flex';
+        }
+
+        function closeDatePicker() {
+            document.getElementById('datePickerModal').style.display = 'none';
+        }
+
+        function selectDate() {
+            const dateInput = document.getElementById('dateInput');
+            const dobInput = document.getElementById('dob');
+
+            if (dateInput.value) {
+                const date = new Date(dateInput.value);
+                const formattedDate = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`;
+                dobInput.value = formattedDate;
+            }
+
+            closeDatePicker();
+        }
+
+        function submitForm() {
+            // Reset error messages
+            document.querySelectorAll('.error-message').forEach(el => el.textContent = '');
+
+            // Get form values
+            const formData = {
+                dob: document.getElementById('dob').value,
+                phone: document.getElementById('phone').value,
+                height: document.getElementById('height').value,
+                weight: document.getElementById('weight').value,
+                position: document.getElementById('position').value,
+                marketValue: document.getElementById('marketValue').value,
+                gender: document.getElementById('gender').value,
+                nationality: document.getElementById('nationality').value,
+                city: document.getElementById('city').value,
+                club: document.getElementById('club').value,
+                experience: document.getElementById('experience').value,
+                bio: document.getElementById('bio').value,
+                endurance: document.getElementById('endurance').value,
+                yellowCards: document.getElementById('yellowCards').value,
+                redCards: document.getElementById('redCards').value
+            };
+
+            // Simple validation
+            let isValid = true;
+
+            if (!formData.dob) {
+                document.getElementById('dobError').textContent = 'Please select Date of Birth';
+                isValid = false;
+            }
+
+            if (!formData.phone) {
+                document.getElementById('phoneError').textContent = 'Please enter Phone Number';
+                isValid = false;
+            }
+
+            if (!formData.height) {
+                document.getElementById('heightError').textContent = 'Please enter Height';
+                isValid = false;
+            }
+
+            // Add similar validation for other required fields...
+
+            if (isValid) {
+                console.log("Player Registration Submitted");
+                console.log("DOB:", formData.dob);
+                console.log("Phone:", formData.phone);
+                console.log("Height:", formData.height);
+                console.log("Weight:", formData.weight);
+                console.log("Position:", formData.position);
+                console.log("Market Value:", formData.marketValue);
+                console.log("Gender:", formData.gender);
+                console.log("Nationality:", formData.nationality);
+                console.log("Current City:", formData.city);
+                console.log("Current Club:", formData.club);
+                console.log("Experience:", formData.experience);
+                console.log("Bio:", formData.bio);
+                console.log("Endurance:", formData.endurance);
+                console.log("Yellow Cards:", formData.yellowCards);
+                console.log("Red Cards:", formData.redCards);
+
+                alert("Player registration submitted successfully!");
+            }
+        }
+    </script>  -->

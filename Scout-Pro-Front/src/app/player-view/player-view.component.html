@@ -1,0 +1,99 @@
+<div class="container">
+  <!-- Profile Header -->
+  <div class="profile-header">
+    <div class="avatar-container">
+      <img [src]="player.image" alt="Player avatar" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" *ngIf="player.image; else noAvatar" />
+      <ng-template #noAvatar>Profile Picture</ng-template>
+    </div>
+    <div class="player-info">
+      <h1 class="player-name">{{ player.name }}</h1>
+      <p class="player-title">{{ player.position.primary }} <span *ngIf="player.club">| {{ player.club }}</span></p>
+      <div class="key-stats">
+        <div class="stat-item">
+          <span class="stat-label">Age:</span>
+          <span class="stat-value">{{ player.age }}</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Height:</span>
+          <span class="stat-value">{{ player.height }}</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Position:</span>
+          <span class="stat-value">{{ player.position.primary }}</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Weight:</span>
+          <span class="stat-value">{{ player.weight || '--' }}</span>
+        </div>
+      </div>
+      <div class="action-buttons">
+        <button class="btn btn-primary">Follow</button>
+        <button class="btn btn-primary">Contact Player</button>
+      </div>
+    </div>
+  </div>
+  <!-- Tabs -->
+  <div class="tabs">
+    <div class="tab" [class.active]="activeTab === 'about'" (click)="setTab('about')">About</div>
+    <div class="tab" [class.active]="activeTab === 'video'" (click)="setTab('video')">Video</div>
+    <div class="tab" [class.active]="activeTab === 'career'" (click)="setTab('career')">Career</div>
+  </div>
+  <!-- About Tab -->
+  <div class="tab-content" [class.active]="activeTab === 'about'">
+    <div class="player-details">
+      <div class="detail-group">
+        <h3 class="detail-title">Personal Info</h3>
+        <div class="detail-item">
+          <span class="detail-label">Full Name:</span>
+          <span class="detail-value">{{ player.name }}</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Date of Birth:</span>
+          <span class="detail-value">{{ player.dob }}</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Nationality:</span>
+          <span class="detail-value">{{ player.country }}</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Preferred Foot:</span>
+          <span class="detail-value">{{ player.foot }}</span>
+        </div>
+      </div>
+      <div class="detail-group">
+        <h3 class="detail-title">Current Club</h3>
+        <div class="detail-item">
+          <span class="detail-label">Club:</span>
+          <span class="detail-value">{{ player.club || '--' }}</span>
+        </div>
+      </div>
+      <div class="detail-group">
+        <h3 class="detail-title">Bio</h3>
+      </div>
+      <p class="player-bio">{{ player.bio }}</p>
+    </div>
+  </div>
+  <!-- Video Tab -->
+  <div class="tab-content" [class.active]="activeTab === 'video'">
+    <div class="video-container" *ngIf="videos.length">
+      <iframe [src]="videos[0].url" frameborder="0" allowfullscreen></iframe>
+    </div>
+    <h3 *ngIf="videos.length">Recent Highlights</h3>
+    <div class="video-container" style="padding-bottom: 30%; margin-top: 1rem;" *ngIf="videos.length > 1">
+      <iframe [src]="videos[1].url" frameborder="0" allowfullscreen></iframe>
+    </div>
+    <div *ngIf="!videos.length" class="player-bio">No videos available.</div>
+  </div>
+  <!-- Career Tab -->
+  <div class="tab-content" [class.active]="activeTab === 'career'">
+    <h3>Career Timeline</h3>
+    <div class="player-details" style="grid-template-columns: 1fr; margin-top: 1rem;">
+      <div class="detail-group">
+        <div class="detail-item" *ngFor="let entry of player.career">
+          <span class="detail-label">{{ entry.years }}:</span>
+          <span class="detail-value">{{ entry.club }} - {{ entry.stats }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

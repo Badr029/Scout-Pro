@@ -1,0 +1,583 @@
+/* registration-form.component.scss */
+
+/* Import Font Awesome */
+@import '@fortawesome/fontawesome-free/css/all.min.css';
+
+/* General Styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+:host::before {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background:
+        linear-gradient(rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.85)),
+        url('/assets/WhatsApp Image 2025-05-02 at 22.17.46_f8c08b38.jpg') center center/cover no-repeat;
+    z-index: -1;
+}
+
+:host {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    background: linear-gradient(rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.85)),
+                url('../../assets/WhatsApp\ Image\ 2025-05-02\ at\ 22.17.46_f8c08b38.jpg');
+    background-size: cover;
+    background-attachment: fixed;
+    padding: 20px;
+    position: relative;
+}
+
+.container {
+    background-color: #1e1e1e;
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+    padding: 40px;
+    width: 100%;
+    max-width: 500px;
+    border: 1px solid #333;
+}
+
+h2 {
+    font-size: 24px;
+    font-weight: 600;
+    margin-bottom: 30px;
+    text-align: center;
+    color: #f5f5f5;
+}
+
+/* Form Styles */
+form {
+    width: 100%;
+}
+
+.input-group {
+    display: flex;
+    flex-direction: column;
+}
+
+/* Name Fields */
+.name-fields {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 20px;
+
+    .input-field {
+        flex: 1;
+    }
+}
+
+/* Input Fields */
+.input-field {
+    margin-bottom: 20px;
+    position: relative;
+
+    label {
+        display: block;
+        margin-bottom: 8px;
+        font-size: 14px;
+        font-weight: 500;
+        color: #b0b0b0;
+    }
+
+    input, select {
+        width: 100%;
+        padding: 12px 15px;
+        border: 1px solid #333;
+        border-radius: 8px;
+        font-size: 15px;
+        transition: all 0.3s;
+        background-color: #2d2d2d;
+        color: #e0e0e0;
+    }
+
+    input:focus, select:focus {
+        outline: none;
+        border-color: #4a6cf7;
+        box-shadow: 0 0 0 3px rgba(74, 108, 247, 0.2);
+        background-color: #333;
+    }
+
+    input::placeholder {
+        color: #777;
+        font-weight: 300;
+    }
+}
+
+/* Phone Number Field */
+.form-group {
+    margin-bottom: 20px;
+
+    label {
+        display: block;
+        margin-bottom: 8px;
+        font-size: 14px;
+        font-weight: 500;
+        color: #b0b0b0;
+    }
+
+    input {
+        width: 100%;
+        padding: 12px 15px;
+        border: 1px solid #333;
+        border-radius: 8px;
+        font-size: 15px;
+        transition: all 0.3s;
+        background-color: #2d2d2d;
+        color: #e0e0e0;
+    }
+
+    input:focus {
+        outline: none;
+        border-color: #4a6cf7;
+        box-shadow: 0 0 0 3px rgba(74, 108, 247, 0.2);
+        background-color: #333;
+    }
+}
+
+/* Validation Styles */
+.validation-error {
+    color: #ff4444;
+    font-size: 12px;
+    margin-top: 5px;
+    display: block;
+}
+
+.form-group input.ng-invalid.ng-touched,
+.form-group select.ng-invalid.ng-touched {
+    border-color: #ff4444;
+}
+
+.form-group input.ng-valid.ng-touched,
+.form-group select.ng-valid.ng-touched {
+    border-color: #00C851;
+}
+
+.error-message {
+    color: #ff4444;
+    font-size: 14px;
+    margin: 10px 0;
+    text-align: center;
+    padding: 10px;
+    background-color: rgba(255, 68, 68, 0.1);
+    border-radius: 4px;
+}
+
+.success-message {
+    color: #00C851;
+    font-size: 14px;
+    margin: 10px 0;
+    text-align: center;
+    padding: 10px;
+    background-color: rgba(0, 200, 81, 0.1);
+    border-radius: 4px;
+}
+
+/* Disable button styles */
+button:disabled {
+    background-color: #666;
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+button:disabled:hover {
+    transform: none;
+    background-color: #666;
+}
+
+/* Select Dropdown */
+select {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23b0b0b0' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 15px center;
+    background-size: 15px;
+}
+
+/* Register Button */
+.register-btn {
+    width: 100%;
+    padding: 14px;
+    background-color: #4a6cf7;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s;
+    margin-top: 10px;
+
+    &:hover {
+        background-color: #3a5bd9;
+        transform: translateY(-2px);
+    }
+}
+
+/* Social Login and Divider */
+.divider {
+    display: flex;
+    align-items: center;
+    margin: 25px 0;
+    color: #666;
+    font-size: 14px;
+    text-align: center;
+}
+
+.divider::before,
+.divider::after {
+    content: "";
+    flex: 1;
+    border-bottom: 1px solid #333;
+}
+
+.divider::before {
+    margin-right: 15px;
+}
+
+.divider::after {
+    margin-left: 15px;
+}
+
+/* Google Button Styles */
+.social-login-container {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    margin: 15px 0;
+    width: 100%;
+}
+
+.custom-google-button {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 280px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    background-color: #2d2d2d;
+    border: 1px solid #4a6cf7;
+    border-radius: 8px;
+    color: #e0e0e0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    padding: 12px 24px;
+    pointer-events: none;
+    box-shadow: 0 2px 10px rgba(74, 108, 247, 0.1);
+}
+
+.custom-google-button i {
+    font-size: 18px;
+    color: #4a6cf7;
+    transition: all 0.3s ease;
+}
+
+/* Hide the original Google button text but keep the clickable area */
+.social-login-container ::ng-deep .nsm7Bb-HzV7m-LgbsSe {
+    opacity: 0;
+    position: relative;
+    z-index: 1;
+    width: 280px !important;
+    height: 48px !important;
+}
+
+.social-login-container:hover .custom-google-button {
+    background-color: #3a3a3a;
+    box-shadow: 0 4px 15px rgba(74, 108, 247, 0.2);
+    transform: translateX(-50%) translateY(-2px);
+}
+
+.social-login-container:active .custom-google-button {
+    transform: translateX(-50%) translateY(0);
+}
+
+/* Login Link */
+.login-link {
+    text-align: center;
+    margin-top: 25px;
+    font-size: 14px;
+    color: #999;
+}
+
+.login-link a {
+    color: #4a6cf7;
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.3s ease;
+}
+
+.login-link a:hover {
+    color: #3a5bd9;
+    text-decoration: underline;
+}
+
+/* Social Buttons */
+.social-btn {
+    width: 100%;
+    padding: 12px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 12px;
+    transition: all 0.3s;
+    border: 1px solid #333;
+    background-color: #2d2d2d;
+    color: #e0e0e0;
+}
+
+.social-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.social-btn span:first-child {
+    margin-right: 10px;
+    font-size: 18px;
+}
+
+.google:hover {
+    border-color: #db4437;
+    color: #db4437;
+    background-color: rgba(219, 68, 55, 0.1);
+}
+
+/* Font Awesome Icons */
+.fa-google {
+    color: #db4437;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+    .container {
+        padding: 30px 20px;
+    }
+
+    .name-fields {
+        flex-direction: column;
+        gap: 0;
+    }
+}
+
+@media (max-width: 480px) {
+    .container {
+        padding: 25px 15px;
+    }
+
+    h2 {
+        font-size: 22px;
+    }
+}
+
+/* User Type Selection Styles */
+.user-type-slider {
+    max-width: 600px;
+    width: 100%;
+    text-align: center;
+    transition: all 0.5s ease;
+}
+
+.user-type-slider:not(.selected) {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.user-type-slider.selected {
+    position: relative;
+    transform: none;
+    margin: 20px auto;
+}
+
+.user-type-slider h2 {
+    color: #e0e0e0;
+    font-size: 32px;
+    margin-bottom: 30px;
+    transition: all 0.3s ease;
+}
+
+.user-type-slider.selected h2 {
+    font-size: 24px;
+    margin-bottom: 20px;
+}
+
+/* Filter Switch Styles */
+.filter-switch {
+    border: 2px solid #3a5bd9;
+    border-radius: 30px;
+    position: relative;
+    display: flex;
+    align-items: center;
+    height: 50px;
+    width: 400px;
+    overflow: hidden;
+    margin: 0 auto;
+}
+
+.filter-switch input {
+    display: none;
+}
+
+.filter-switch label {
+    flex: 1;
+    height: 100%;
+    text-align: center;
+    cursor: pointer;
+    border: none;
+    border-radius: 30px;
+    position: relative;
+    overflow: hidden;
+    z-index: 1;
+    transition: all 0.3s ease;
+    font-weight: 500;
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: transparent;
+}
+
+.filter-switch label:hover {
+    background-color: rgba(58, 91, 217, 0.1);
+}
+
+.filter-switch .background {
+    position: absolute;
+    width: 49%;
+    height: calc(100% - 8px);
+    background-color: #3a5bd9;
+    top: 4px;
+    left: 4px;
+    border-radius: 30px;
+    transition: left 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.filter-switch input[type="radio"]:last-of-type:checked ~ .background {
+    left: 50%;
+}
+
+.filter-switch input[type="radio"]:first-of-type:checked + label {
+    color: white;
+    font-weight: bold;
+}
+
+.filter-switch input[type="radio"]:last-of-type:checked + label {
+    color: white;
+    font-weight: bold;
+}
+
+.filter-switch input[type="radio"]:not(:checked) + label {
+    color: #7d7d7d;
+}
+
+.filter-switch input[type="radio"]:not(:checked) + label:hover {
+    color: #3a5bd9;
+}
+
+.filter-switch i {
+    font-size: 18px;
+}
+
+/* Registration Container */
+.registration-container {
+    width: 100%;
+    max-width: 500px;
+    margin: 0 auto;
+    opacity: 0;
+    transform: translateY(20px);
+    animation: fadeInUp 0.5s ease forwards;
+}
+
+@keyframes fadeInUp {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Responsive Adjustments */
+@media (max-width: 600px) {
+    .user-type-slider h2 {
+        font-size: 28px;
+    }
+
+    .user-type-slider.selected h2 {
+        font-size: 20px;
+    }
+
+    .filter-switch {
+        width: 300px;
+        height: 45px;
+    }
+
+    .filter-switch label {
+        font-size: 16px;
+    }
+
+    .filter-switch .background {
+        height: 33px;
+    }
+
+    .filter-switch i {
+        font-size: 16px;
+    }
+}
+
+/* Password Input Styles */
+.password-input {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.password-input input {
+    padding-right: 40px;
+}
+
+.toggle-password {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: #b0b0b0;
+    cursor: pointer;
+    padding: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.3s ease;
+}
+
+.toggle-password:hover {
+    color: #4a6cf7;
+}
+
+.toggle-password i {
+    font-size: 16px;
+}

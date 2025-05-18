@@ -1,0 +1,98 @@
+<div class="app-container">
+  <aside class="left-sidebar">
+    <div class="logo">Scout Pro</div>
+    <nav class="nav-links">
+      <a href="#"><i class="fi fi-br-house-chimney-blank"></i> Home</a>
+      <a href="#" class="search-link" (click)="toggleSearchPanel(); $event.preventDefault()"><i class="icon-search"></i> Search</a>
+      <a href="#"><i class="icon-bell"></i> Notifications</a>
+      <a href="#"><i class="icon-plus-box"></i> Post</a>
+      <a href="/profile"><img src="https://ui-avatars.com/api/?name=User&size=24" alt="Profile" class="avatar-xs" /> Profile</a>
+    </nav>
+  </aside>
+  <div class="search-panel" *ngIf="showSearchPanel">
+    <h2>Search</h2>
+    <input type="text" placeholder="Search..." class="search-input" />
+    <div class="recent-searches">
+      <h4>Recent</h4>
+      <!-- Example recent searches -->
+      <div class="recent-item">--</div>
+      <div class="recent-item">--</div>
+      <div class="recent-item">--</div>
+    </div>
+  </div>
+  <div class="feed-container">
+    <div *ngIf="loading" class="loading"><span class="spinner"></span> Loading feed...</div>
+    <div *ngIf="error" class="error" aria-live="assertive">{{ error }}</div>
+    <div *ngIf="notification" class="notification" aria-live="polite">{{ notification }}</div>
+    <ng-container *ngIf="feedData">
+      <div class="posts">
+        <div *ngIf="!feedData.posts.data.length" class="empty-feed">No posts to show. Try adjusting your filters or check back later!</div>
+        <div *ngFor="let post of feedData.posts.data" class="post-card">
+          <div class="post-card-header">
+            <img src="https://ui-avatars.com/api/?name={{ post.player.name }}" class="avatar-sm" (click)="goToPlayerProfile(post.player.id)" />
+            <div class="post-card-info">
+              <span class="player-link" (click)="goToPlayerProfile(post.player.id)">{{ post.player.name }}</span>
+              <span class="player-position">• {{ post.player.position }}</span>
+              <span class="player-region">• {{ post.player.region }}</span>
+            </div>
+            <button class="follow-btn" *ngIf="!post.player.following" (click)="followPlayer(post.player.id)">Follow</button>
+            <span class="following-label" *ngIf="post.player.following">Following</span>
+          </div>
+          <div class="post-card-media">
+            <video width="100%" height="260" controls [src]=""></video>
+          </div>
+          <div class="post-card-actions">
+            <button (click)="likePost(post.id)" class="icon-btn">
+              <span *ngIf="post.liked">❤️</span><span *ngIf="!post.liked">🤍</span>
+            </button>
+            <button class="icon-btn"><span>💬</span></button>
+            <button class="icon-btn" (click)="goToPlayerProfile(post.player.id)"><span>👤</span></button>
+          </div>
+          <div class="post-card-info">
+            <span class="likes">{{ post.likes }} likes</span>
+            <span class="comments">{{ post.comments }} comments</span>
+          </div>
+          <div class="post-card-desc">
+            <span class="player-link" (click)="goToPlayerProfile(post.player.id)">{{ post.player.name }}</span>
+            <span> {{ post.description }}</span>
+          </div>
+        </div>
+      </div>
+    </ng-container>
+  </div>
+  <aside class="right-panel">
+    <div class="profile-info">
+      <a href="/profile" class="profile-link">
+        <img src="https://ui-avatars.com/api/?name=User" alt="Profile" class="avatar" />
+        <div class="profile-name">username</div>
+      </a>
+    </div>
+    <div class="trending">
+      <h4>Trending Players</h4>
+      <ul>
+        <li *ngFor="let player of feedData.trending_players">{{ player.name }}</li>
+      </ul>
+    </div>
+    <div class="events">
+      <h4>Upcoming Events</h4>
+      <div class="event-card" *ngFor="let event of feedData.upcoming_events">
+        <div class="event-bg" [style.background-image]="'url(' + (event.image || 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=600&q=80') + ')'">
+          <div class="event-overlay">
+            <div class="event-title">{{ event.title }}</div>
+            <div class="event-date">{{ event.date }}</div>
+            <div class="event-desc" *ngIf="event.desc">{{ event.desc }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="recommendations">
+      <h4>You May Also Like</h4>
+      <ul>
+        <li *ngFor="let rec of feedData.recommendations">{{ rec.name }}</li>
+      </ul>
+    </div>
+  </aside>
+</div>
+<footer class="app-footer">
+  <span>&copy; {{ currentYear }} ScoutPro. All rights reserved.</span>
+</footer>

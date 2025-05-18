@@ -1,0 +1,176 @@
+<div class="container">
+    <!-- Profile Header -->
+    <div class="profile-header">
+      <div class="avatar-container">Profile Picture</div>
+
+      <div class="player-info">
+        <h1 class="player-name">Scout Name</h1>
+        <p class="player-title">Scouting Role | Affiliation</p>
+
+        <div class="key-stats">
+          <div class="stat-item">
+            <span class="stat-label">Experience:</span>
+            <span class="stat-value">-- years</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Regions:</span>
+            <span class="stat-value">--</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Player Levels:</span>
+            <span class="stat-value">--</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Age Groups:</span>
+            <span class="stat-value">--</span>
+          </div>
+        </div>
+
+        <div class="action-buttons">
+          <button class="btn btn-outline" (click)="goToEditProfile()">Edit</button>
+          <button class="btn btn-danger">Delete</button>
+          <button class="btn btn-primary">Logout</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs">
+      <div class="tab active" data-tab="about">About</div>
+      <div class="tab" data-tab="portfolio">Portfolio</div>
+      <div class="tab" data-tab="contact">Contact</div>
+    </div>
+
+    <!-- About Tab -->
+    <div class="tab-content active" id="about">
+      <div class="player-details">
+        <div class="detail-group">
+          <h3 class="detail-title">Professional Info</h3>
+          <div class="detail-item">
+            <span class="detail-label">City:</span>
+            <span class="detail-value">--</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Country:</span>
+            <span class="detail-value">--</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Languages:</span>
+            <span class="detail-value">--</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Scouting Role:</span>
+            <span class="detail-value">--</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Affiliation:</span>
+            <span class="detail-value">--</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Experience:</span>
+            <span class="detail-value">-- years</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Player Levels:</span>
+            <span class="detail-value">--</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Regions Covered:</span>
+            <span class="detail-value">--</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Age Groups:</span>
+            <span class="detail-value">--</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Positions Focused:</span>
+            <span class="detail-value">--</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Scouting Criteria:</span>
+            <span class="detail-value">--</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Preferred Playing Style:</span>
+            <span class="detail-value">--</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Portfolio Tab -->
+    <div class="tab-content" id="portfolio">
+      <div class="player-details">
+        <div class="detail-group">
+          <h3 class="detail-title">Portfolio</h3>
+          <div class="detail-item">
+            <span class="detail-label">Players Discovered:</span>
+            <span class="detail-value">--</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Clubs Worked With:</span>
+            <span class="detail-value">--</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Achievements:</span>
+            <span class="detail-value">--</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">References:</span>
+            <span class="detail-value">--</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Certifications:</span>
+            <span class="detail-value">--</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Contact Tab -->
+    <div class="tab-content" id="contact">
+      <div class="player-details">
+        <div class="detail-group">
+          <h3 class="detail-title">Contact Info</h3>
+          <div class="detail-item">
+            <span class="detail-label">Email:</span>
+            <span class="detail-value">--</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Phone:</span>
+            <span class="detail-value">--</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Social Links:</span>
+            <span class="detail-value">--</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Available for Events:</span>
+            <span class="detail-value">--</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Willing to Travel:</span>
+            <span class="detail-value">--</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const tabs = document.querySelectorAll('.tab');
+
+        tabs.forEach(tab => {
+            tab.addEventListener('click', function() {
+                // Remove active class from all tabs and content
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+
+                // Add active class to clicked tab and corresponding content
+                this.classList.add('active');
+                const tabId = this.getAttribute('data-tab');
+                document.getElementById(tabId).classList.add('active');
+            });
+        });
+    });
+  </script>

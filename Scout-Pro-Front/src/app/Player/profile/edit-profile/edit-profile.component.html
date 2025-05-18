@@ -1,0 +1,101 @@
+<div class="profile-container">
+    <div class="profile-header">
+        <h1>Edit Player Profile</h1>
+    </div>
+
+
+    <div class="profile-picture">
+        <img src="https://via.placeholder.com/120" alt="Profile Picture" id="profile-image">
+        <button class="change-photo-btn">Change Photo</button>
+        <input type="file" id="photo-upload" accept="image/*" style="display: none;">
+    </div>
+
+    <form id="player-profile-form">
+        <div class="form-grid">
+            <div class="form-group">
+                <label for="full-name">Full Name</label>
+                <input type="text" id="full-name" >
+            </div>
+
+            <div class="form-group">
+                <label for="age">Age</label>
+                <input type="number" id="age" >
+            </div>
+
+            <div class="form-group">
+                <label for="height">Height (cm)</label>
+                <input type="number" id="height">
+            </div>
+
+            <div class="form-group">
+                <label for="weight">Weight (kg)</label>
+                <input type="number" id="weight" >
+            </div>
+
+            <div class="form-group">
+                <label for="nationality">Nationality</label>
+                <select id="nationality" required>
+                    <option value="Egypt" selected>Egypt</option>
+                    <option value="Brazil">Brazil</option>
+                    <option value="Argentina">Argentina</option>
+                    <option value="France">France</option>
+                    <option value="Spain">Spain</option>
+                    <option value="Germany">Germany</option>
+                    <option value="Other">Other</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="position">Primary Position</label>
+                <select id="position" required>
+                    <option value="ST" selected>Striker (ST)</option>
+                    <option value="LW">Left Winger (LW)</option>
+                    <option value="RW">Right Winger (RW)</option>
+                    <option value="CF">Center Forward (CF)</option>
+                    <option value="CAM">Attacking Midfielder (CAM)</option>
+                </select>
+            </div>
+
+            <div class="form-group full-width">
+                <label for="current-club">Current Club</label>
+                <input type="text" id="current-club">
+            </div>
+
+            <div class="form-group full-width">
+                <label for="bio">Player Bio</label>
+                <textarea id="bio" rows="4"></textarea>
+            </div>
+
+            <div class="form-group full-width">
+                <label>Skills & Attributes</label>
+                <div class="skill-tags" id="skill-tags-container">
+                    <span class="skill-tag">
+                        Shooting
+                        <button class="remove-tag">×</button>
+                    </span>
+                    <span class="skill-tag">
+                        Dribbling
+                        <button class="remove-tag">×</button>
+                    </span>
+                    <span class="skill-tag">
+                        Speed
+                        <button class="remove-tag">×</button>
+                    </span>
+                    <span class="skill-tag">
+                        Leadership
+                        <button class="remove-tag">×</button>
+                    </span>
+                </div>
+                <div style="display: flex; margin-top: 0.5rem;">
+                    <input type="text" id="new-skill" placeholder="Add new skill" style="flex-grow: 1; margin-right: 0.5rem;">
+                    <button type="button" class="btn btn-secondary" id="add-skill-btn" style="padding: 0.5rem 1rem;">Add</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-actions">
+            <button type="button" class="btn btn-secondary" (click)="goToProfile()">Cancel</button>
+            <button type="submit" class="btn btn-primary" (click)="goToProfile()">Save Changes</button>
+        </div>
+    </form>
+</div>
