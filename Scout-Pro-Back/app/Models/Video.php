@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Like extends Model
+class Video extends Model
 {
     use HasFactory;
 
@@ -16,11 +16,16 @@ class Like extends Model
      */
     protected $fillable = [
         'user_id',
-        'video_id',
+        'title',
+        'description',
+        'file_path',
+        'thumbnail',
+        'views',
+        'status'
     ];
 
     /**
-     * Get the user that owns the like.
+     * Get the user that owns the video.
      */
     public function user()
     {
@@ -28,10 +33,18 @@ class Like extends Model
     }
 
     /**
-     * Get the video that the like belongs to.
+     * Get the comments for the video.
      */
-    public function video()
+    public function comments()
     {
-        return $this->belongsTo(Video::class);
+        return $this->hasMany(Comment::class);
+    }
+
+    /**
+     * Get the likes for the video.
+     */
+    public function likes()
+    {
+        return $this->hasMany(Like::class);
     }
 }

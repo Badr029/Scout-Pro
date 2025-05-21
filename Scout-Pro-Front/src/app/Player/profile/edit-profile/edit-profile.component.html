@@ -1,101 +1,185 @@
 <div class="profile-container">
-    <div class="profile-header">
-        <h1>Edit Player Profile</h1>
+    <!-- Loading State -->
+    <div *ngIf="loading" class="loading-state">
+        <div class="spinner"></div>
+        <p>Loading profile...</p>
     </div>
 
-
-    <div class="profile-picture">
-        <img src="https://via.placeholder.com/120" alt="Profile Picture" id="profile-image">
-        <button class="change-photo-btn">Change Photo</button>
-        <input type="file" id="photo-upload" accept="image/*" style="display: none;">
+    <!-- Error State -->
+    <div *ngIf="!loading && error" class="error-state">
+        <p class="error-message">{{ error }}</p>
+        <button class="btn btn-primary" (click)="fetchPlayerProfile()">Try Again</button>
     </div>
 
-    <form id="player-profile-form">
-        <div class="form-grid">
-            <div class="form-group">
-                <label for="full-name">Full Name</label>
-                <input type="text" id="full-name" >
-            </div>
-
-            <div class="form-group">
-                <label for="age">Age</label>
-                <input type="number" id="age" >
-            </div>
-
-            <div class="form-group">
-                <label for="height">Height (cm)</label>
-                <input type="number" id="height">
-            </div>
-
-            <div class="form-group">
-                <label for="weight">Weight (kg)</label>
-                <input type="number" id="weight" >
-            </div>
-
-            <div class="form-group">
-                <label for="nationality">Nationality</label>
-                <select id="nationality" required>
-                    <option value="Egypt" selected>Egypt</option>
-                    <option value="Brazil">Brazil</option>
-                    <option value="Argentina">Argentina</option>
-                    <option value="France">France</option>
-                    <option value="Spain">Spain</option>
-                    <option value="Germany">Germany</option>
-                    <option value="Other">Other</option>
-                </select>
-            </div>
-
-            <div class="form-group">
-                <label for="position">Primary Position</label>
-                <select id="position" required>
-                    <option value="ST" selected>Striker (ST)</option>
-                    <option value="LW">Left Winger (LW)</option>
-                    <option value="RW">Right Winger (RW)</option>
-                    <option value="CF">Center Forward (CF)</option>
-                    <option value="CAM">Attacking Midfielder (CAM)</option>
-                </select>
-            </div>
-
-            <div class="form-group full-width">
-                <label for="current-club">Current Club</label>
-                <input type="text" id="current-club">
-            </div>
-
-            <div class="form-group full-width">
-                <label for="bio">Player Bio</label>
-                <textarea id="bio" rows="4"></textarea>
-            </div>
-
-            <div class="form-group full-width">
-                <label>Skills & Attributes</label>
-                <div class="skill-tags" id="skill-tags-container">
-                    <span class="skill-tag">
-                        Shooting
-                        <button class="remove-tag">×</button>
-                    </span>
-                    <span class="skill-tag">
-                        Dribbling
-                        <button class="remove-tag">×</button>
-                    </span>
-                    <span class="skill-tag">
-                        Speed
-                        <button class="remove-tag">×</button>
-                    </span>
-                    <span class="skill-tag">
-                        Leadership
-                        <button class="remove-tag">×</button>
-                    </span>
-                </div>
-                <div style="display: flex; margin-top: 0.5rem;">
-                    <input type="text" id="new-skill" placeholder="Add new skill" style="flex-grow: 1; margin-right: 0.5rem;">
-                    <button type="button" class="btn btn-secondary" id="add-skill-btn" style="padding: 0.5rem 1rem;">Add</button>
-                </div>
-            </div>
+    <!-- Edit Profile Content -->
+    <div *ngIf="!loading && !error && playerData">
+        <div class="profile-header">
+            <h1>Edit Player Profile</h1>
         </div>
 
-        <div class="form-actions">
-            <button type="button" class="btn btn-secondary" (click)="goToProfile()">Cancel</button>
-            <button type="submit" class="btn btn-primary" (click)="goToProfile()">Save Changes</button>
+        <div class="profile-picture">
+            <img [src]="playerData.profile_image ? 'http://localhost:8000/storage/' + playerData.profile_image : 'https://ui-avatars.com/api/?name=' + playerData.first_name + '+' + playerData.last_name" alt="Profile Picture" id="profile-image">
+            <button class="change-photo-btn" (click)="openPhotoUpload()">Change Photo</button>
+            <input type="file" id="photo-upload" accept="image/*" style="display: none;" (change)="onProfileImageChange($event)">
         </div>
-    </form>
+
+        <div *ngIf="successMessage" class="success-message">
+            {{ successMessage }}
+        </div>
+
+        <div *ngIf="saveError" class="error-message">
+            {{ saveError }}
+        </div>
+
+        <form (ngSubmit)="saveChanges()" #profileForm="ngForm">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="first-name">First Name <span class="required">*</span></label>
+                    <input type="text" id="first-name" name="first_name" [(ngModel)]="playerData.first_name" required #firstName="ngModel">
+                    <span class="field-error" *ngIf="firstName.invalid && (firstName.dirty || firstName.touched)">First name is required</span>
+                </div>
+
+                <div class="form-group">
+                    <label for="last-name">Last Name <span class="required">*</span></label>
+                    <input type="text" id="last-name" name="last_name" [(ngModel)]="playerData.last_name" required #lastName="ngModel">
+                    <span class="field-error" *ngIf="lastName.invalid && (lastName.dirty || lastName.touched)">Last name is required</span>
+                </div>
+
+                <div class="form-group">
+                    <label for="date-of-birth">Date of Birth <span class="required">*</span></label>
+                    <input type="date" id="date-of-birth" name="DateofBirth" [(ngModel)]="playerData.DateofBirth" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="gender">Gender <span class="required">*</span></label>
+                    <select id="gender" name="gender" [(ngModel)]="playerData.gender" required>
+                        <option *ngFor="let option of genderOptions" [value]="option.value">{{ option.label }}</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="phone">Phone Number <span class="required">*</span></label>
+                    <input type="tel" id="phone" name="phone_number" [(ngModel)]="playerData.phone_number" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="nationality">Nationality <span class="required">*</span></label>
+                    <input type="text" id="nationality" name="nationality" [(ngModel)]="playerData.nationality" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="height">Height (cm) <span class="required">*</span></label>
+                    <input type="number" id="height" name="height" [(ngModel)]="playerData.height" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="weight">Weight (kg) <span class="required">*</span></label>
+                    <input type="number" id="weight" name="weight" [(ngModel)]="playerData.weight" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="current-city">Current City <span class="required">*</span></label>
+                    <input type="text" id="current-city" name="current_city" [(ngModel)]="playerData.current_city" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="position">Primary Position <span class="required">*</span></label>
+                    <select id="position" name="position" [(ngModel)]="playerData.position" required>
+                        <option value="" selected disabled>Select Your Primary Position</option>
+                        <option *ngFor="let pos of positions" [value]="pos.value">{{ pos.label }}</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="secondary-position">Secondary Positions</label>
+                    <div class="multi-select">
+                        <select [(ngModel)]="newSecondaryPosition" name="new_secondary_position">
+                            <option value="">Select a secondary position</option>
+                            <option *ngFor="let pos of availableSecondaryPositions" [value]="pos">{{pos}}</option>
+                        </select>
+                        <button type="button" class="add-btn" (click)="addSecondaryPosition()" [disabled]="!newSecondaryPosition">Add</button>
+                    </div>
+                    <div class="tags">
+                        <ng-container *ngIf="Array.isArray(playerData.secondary_position)">
+                            <span *ngFor="let pos of playerData.secondary_position" class="tag">
+                                {{pos}}
+                                <button type="button" class="remove-tag" (click)="removeSecondaryPosition(pos)">&times;</button>
+                            </span>
+                        </ng-container>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="preferred-foot">Preferred Foot <span class="required">*</span></label>
+                    <select id="preferred-foot" name="preferred_foot" [(ngModel)]="playerData.preferred_foot" required>
+                        <option value="" selected disabled>Select Your Preferred Foot</option>
+                        <option *ngFor="let option of preferredFootOptions" [value]="option.value">{{ option.label }}</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="current-club">Current Club <span class="required">*</span></label>
+                    <select id="current-club" name="current_club" [(ngModel)]="playerData.current_club" required>
+                        <option value="" selected disabled>Select Your Current Club</option>
+                        <option *ngFor="let club of egyptianClubs" [value]="club">{{ club }}</option>
+                        <option value="Other">Other Club</option>
+                    </select>
+                    <input type="text" *ngIf="playerData.current_club === 'Other'" [(ngModel)]="playerData.current_club" name="current_club_other" placeholder="Enter club name" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Previous Clubs</label>
+                    <div class="multi-select">
+                        <select [(ngModel)]="newClub" name="new_club">
+                            <option value="">Select a club</option>
+                            <option *ngFor="let club of egyptianClubs" [value]="club">{{club}}</option>
+                            <option value="Other">Other Club</option>
+                        </select>
+                        <input
+                            type="text"
+                            *ngIf="newClub === 'Other'"
+                            [(ngModel)]="newClub"
+                            name="new_club_other"
+                            placeholder="Enter club name">
+                        <button type="button" class="add-btn" (click)="addPreviousClub()" [disabled]="!newClub.trim()">Add</button>
+                    </div>
+                    <div class="tags">
+                        <ng-container *ngIf="Array.isArray(playerData.previous_clubs)">
+                            <span *ngFor="let club of playerData.previous_clubs" class="tag">
+                                {{club}}
+                                <button type="button" class="remove-tag" (click)="removePreviousClub(club)">&times;</button>
+                            </span>
+                        </ng-container>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="playing-style">Playing Style</label>
+                    <textarea id="playing-style" name="playing_style" [(ngModel)]="playerData.playing_style" placeholder="Describe your playing style..." rows="3"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="transfer-status">Transfer Status <span class="required">*</span></label>
+                    <select id="transfer-status" name="transfer_status" [(ngModel)]="playerData.transfer_status" required>
+                        <option value="" selected disabled>Select Transfer Status</option>
+                        <option *ngFor="let option of availableTransferStatusOptions" [value]="option.value">{{ option.label }}</option>
+                    </select>
+                </div>
+
+                <div class="form-group full-width">
+                    <label for="bio">Player Bio</label>
+                    <textarea id="bio" name="bio" rows="4" [(ngModel)]="playerData.bio"></textarea>
+                </div>
+            </div>
+
+            <div class="form-note">
+                <span class="required">*</span> Required fields
+            </div>
+
+            <div class="form-actions">
+                <button type="button" class="btn btn-secondary" (click)="goToProfile()">Cancel</button>
+                <button type="submit" class="btn btn-primary" [disabled]="profileForm.invalid">Save Changes</button>
+            </div>
+        </form>
+    </div>
 </div>

@@ -10,6 +10,7 @@ import { PlayerViewComponent } from './player-view/player-view.component';
 import { ForgotPasswordComponent } from './forgot-password/forgot-password.component';
 import { ResetPasswordComponent } from './reset-password/reset-password.component';
 import { EmailVerificationComponent } from './email-verification/email-verification.component';
+import { SubscriptionComponent } from './subscription/subscription.component';
 import { AuthGuard } from './auth.guard';
 
 export const routes: Routes = [
@@ -75,6 +76,16 @@ export const routes: Routes = [
     {
         path: 'player/:id',
         component: PlayerViewComponent,
+        canActivate: [AuthGuard]
+    },
+    {
+        path: 'subscription',
+        component: SubscriptionComponent,
+        canActivate: [AuthGuard]
+    },
+    {
+        path: 'event/:id',
+        component: HomeFeedComponent,
         canActivate: [AuthGuard]
     }
 ];

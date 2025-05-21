@@ -13,16 +13,45 @@
 
   <!-- Profile Content -->
   <div *ngIf="!loading && !error && playerData" class="profile-content">
-    <!-- Profile Header -->
+        <!-- Profile Header -->
     <div class="profile-header">
+      <!-- Settings Menu -->
+      <div class="settings-menu">
+        <button class="settings-toggle" (click)="toggleSettingsMenu()">
+          <i class="fas fa-cog"></i>
+          <span class="sr-only">Settings</span>
+        </button>
+        <div class="settings-dropdown" [class.show]="showSettingsMenu">
+          <div class="settings-menu-item" (click)="goToEditProfile()">
+            <i class="fas fa-user-edit"></i> Edit Profile
+          </div>
+          <div class="settings-menu-item" (click)="goToSubscription()" *ngIf="playerData.subscription_plan !== 'Premium'">
+            <i class="fas fa-crown"></i> Upgrade to Premium
+          </div>
+          <div class="settings-divider"></div>
+          <div class="settings-menu-item" (click)="logout()">
+            <i class="fas fa-sign-out-alt"></i> Logout
+          </div>
+          <div class="settings-menu-item danger" (click)="showDeleteAccountModal()">
+            <i class="fas fa-trash-alt"></i> Delete Account
+          </div>
+        </div>
+      </div>
+
       <div class="avatar-container">
         <img *ngIf="playerData.profile_image" [src]="'http://localhost:8000/storage/' + playerData.profile_image" [alt]="playerData.first_name">
         <div *ngIf="!playerData.profile_image" class="no-image">{{ playerData.first_name[0] }}{{ playerData.last_name[0] }}</div>
       </div>
 
       <div class="player-info">
-        <h1 class="player-name">{{ playerData.first_name }} {{ playerData.last_name }}</h1>
+        <h1 class="player-name">
+          {{ playerData.first_name }} {{ playerData.last_name }}
+          <span class="username">{{"@"+playerData.username}}</span>
+        </h1>
         <p class="player-title">{{ playerData.position }} | {{ playerData.current_club }}</p>
+        <p class="subscription-badge" [ngClass]="playerData.subscription_plan === 'Premium' ? 'premium' : 'free'">
+          {{ playerData.subscription_plan || 'Free' }} Player
+        </p>
 
         <div class="key-stats">
           <div class="stat-item">
@@ -41,20 +70,20 @@
             <span class="stat-label">Weight:</span>
             <span class="stat-value">{{ playerData.weight }} kg</span>
           </div>
+          <div class="detail-item">
+            <span class="detail-label">Preferred Foot:</span>
+            <span class="detail-value">{{ playerData.preferred_foot }}</span>
+          </div>
         </div>
 
-        <div class="action-buttons">
-          <button class="btn btn-outline" (click)="goToEditProfile()">Edit Profile</button>
-          <button class="btn btn-danger">Delete Account</button>
-          <button class="btn btn-primary" (click)="goToLogin()">Logout</button>
-        </div>
+
       </div>
     </div>
 
     <!-- Tabs -->
     <div class="tabs">
       <div class="tab" [class.active]="activeTab === 'about'" (click)="switchTab('about')">About</div>
-      <div class="tab" [class.active]="activeTab === 'video'" (click)="switchTab('video')">Video</div>
+      <div class="tab" [class.active]="activeTab === 'video'" (click)="switchTab('video')">Videos</div>
       <div class="tab" [class.active]="activeTab === 'career'" (click)="switchTab('career')">Career</div>
     </div>
 
@@ -75,18 +104,12 @@
             <span class="detail-label">Nationality:</span>
             <span class="detail-value">{{ playerData.nationality }}</span>
           </div>
-          <div class="detail-item">
-            <span class="detail-label">Preferred Foot:</span>
-            <span class="detail-value">{{ playerData.preferred_foot }}</span>
-          </div>
+
           <div class="detail-item">
             <span class="detail-label">Current City:</span>
             <span class="detail-value">{{ playerData.current_city }}</span>
           </div>
-          <div class="detail-item">
-            <span class="detail-label">Phone:</span>
-            <span class="detail-value">{{ playerData.phone_number }}</span>
-          </div>
+          <!-- Phone number removed for privacy -->
         </div>
 
         <div class="detail-group">
@@ -95,14 +118,30 @@
             <span class="detail-label">Current Club:</span>
             <span class="detail-value">{{ playerData.current_club }}</span>
           </div>
-          <div class="detail-item">
-            <span class="detail-label">Position:</span>
-            <span class="detail-value">{{ playerData.position }}</span>
+
+          <!-- Position Information -->
+          <div class="detail-item positions-container">
+            <span class="detail-label">Positions:</span>
+            <div class="positions-info">
+              <div class="position primary-position">
+                <span class="position-type">Primary:</span>
+                <span class="position-value">{{ playerData.position }}</span>
+              </div>
+
+              <div class="secondary-positions" id="secondary-positions-container">
+                <span class="position-type">Secondary:</span>
+                <div id="secondary-positions-list">
+                  <div *ngIf="!playerData?.secondary_position || (Array.isArray(playerData?.secondary_position) && playerData?.secondary_position.length === 0)" class="no-secondary-positions">
+                    None specified
+                  </div>
+                  <ng-container *ngIf="playerData?.secondary_position && Array.isArray(playerData?.secondary_position) && playerData?.secondary_position.length > 0">
+                    <div *ngFor="let position of playerData.secondary_position" class="secondary-position-item">{{ position }}</div>
+                  </ng-container>
+                </div>
+              </div>
+            </div>
           </div>
-          <div class="detail-item" *ngIf="playerData.secondary_position">
-            <span class="detail-label">Secondary Position:</span>
-            <span class="detail-value">{{ playerData.secondary_position }}</span>
-          </div>
+
           <div class="detail-item">
             <span class="detail-label">Playing Style:</span>
             <span class="detail-value">{{ playerData.playing_style || 'Not specified' }}</span>
@@ -113,58 +152,221 @@
           </div>
         </div>
 
-        <div class="detail-group" *ngIf="playerData.bio">
-          <h3 class="detail-title">Bio</h3>
-          <p class="player-bio">{{ playerData.bio }}</p>
+        <!-- Bio section -->
+        <div class="detail-group">
+                    <div class="detail-title-row">
+            <h3 class="detail-title">Bio</h3>
+            <button *ngIf="playerData.bio" class="btn-edit-bio" (click)="showAddBioModal()">
+              <i class="fas fa-pen"></i> Edit
+            </button>
+          </div>
+
+          <!-- Show bio if it exists -->
+          <p *ngIf="playerData.bio" class="player-bio">{{ playerData.bio }}</p>
+
+          <!-- Show add bio button if no bio exists -->
+          <div *ngIf="!playerData.bio" class="empty-bio">
+            <p class="no-bio-message">No bio added yet.</p>
+            <button class="btn btn-outline bio-btn" (click)="showAddBioModal()">
+              <i class="fas fa-plus-circle"></i> Add Bio
+            </button>
+          </div>
+        </div>
+
+        <div class="detail-group">
+          <h3 class="detail-title">Account Plan</h3>
+          <div class="subscription-details">
+            <div class="current-plan" [ngClass]="playerData.subscription_plan === 'Premium' ? 'premium' : 'free'">
+              <h4>{{ playerData.subscription_plan || 'Free' }} Account</h4>
+              <p *ngIf="playerData.subscription_plan !== 'Premium'">
+                You currently have {{ playerData.remaining_uploads || 0 }}/3 video uploads available this month.
+              </p>
+              <p *ngIf="playerData.subscription_plan === 'Premium'">
+                Unlimited video uploads and premium features.
+              </p>
+            </div>
+            <button *ngIf="playerData.subscription_plan !== 'Premium'" class="btn btn-upgrade" (click)="goToSubscription()">Upgrade to Premium</button>
+          </div>
         </div>
       </div>
     </div>
 
     <!-- Video Tab -->
-    <div class="tab-content" id="video">
-      <div class="video-container">
-        <iframe src="" frameborder="0" allowfullscreen></iframe>
+    <div class="tab-content" [class.active]="activeTab === 'video'" id="video">
+      <div class="videos-header">
+        <h3>My Videos</h3>
+        <button class="btn btn-primary" (click)="openUploadModal()">Upload New Video</button>
       </div>
 
-      <h3>Recent Highlights</h3>
-      <div class="video-container" style="padding-bottom: 30%; margin-top: 1rem;">
-        <iframe src="" frameborder="0" allowfullscreen></iframe>
+              <div class="videos-container">
+          <!-- Show this when no videos are present -->
+          <div *ngIf="!videos || !Array.isArray(videos) || videos.length === 0" class="no-videos">
+            <p>No videos uploaded yet.</p>
+            <button class="btn btn-outline" (click)="openUploadModal()">Upload Your First Video</button>
+          </div>
+
+          <!-- Only show video cards if videos array exists, is an array, and has items -->
+          <ng-container *ngIf="videos && Array.isArray(videos) && videos.length > 0">
+            <div *ngFor="let video of videos" class="video-card">
+              <div class="video-thumbnail">
+                <img [src]="video.thumbnail || 'assets/default-thumbnail.jpg'" [alt]="video.title">
+                <div class="play-overlay">
+                  <span class="play-icon">▶</span>
+                </div>
+              </div>
+              <div class="video-info">
+                <h4>{{ video.title }}</h4>
+                <p class="video-description">{{ video.description }}</p>
+                <div class="video-stats">
+                  <span>{{ video.views }} views</span>
+                  <span>{{ video.likes }} likes</span>
+                  <span>{{ video.comments }} comments</span>
+                  <span>{{ video.created_at | date }}</span>
+                </div>
+              </div>
+            </div>
+          </ng-container>
+        </div>
+
+      <div *ngIf="playerData.subscription_plan !== 'Premium'" class="premium-promo">
+        <h3>Want More Exposure?</h3>
+        <p>Upgrade to Premium to get unlimited video uploads and priority placement in scout search results.</p>
+        <button class="btn btn-upgrade" (click)="goToSubscription()">Upgrade to Premium</button>
       </div>
     </div>
 
     <!-- Career Tab -->
     <div class="tab-content" [class.active]="activeTab === 'career'" id="career">
       <h3>Career History</h3>
+
       <div class="player-details" style="grid-template-columns: 1fr; margin-top: 1rem;">
         <div class="detail-group">
-          <div class="detail-item">
-            <span class="detail-label">Current:</span>
-            <span class="detail-value">{{ playerData.current_club }}</span>
+                    <!-- Clubs Section -->
+          <div class="clubs-section">
+            <!-- Current Club -->
+            <div class="detail-item clubs-container">
+              <span class="detail-label">Current Club:</span>
+              <div class="clubs-list">
+                <div class="current-club-item">{{ playerData.current_club || 'Not specified' }}</div>
+              </div>
+            </div>
+
+            <!-- Previous Clubs -->
+            <div class="detail-item clubs-container">
+              <span class="detail-label">Previous Clubs:</span>
+              <div id="previous-clubs-list" class="clubs-list">
+                <div *ngIf="!playerData?.previous_clubs || (Array.isArray(playerData?.previous_clubs) && playerData?.previous_clubs.length === 0)" class="no-previous-clubs">
+                  No previous clubs
+                </div>
+                <ng-container *ngIf="playerData?.previous_clubs && Array.isArray(playerData?.previous_clubs) && playerData?.previous_clubs.length > 0">
+                  <div *ngFor="let club of playerData.previous_clubs" class="previous-club-item">{{ club }}</div>
+                </ng-container>
+              </div>
+            </div>
           </div>
-          <div class="detail-item" *ngIf="playerData.previous_clubs">
-            <span class="detail-label">Previous Clubs:</span>
-            <span class="detail-value">{{ playerData.previous_clubs }}</span>
-          </div>
+
         </div>
       </div>
     </div>
   </div>
 </div>
-<script>
-  document.addEventListener('DOMContentLoaded', function() {
-      const tabs = document.querySelectorAll('.tab');
 
-      tabs.forEach(tab => {
-          tab.addEventListener('click', function() {
-              // Remove active class from all tabs and content
-              document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-              document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+<!-- Delete Account Confirmation Modal -->
+<div class="modal" [class.show]="showDeleteConfirm">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2>Delete Account</h2>
+      <span class="close" (click)="hideDeleteAccountModal()">&times;</span>
+    </div>
+    <div class="modal-body">
+      <p>Are you sure you want to delete your account? This action cannot be undone.</p>
 
-              // Add active class to clicked tab and corresponding content
-              this.classList.add('active');
-              const tabId = this.getAttribute('data-tab');
-              document.getElementById(tabId).classList.add('active');
-          });
-      });
-  });
-</script>
+      <!-- Email account - Password confirmation -->
+      <div class="form-group" *ngIf="!isGoogleAccount">
+        <label for="password">Please enter your password to confirm:</label>
+        <input type="password" id="password" [(ngModel)]="deletePassword" class="form-control" placeholder="Your password">
+      </div>
+
+      <!-- Google account - Type "delete" confirmation -->
+      <div class="form-group" *ngIf="isGoogleAccount">
+        <label for="delete-confirmation">Type "delete" to confirm:</label>
+        <input type="text" id="delete-confirmation" [(ngModel)]="deleteConfirmation" class="form-control" placeholder="delete">
+      </div>
+
+      <p *ngIf="deleteError" class="error-message">{{ deleteError }}</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" (click)="hideDeleteAccountModal()">Cancel</button>
+      <button class="btn btn-danger" (click)="deleteAccount()">Delete My Account</button>
+    </div>
+  </div>
+</div>
+
+<!-- Video Upload Modal -->
+<div class="modal" [class.show]="showUploadModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2>Upload New Video</h2>
+      <span class="close" (click)="closeUploadModal()">&times;</span>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label for="title">Title:</label>
+        <input type="text" id="title" [(ngModel)]="uploadData.title" class="form-control" placeholder="Video title">
+      </div>
+      <div class="form-group">
+        <label for="description">Description:</label>
+        <textarea id="description" [(ngModel)]="uploadData.description" class="form-control" rows="3" placeholder="Video description"></textarea>
+      </div>
+      <div class="form-group">
+        <label for="video">Video File:</label>
+        <input type="file" id="video" (change)="onFileSelected($event)" class="form-control" accept="video/*">
+      </div>
+      <div *ngIf="uploadProgress > 0" class="upload-progress">
+        <div class="progress-bar" [style.width.%]="uploadProgress"></div>
+        <span>{{ uploadProgress }}%</span>
+      </div>
+      <p *ngIf="uploadError" class="error-message">{{ uploadError }}</p>
+      <p *ngIf="playerData?.subscription_plan === 'Free' && (playerData?.remaining_uploads ?? 0) > 0" class="upload-limit-info">
+        You have {{ playerData?.remaining_uploads ?? 0 }}/3 uploads remaining this month.
+      </p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" (click)="closeUploadModal()">Cancel</button>
+      <button class="btn btn-primary" (click)="uploadVideo()">Upload</button>
+    </div>
+  </div>
+</div>
+
+<!-- Bio Add/Edit Modal -->
+<div class="modal" [class.show]="showBioModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2>{{ playerData?.bio ? 'Edit Bio' : 'Add Bio' }}</h2>
+      <span class="close" (click)="closeBioModal()">&times;</span>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label for="bio">Tell us about yourself:</label>
+        <textarea
+          id="bio"
+          [(ngModel)]="bioText"
+          class="form-control bio-textarea"
+          rows="5"
+          placeholder="Share your football journey, skills, and aspirations..."
+          maxlength="1000">
+        </textarea>
+        <div class="character-count" [class.limit-near]="bioText.length > 900" [class.limit-reached]="bioText.length >= 1000">
+          {{ bioText.length }}/1000
+        </div>
+      </div>
+      <p *ngIf="bioError" class="error-message">{{ bioError }}</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" (click)="closeBioModal()">Cancel</button>
+      <button class="btn btn-primary" (click)="saveBio()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Script removed - tab functionality is handled by Angular -->

@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -22,7 +22,8 @@ export class HomeFeedComponent implements OnInit {
     age: '',
     height: '',
     preferred_foot: '',
-    playing_style: ''
+    playing_style: '',
+    transfer_status: ''
   };
   loading = false;
   error = '';
@@ -31,20 +32,54 @@ export class HomeFeedComponent implements OnInit {
   searchQuery: string = '';
   showFilters = false;
   showSearchPanel = false;
+  activeView = 'reels'; // 'reels', 'grid', 'events'
+  showCommentBox: { [key: number]: boolean } = {};
+  newComment: string = '';
+  uploadModalOpen = false;
+  uploadProgress = 0;
+  uploadData = {
+    title: '',
+    description: '',
+    file: null as File | null
+  };
+  uploadError = '';
+  userProfile: any = null;
 
   constructor(private router: Router, private apiService: ApiService) {}
 
   ngOnInit() {
+    this.getUserProfile();
     this.loadFeedData();
   }
 
+  getUserProfile() {
+    const token = localStorage.getItem('auth_token');
+    if (!token) {
+      this.router.navigate(['/login']);
+      return;
+    }
+
+    this.apiService.getUserProfile().subscribe(
+      (data: any) => {
+        this.userProfile = data;
+      },
+      (error: any) => {
+        console.error('Error fetching user profile', error);
+      }
+    );
+  }
+
   loadFeedData(): void {
-    this.apiService.getData('feed-endpoint').subscribe(
+    this.loading = true;
+    this.apiService.getData('feed').subscribe(
       (data: any) => {
         this.feedData = data;
+        this.loading = false;
       },
       (error: any) => {
         console.error('Error fetching feed data', error);
+        this.loading = false;
+        this.error = 'Failed to load feed data';
       }
     );
   }
@@ -60,35 +95,85 @@ export class HomeFeedComponent implements OnInit {
           title: 'Amazing Goal! ⚽',
           description: 'Watch this stunning goal from last weekend.',
           video_url: 'https://www.w3schools.com/html/mov_bbb.mp4',
-          player: { id: 101, name: 'John Doe', position: 'Forward', region: 'Europe', following: false },
+          thumbnail: 'https://images.unsplash.com/photo-1560272564-c83b66b1ad12',
+          player: {
+            id: 101,
+            name: 'John Doe',
+            position: 'Forward',
+            region: 'Europe',
+            following: false,
+            profile_image: 'https://ui-avatars.com/api/?name=John+Doe'
+          },
           views: 1200,
           likes: 150,
-          comments: 12,
-          liked: false
+          comments: [
+            { user: 'scout123', text: 'Incredible skill!', timestamp: '2h ago' },
+            { user: 'coach_dave', text: 'Great control and finish', timestamp: '1h ago' }
+          ],
+          liked: false,
+          created_at: '2023-06-15T14:30:00Z'
         },
         {
           id: 2,
           title: 'Defensive Skills',
           description: 'Top tackles and interceptions.',
           video_url: 'https://www.w3schools.com/html/movie.mp4',
-          player: { id: 102, name: 'Jane Smith', position: 'Defender', region: 'Africa', following: true },
+          thumbnail: 'https://images.unsplash.com/photo-1575361204480-aadea25e6e68',
+          player: {
+            id: 102,
+            name: 'Jane Smith',
+            position: 'Defender',
+            region: 'Africa',
+            following: true,
+            profile_image: 'https://ui-avatars.com/api/?name=Jane+Smith'
+          },
           views: 800,
           likes: 90,
-          comments: 5,
-          liked: true
+          comments: [
+            { user: 'football_fan', text: 'Solid defending', timestamp: '5h ago' }
+          ],
+          liked: true,
+          created_at: '2023-06-10T09:15:00Z'
+        },
+        {
+          id: 3,
+          title: 'Speed Training',
+          description: 'Working on my acceleration and sprint technique.',
+          video_url: 'https://www.w3schools.com/html/mov_bbb.mp4',
+          thumbnail: 'https://images.unsplash.com/photo-1517466787929-bc90951d0974',
+          player: {
+            id: 103,
+            name: 'Mike Johnson',
+            position: 'Midfielder',
+            region: 'North America',
+            following: false,
+            profile_image: 'https://ui-avatars.com/api/?name=Mike+Johnson'
+          },
+          views: 450,
+          likes: 62,
+          comments: [],
+          liked: false,
+          created_at: '2023-06-05T16:20:00Z'
         }
       ];
+
       // Filter by searchQuery and filters
       let filteredPosts = allPosts.filter(post => {
         const matchesSearch = this.searchQuery.trim() === '' ||
           post.player.name.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
           post.title.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
           post.description.toLowerCase().includes(this.searchQuery.toLowerCase());
-        const matchesPosition = !this.filters.position || post.player.position === this.filters.position;
-        const matchesRegion = !this.filters.region || post.player.region === this.filters.region;
+
+        const matchesPosition = !this.filters.position ||
+          post.player.position.toLowerCase() === this.filters.position.toLowerCase();
+
+        const matchesRegion = !this.filters.region ||
+          post.player.region.toLowerCase() === this.filters.region.toLowerCase();
+
         // Age filter is mock (not in data)
         return matchesSearch && matchesPosition && matchesRegion;
       });
+
       this.feedData = {
         user_type: 'scout', // Change to 'player' to preview player UI
         filter_options: [
@@ -123,27 +208,34 @@ export class HomeFeedComponent implements OnInit {
           last_page: 1
         },
         trending_players: [
-          { name: 'John Doe' },
-          { name: 'Jane Smith' },
-          { name: 'Alex Brown' }
+          { id: 201, name: 'John Doe', position: 'Forward', region: 'Europe', image: 'https://ui-avatars.com/api/?name=John+Doe' },
+          { id: 202, name: 'Jane Smith', position: 'Defender', region: 'Africa', image: 'https://ui-avatars.com/api/?name=Jane+Smith' },
+          { id: 203, name: 'Alex Brown', position: 'Midfielder', region: 'Asia', image: 'https://ui-avatars.com/api/?name=Alex+Brown' }
         ],
         upcoming_events: [
           {
+            id: 301,
             title: 'Summer Cup',
             date: '2024-07-15',
             desc: 'The biggest youth football event of the summer. Join top talents and scouts from around the world!',
-            image: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=400&q=80'
+            image: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=400&q=80',
+            location: 'London, UK'
           },
           {
+            id: 302,
             title: 'Scouting Combine',
             date: '2024-08-01',
             desc: 'Showcase your skills in front of professional scouts. Registration open now!',
-            image: 'https://images.unsplash.com/photo-1464983953574-0892a716854b?auto=format&fit=crop&w=400&q=80'
+            image: 'https://images.unsplash.com/photo-1464983953574-0892a716854b?auto=format&fit=crop&w=400&q=80',
+            location: 'Manchester, UK'
           }
         ],
         recommendations: [
-          { name: 'Michael Green' },
-          { name: 'Emily White' }
+          { id: 401, name: 'Michael Green', position: 'Forward', region: 'Europe', image: 'https://ui-avatars.com/api/?name=Michael+Green' },
+          { id: 402, name: 'Emily White', position: 'Midfielder', region: 'North America', image: 'https://ui-avatars.com/api/?name=Emily+White' }
+        ],
+        suggested_searches: [
+          'Forward', 'Under 18', 'London', 'Available for transfer'
         ]
       };
       this.loading = false;
@@ -153,6 +245,10 @@ export class HomeFeedComponent implements OnInit {
   onFilterChange(key: string, value: string) {
     this.filters[key] = value;
     this.fetchFeed();
+  }
+
+  toggleFilter() {
+    this.showFilters = !this.showFilters;
   }
 
   likePost(postId: number) {
@@ -203,9 +299,104 @@ export class HomeFeedComponent implements OnInit {
 
   onSearch() {
     this.fetchFeed();
+    this.showSearchPanel = false;
   }
 
   toggleSearchPanel() {
     this.showSearchPanel = !this.showSearchPanel;
+  }
+
+  switchView(view: string) {
+    this.activeView = view;
+  }
+
+  toggleCommentBox(postId: number) {
+    this.showCommentBox[postId] = !this.showCommentBox[postId];
+  }
+
+  postComment(postId: number) {
+    if (!this.newComment.trim()) return;
+
+    const post = this.feedData.posts.data.find((p: any) => p.id === postId);
+    if (post) {
+      post.comments.push({
+        user: this.userProfile?.username || 'currentuser',
+        text: this.newComment,
+        timestamp: 'Just now'
+      });
+      post.comments_count = post.comments.length;
+      this.newComment = '';
+      this.showCommentBox[postId] = false;
+      this.showNotification('Comment posted!');
+    }
+  }
+
+  openUploadModal() {
+    this.uploadModalOpen = true;
+    this.uploadData = {
+      title: '',
+      description: '',
+      file: null
+    };
+    this.uploadProgress = 0;
+    this.uploadError = '';
+  }
+
+  closeUploadModal() {
+    this.uploadModalOpen = false;
+  }
+
+  onFileSelected(event: Event) {
+    const input = event.target as HTMLInputElement;
+    if (input.files && input.files.length) {
+      this.uploadData.file = input.files[0];
+    }
+  }
+
+  uploadVideo() {
+    if (!this.uploadData.title || !this.uploadData.description || !this.uploadData.file) {
+      this.uploadError = 'Please fill all fields and select a video file';
+      return;
+    }
+
+    this.uploadProgress = 10;
+
+    // Simulating upload progress
+    const interval = setInterval(() => {
+      this.uploadProgress += 20;
+      if (this.uploadProgress >= 100) {
+        clearInterval(interval);
+
+        // Simulate successful upload
+        setTimeout(() => {
+          this.loadFeedData();
+          this.closeUploadModal();
+          this.showNotification('Video uploaded successfully!');
+        }, 500);
+      }
+    }, 500);
+  }
+
+  searchForTerm(term: string) {
+    this.searchQuery = term;
+    this.onSearch();
+  }
+
+  clearSearch() {
+    this.searchQuery = '';
+    this.onSearch();
+  }
+
+  goToEvent(eventId: number) {
+    this.router.navigate(['/event', eventId]);
+  }
+
+  @HostListener('window:scroll', [])
+  onScroll(): void {
+    if (window.innerHeight + document.documentElement.scrollTop >= document.documentElement.offsetHeight - 200) {
+      if (!this.loading) {
+        this.loadMore();
+      }
+    }
   }
 }

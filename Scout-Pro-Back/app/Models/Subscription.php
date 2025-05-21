@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Event extends Model
+class Subscription extends Model
 {
     use HasFactory;
 
@@ -15,12 +15,12 @@ class Event extends Model
      * @var array<int, string>
      */
     protected $fillable = [
-        'title',
-        'description',
-        'date',
-        'location',
-        'image',
-        'organizer_id',
+        'user_id',
+        'plan',
+        'active',
+        'trial_ends_at',
+        'expires_at',
+        'canceled_at'
     ];
 
     /**
@@ -29,14 +29,17 @@ class Event extends Model
      * @var array<string, string>
      */
     protected $casts = [
-        'date' => 'datetime',
+        'active' => 'boolean',
+        'trial_ends_at' => 'datetime',
+        'expires_at' => 'datetime',
+        'canceled_at' => 'datetime',
     ];
 
     /**
-     * Get the organizer of the event.
+     * Get the user that owns the subscription.
      */
-    public function organizer()
+    public function user()
     {
-        return $this->belongsTo(User::class, 'organizer_id');
+        return $this->belongsTo(User::class);
     }
 }

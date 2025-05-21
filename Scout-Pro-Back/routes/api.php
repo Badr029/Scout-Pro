@@ -9,6 +9,10 @@ use App\Http\Controllers\API\ProfileController;
 use App\Http\Controllers\API\ResetPasswordController;
 use App\Http\Controllers\API\FeedController;
 use App\Http\Controllers\API\VideoController;
+use App\Http\Controllers\API\SubscriptionController;
+use App\Http\Controllers\API\EventController;
+use App\Http\Controllers\API\PlayerController;
+use App\Http\Controllers\API\AccountController;
 
 
 
@@ -43,7 +47,7 @@ Route::post('/reset-password', [ResetPasswordController::class, 'reset']);
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/setup', [SetupController::class, 'setup']);
     Route::get('/profile', [ProfileController::class, 'show']);
-    Route::put('/update', [ProfileController::class, 'update']);
+    Route::put('player/profile/update', [ProfileController::class, 'update']);
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::delete('/delete',[ProfileController::class , 'delete']);
 
@@ -63,4 +67,28 @@ Route::middleware('auth:sanctum')->group(function () {
     // Setup routes
     Route::post('/player/setup', [SetupController::class, 'playerSetup']);
     Route::post('/scout/setup', [SetupController::class, 'scoutSetup']);
+
+    // New video routes
+    Route::get('/videos', [VideoController::class, 'index']);
+    Route::post('/videos', [VideoController::class, 'store']);
+    Route::get('/videos/{video}', [VideoController::class, 'show']);
+    Route::post('/videos/{video}/like', [VideoController::class, 'like']);
+    Route::post('/videos/{video}/unlike', [VideoController::class, 'unlike']);
+    Route::post('/videos/{video}/comment', [VideoController::class, 'comment']);
+
+    // New subscription routes
+    Route::get('/subscription', [SubscriptionController::class, 'show']);
+    Route::post('/subscription/upgrade', [SubscriptionController::class, 'upgrade']);
+    Route::post('/subscription/cancel', [SubscriptionController::class, 'cancel']);
+
+    // Feed related routes
+    Route::get('/events', [EventController::class, 'index']);
+    Route::get('/events/{event}', [EventController::class, 'show']);
+
+    // Follow/unfollow routes
+    Route::post('/players/{player}/follow', [PlayerController::class, 'follow']);
+    Route::post('/players/{player}/unfollow', [PlayerController::class, 'unfollow']);
+
+    // Account management
+    Route::post('/account/delete', [AccountController::class, 'delete']);
 });

@@ -9,21 +9,30 @@ class Comment extends Model
 {
     use HasFactory;
 
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var array<int, string>
+     */
     protected $fillable = [
         'user_id',
-        'post_id',
+        'video_id',
         'content',
     ];
 
-    protected $with = ['user'];
-
+    /**
+     * Get the user that owns the comment.
+     */
     public function user()
     {
         return $this->belongsTo(User::class);
     }
 
-    public function post()
+    /**
+     * Get the video that the comment belongs to.
+     */
+    public function video()
     {
-        return $this->belongsTo(Post::class);
+        return $this->belongsTo(Video::class);
     }
 }

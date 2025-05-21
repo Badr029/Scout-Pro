@@ -8,6 +8,8 @@ use App\Models\Like;
 use App\Models\Follow;
 use App\Models\Event;
 use App\Models\Player;
+use App\Models\User;
+use App\Models\Video;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Database\Eloquent\Builder;
@@ -15,9 +17,217 @@ use Illuminate\Database\Eloquent\Builder;
 class FeedController extends Controller
 {
     /**
-     * Get the main feed based on user type with video filters by player profile
+     * Display the feed for the authenticated user.
      */
     public function index(Request $request)
+    {
+        $user = Auth::user();
+        $userType = $user->user_type;
+
+        // Get filter parameters
+        $position = $request->input('position');
+        $secondary_position = $request->input('secondary_position');
+        $region = $request->input('region');
+        $age = $request->input('age');
+        $height = $request->input('height');
+        $preferred_foot = $request->input('preferred_foot');
+        $playing_style = $request->input('playing_style');
+        $transfer_status = $request->input('transfer_status');
+
+        // Build query for videos
+        $videosQuery = Video::with(['user', 'comments', 'likes'])
+            ->whereHas('user', function ($query) {
+                $query->where('user_type', 'player');
+            })
+            ->orderBy('created_at', 'desc');
+
+        // Apply filters if user is a scout
+        if ($userType === 'scout' && $position) {
+            $videosQuery->whereHas('user.player', function ($query) use ($position) {
+                $query->where('position', $position);
+            });
+        }
+
+        if ($userType === 'scout' && $secondary_position) {
+            $videosQuery->whereHas('user.player', function ($query) use ($secondary_position) {
+                $query->where('secondary_position', $secondary_position);
+            });
+        }
+
+        if ($userType === 'scout' && $region) {
+            $videosQuery->whereHas('user.player', function ($query) use ($region) {
+                $query->where('nationality', 'like', '%' . $region . '%')
+                    ->orWhere('current_city', 'like', '%' . $region . '%');
+            });
+        }
+
+        if ($userType === 'scout' && $preferred_foot) {
+            $videosQuery->whereHas('user.player', function ($query) use ($preferred_foot) {
+                $query->where('preferred_foot', $preferred_foot);
+            });
+        }
+
+        if ($userType === 'scout' && $playing_style) {
+            $videosQuery->whereHas('user.player', function ($query) use ($playing_style) {
+                $query->where('playing_style', $playing_style);
+            });
+        }
+
+        if ($userType === 'scout' && $transfer_status) {
+            $videosQuery->whereHas('user.player', function ($query) use ($transfer_status) {
+                $query->where('transfer_status', $transfer_status);
+            });
+        }
+
+        // Get videos
+        $videos = $videosQuery->paginate(10);
+
+        // Get trending players (based on video views and likes)
+        $trendingPlayers = User::where('user_type', 'player')
+            ->whereHas('videos', function ($query) {
+                $query->orderByDesc('views')
+                    ->orderByDesc('created_at');
+            })
+            ->with('player')
+            ->take(5)
+            ->get()
+            ->map(function ($user) {
+                return [
+                    'id' => $user->id,
+                    'name' => $user->first_name . ' ' . $user->last_name,
+                    'position' => $user->player ? $user->player->position : null,
+                    'region' => $user->player ? $user->player->nationality : null,
+                    'image' => $user->player && $user->player->profile_image
+                        ? url('storage/' . $user->player->profile_image)
+                        : null,
+                ];
+            });
+
+        // Get upcoming events
+        $upcomingEvents = Event::where('date', '>=', now())
+            ->orderBy('date')
+            ->take(3)
+            ->get();
+
+        // Get recommended players based on user's interests
+        $recommendedPlayers = [];
+        if ($userType === 'scout' && $user->scout) {
+            $recommendedPlayers = User::where('user_type', 'player')
+                ->whereHas('player', function ($query) use ($user) {
+                    if ($user->scout->preferred_positions) {
+                        $positions = explode(',', $user->scout->preferred_positions);
+                        $query->whereIn('position', $positions);
+                    }
+                })
+                ->with('player')
+                ->take(5)
+                ->get()
+                ->map(function ($user) {
+                    return [
+                        'id' => $user->id,
+                        'name' => $user->first_name . ' ' . $user->last_name,
+                        'position' => $user->player ? $user->player->position : null,
+                        'region' => $user->player ? $user->player->nationality : null,
+                        'image' => $user->player && $user->player->profile_image
+                            ? url('storage/' . $user->player->profile_image)
+                            : null,
+                    ];
+                });
+        }
+
+        // Get filter options
+        $filterOptions = [
+            [
+                'label' => 'Position',
+                'key' => 'position',
+                'options' => [
+                    ['label' => 'All', 'value' => ''],
+                    ['label' => 'Forward', 'value' => 'forward'],
+                    ['label' => 'Midfielder', 'value' => 'midfielder'],
+                    ['label' => 'Defender', 'value' => 'defender'],
+                    ['label' => 'Goalkeeper', 'value' => 'goalkeeper']
+                ]
+            ],
+            [
+                'label' => 'Secondary Position',
+                'key' => 'secondary_position',
+                'options' => [
+                    ['label' => 'All', 'value' => ''],
+                    ['label' => 'Forward', 'value' => 'forward'],
+                    ['label' => 'Midfielder', 'value' => 'midfielder'],
+                    ['label' => 'Defender', 'value' => 'defender'],
+                    ['label' => 'Goalkeeper', 'value' => 'goalkeeper']
+                ]
+            ],
+            [
+                'label' => 'Region',
+                'key' => 'region',
+                'options' => [
+                    ['label' => 'All', 'value' => ''],
+                    ['label' => 'Europe', 'value' => 'europe'],
+                    ['label' => 'Africa', 'value' => 'africa'],
+                    ['label' => 'Asia', 'value' => 'asia'],
+                    ['label' => 'North America', 'value' => 'north america'],
+                    ['label' => 'South America', 'value' => 'south america'],
+                    ['label' => 'Oceania', 'value' => 'oceania']
+                ]
+            ],
+            [
+                'label' => 'Preferred Foot',
+                'key' => 'preferred_foot',
+                'options' => [
+                    ['label' => 'All', 'value' => ''],
+                    ['label' => 'Right', 'value' => 'right'],
+                    ['label' => 'Left', 'value' => 'left'],
+                    ['label' => 'Both', 'value' => 'both']
+                ]
+            ],
+            [
+                'label' => 'Playing Style',
+                'key' => 'playing_style',
+                'options' => [
+                    ['label' => 'All', 'value' => ''],
+                    ['label' => 'Attacker', 'value' => 'attacker'],
+                    ['label' => 'Playmaker', 'value' => 'playmaker'],
+                    ['label' => 'Defender', 'value' => 'defender'],
+                    ['label' => 'Box-to-Box', 'value' => 'box-to-box']
+                ]
+            ],
+            [
+                'label' => 'Transfer Status',
+                'key' => 'transfer_status',
+                'options' => [
+                    ['label' => 'All', 'value' => ''],
+                    ['label' => 'Available', 'value' => 'available'],
+                    ['label' => 'Not Available', 'value' => 'not_available']
+                ]
+            ]
+        ];
+
+        // Get suggested searches
+        $suggestedSearches = [
+            'Forward',
+            'Under 18',
+            'London',
+            'Available for transfer'
+        ];
+
+        return response()->json([
+            'status' => 'success',
+            'user_type' => $userType,
+            'filter_options' => $filterOptions,
+            'posts' => $videos,
+            'trending_players' => $trendingPlayers,
+            'upcoming_events' => $upcomingEvents,
+            'recommendations' => $recommendedPlayers,
+            'suggested_searches' => $suggestedSearches
+        ]);
+    }
+
+    /**
+     * Get the main feed based on user type with video filters by player profile
+     */
+    public function indexOld(Request $request)
     {
         $user = Auth::user();
         $query = Post::with([
