@@ -122,7 +122,7 @@ class AuthController extends Controller
 
             // If not found by social_id, check by email
             if (!$user) {
-                $user = User::where('email', $request->email)->first();
+            $user = User::where('email', $request->email)->first();
             }
 
             // If user doesn't exist and no user_type provided, return special response

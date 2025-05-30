@@ -3,6 +3,7 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
 {
@@ -11,9 +12,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-
         Schema::create('scouts', function (Blueprint $table) {
-            $table->id();
+            $table->id()->from(2000000);
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->string('profile_image')->nullable();
             $table->string('username')->nullable();
@@ -39,6 +39,8 @@ return new class extends Migration
 
             $table->timestamps();
         });
+
+        DB::statement('ALTER TABLE scouts AUTO_INCREMENT = 2000000');
     }
 
     /**

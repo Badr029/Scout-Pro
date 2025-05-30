@@ -111,22 +111,27 @@
 
         <div *ngFor="let post of feedData?.posts?.data" class="reel-card">
           <div class="reel-header">
-            <div class="reel-user" (click)="goToPlayerProfile(post?.user?.id)">
+            <div class="reel-user" (click)="post?.user?.isCurrentUser ? goToProfile() : goToPlayerProfile(post?.user?.player_id)">
               <img [src]="getProfileImageUrl(post?.user?.profile_image)"
                    class="avatar-sm"
                    [alt]="post?.user?.full_name"
                    (error)="handleImageError($event, post?.user?.first_name, post?.user?.last_name)">
               <div class="reel-user-info">
-                <span class="username">{{ post?.user?.full_name }}</span>
+                <span class="username">{{ post?.user?.isCurrentUser ? 'You' : post?.user?.full_name }}</span>
                 <span class="user-meta" *ngIf="post?.user?.player">{{ post?.user?.player?.position || 'No Position' }} • {{ post?.user?.player?.region || post?.user?.player?.nationality || 'No Region' }}</span>
               </div>
             </div>
             <button
               class="follow-btn"
-              *ngIf="post?.user?.id !== currentUser?.id && !post?.user?.following"
-              (click)="followPlayer(post?.user?.id)"
+              *ngIf="!post?.user?.isCurrentUser &&
+                     post?.user?.user_type === 'player' &&
+                     !post?.user?.following"
+              (click)="followPlayer(post?.user?.player_id)"
             >Follow</button>
-            <span class="following-label" *ngIf="post?.user?.id !== currentUser?.id && post?.user?.following">
+            <span class="following-label"
+                  *ngIf="!post?.user?.isCurrentUser &&
+                         post?.user?.user_type === 'player' &&
+                         post?.user?.following">
               <i class="bi bi-check2"></i> Following
             </span>
           </div>
@@ -151,7 +156,7 @@
               <i class="bi bi-chat"></i>
               <span class="action-count">{{ post?.comments_count || 0 }}</span>
             </button>
-            <button class="action-btn" (click)="goToPlayerProfile(post?.user?.id)">
+            <button class="action-btn" (click)="post?.user?.isCurrentUser ? goToProfile() : goToPlayerProfile(post?.user?.player_id)">
               <i class="bi bi-person"></i>
             </button>
             <div class="views-count">
@@ -160,15 +165,20 @@
           </div>
 
           <div class="reel-caption">
-            <p><span class="username">{{ (post?.user?.first_name + ' ' + post?.user?.last_name) || 'Unknown User' }}</span> {{ post?.description }}</p>
+            <p>
+              <span class="username" (click)="post?.user?.isCurrentUser ? goToProfile() : goToPlayerProfile(post?.user?.player_id)">
+                {{ post?.user?.isCurrentUser ? 'You' : post?.user?.full_name }}
+              </span>
+              {{ post?.description }}
+            </p>
             <span class="post-date">{{ post?.created_at | date }}</span>
           </div>
 
           <!-- Comments Section -->
           <div class="reel-comments" *ngIf="post?.comments?.length > 0">
             <div *ngFor="let comment of post?.comments?.slice(0, 2)" class="comment">
-              <span class="comment-user" (click)="goToUserProfile(comment.user_id)">
-                {{ comment.user_id === currentUser?.id ? 'You' : comment.user?.full_name }}
+              <span class="comment-user" (click)="comment?.user?.isCurrentUser ? goToProfile() : goToUserProfile(comment?.user?.player_id)">
+                {{ comment?.user?.isCurrentUser ? 'You' : comment.user?.full_name }}
               </span>
               <span class="comment-text">{{ comment.content }}</span>
               <span class="comment-time">{{ comment.created_at | date:'short' }}</span>
@@ -247,13 +257,15 @@
     <div class="trending">
       <h4>Trending Players</h4>
       <div class="trending-list">
-        <div *ngFor="let player of feedData?.trending_players" class="trending-item" (click)="goToPlayerProfile(player?.id)">
+        <div *ngFor="let player of feedData?.trending_players"
+             class="trending-item"
+             (click)="player?.id === currentUser?.player_id ? goToProfile() : goToPlayerProfile(player?.id)">
           <img [src]="getProfileImageUrl(player?.profile_image)"
                class="avatar-sm"
                [alt]="player?.name"
                (error)="handleImageError($event, player?.name?.split(' ')[0], player?.name?.split(' ')[1])">
           <div class="trending-info">
-            <span class="trending-name">{{ player?.name || 'Unknown Player' }}</span>
+            <span class="trending-name">{{ player?.id === currentUser?.player_id ? 'You' : player?.name }}</span>
             <span class="trending-meta">{{ player?.position || 'No Position' }} • {{ player?.region || 'No Region' }}</span>
           </div>
         </div>
@@ -342,7 +354,7 @@
     <div class="modal-body">
       <div class="likes-list">
         <div *ngFor="let like of selectedPostLikes" class="like-item">
-          <div class="like-user" (click)="goToPlayerProfile(like?.user?.id)">
+          <div class="like-user" (click)="like?.user?.id === currentUser?.id ? goToProfile() : goToPlayerProfile(like?.user?.id)">
             <img [src]="like?.user?.profile_image || getAvatarUrl(like?.user?.first_name, like?.user?.last_name)"
                  class="avatar-sm"
                  [alt]="like?.user?.full_name"
@@ -353,7 +365,8 @@
             </div>
           </div>
           <button
-            *ngIf="like?.user?.id !== currentUser?.id"
+            *ngIf="like?.user?.id !== currentUser?.id &&
+                   like?.user?.user_type === 'player'"
             class="btn btn-sm"
             (click)="followPlayer(like?.user?.id)"
           >

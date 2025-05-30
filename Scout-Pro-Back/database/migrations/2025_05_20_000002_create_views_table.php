@@ -17,7 +17,7 @@ return new class extends Migration
             $table->timestamps();
 
             // A user can view a post multiple times, but we'll track each view separately
-            $table->index(['user_id', 'post_id', 'viewed_at']);
+            $table->index(['user_id', 'video_id', 'viewed_at']);
         });
     }
 

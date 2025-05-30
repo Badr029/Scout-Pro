@@ -79,21 +79,23 @@ export class HomeFeedComponent implements OnInit {
         if (response.data) {
           this.userProfile = response.data;
           this.currentUser = {
-            id: response.data.id,
+            id: response.data.user_id,
             name: `${response.data.first_name} ${response.data.last_name}`,
             profile_image: response.data.profile_image
               ? `${API_URL}/storage/${response.data.profile_image}`
               : null,
             user_type: response.data.user_type,
+            player_id: response.data.id,
             role: response.data.role
           };
-          console.log('Current user data:', this.currentUser); // Debug log
+          console.log('Current user data:', this.currentUser);
+          console.log('User profile data:', this.userProfile);
         }
       },
       error: (error: any) => {
         console.error('Error fetching user profile:', error);
         if (error.status === 401) {
-      this.router.navigate(['/login']);
+          this.router.navigate(['/login']);
         }
       }
     });
@@ -103,13 +105,24 @@ export class HomeFeedComponent implements OnInit {
     this.loading = true;
     this.error = '';
 
+    // Debug log for current user
+    console.log('Current authenticated user:', this.currentUser);
+
     this.apiService.getData('videos').subscribe({
       next: (response: any) => {
-        console.log('Raw video response:', response); // Debug log
+        console.log('Raw video response:', response);
         if (response.data) {
           // Process videos data
           const processedVideos = response.data.map((video: any) => {
-            console.log('Processing video:', video); // Debug log
+            // Debug logs
+            console.log('Processing video user:', video.user);
+            console.log('Video user ID (users table):', video.user.id);
+            console.log('Video user ID (players table):', video.user.player?.id);
+            console.log('Current user ID (users table):', this.currentUser?.id);
+            console.log('Current user player ID:', this.userProfile?.id);
+
+            // Check if the video's user ID matches the current user's ID
+            const isCurrentUser = video.user.id === this.currentUser?.id;
 
             return {
               id: video.id,
@@ -119,12 +132,14 @@ export class HomeFeedComponent implements OnInit {
               thumbnail: video.thumbnail ? `${API_URL}/storage/${video.thumbnail}` : null,
               user: {
                 id: video.user.id,
+                player_id: video.user.player?.id,
                 first_name: video.user.first_name,
                 last_name: video.user.last_name,
-                profile_image: video.user.profile_image, // Already includes full URL from backend
+                profile_image: video.user.profile_image,
                 full_name: video.user.full_name,
                 user_type: video.user.user_type,
-                player: video.user.player
+                player: video.user.player,
+                isCurrentUser: isCurrentUser
               },
               likes_count: video.likes_count || 0,
               comments_count: video.comments?.length || 0,
@@ -134,11 +149,13 @@ export class HomeFeedComponent implements OnInit {
                 id: like.id,
                 user: {
                   id: like.user.id,
+                  player_id: like.user.player?.id,
                   first_name: like.user.first_name,
                   last_name: like.user.last_name,
                   profile_image: like.user.profile_image,
                   full_name: `${like.user.first_name} ${like.user.last_name}`.trim(),
-                  player: like.user.player
+                  player: like.user.player,
+                  isCurrentUser: like.user.id === this.currentUser?.id
                 }
               })),
               comments: (video.comments || []).map((comment: any) => ({
@@ -148,17 +165,19 @@ export class HomeFeedComponent implements OnInit {
                 user_id: comment.user_id,
                 user: {
                   id: comment.user.id,
+                  player_id: comment.user.player?.id,
                   first_name: comment.user.first_name,
                   last_name: comment.user.last_name,
                   profile_image: comment.user.profile_image ? `${API_URL}/storage/${comment.user.profile_image}` : null,
-                  full_name: `${comment.user.first_name} ${comment.user.last_name}`.trim()
+                  full_name: `${comment.user.first_name} ${comment.user.last_name}`.trim(),
+                  isCurrentUser: comment.user.id === this.currentUser?.id
                 }
               })),
               created_at: video.created_at
             };
           });
 
-          console.log('Processed videos:', processedVideos); // Debug log
+          console.log('Processed videos:', processedVideos);
 
           this.feedData = {
             ...this.feedData,
@@ -214,18 +233,42 @@ export class HomeFeedComponent implements OnInit {
       return;
     }
 
-    // Navigate to the profile page
-    this.router.navigate(['/profile']);
+    // Navigate based on user type
+    if (this.currentUser.user_type === 'scout') {
+      this.router.navigate(['/scout-profile']);
+    } else {
+      this.router.navigate(['/profile']);
+    }
+  }
+
+  goToUserProfile(userId: number) {
+    if (!userId) return;
+
+    if (userId === this.currentUser?.id) {
+      // If it's the current user, go to their profile based on user type
+      if (this.currentUser.user_type === 'scout') {
+        this.router.navigate(['/scout-profile']);
+      } else {
+        this.router.navigate(['/profile']);
+      }
+    } else {
+      // If it's another user, only allow viewing player profiles
+      this.router.navigate(['/player-view', userId]);
+    }
   }
 
   goToPlayerProfile(playerId: number) {
     if (!playerId) return;
 
     if (playerId === this.currentUser?.id) {
-      // If it's the current user, go to their profile page
-      this.router.navigate(['/profile']);
+      // If it's the current user, go to their profile based on user type
+      if (this.currentUser.user_type === 'scout') {
+        this.router.navigate(['/scout-profile']);
+      } else {
+        this.router.navigate(['/profile']);
+      }
     } else {
-      // If it's another user, go to their view profile page
+      // If it's another player, go to their view profile page
       this.router.navigate(['/player-view', playerId]);
     }
   }
@@ -593,17 +636,6 @@ export class HomeFeedComponent implements OnInit {
 
   onVideoPlay(event: Event, postId: number) {
     this.incrementVideoViews(postId);
-  }
-
-  goToUserProfile(userId: number) {
-    if (!userId) return;
-
-    if (userId === this.currentUser?.id) {
-      this.router.navigate(['/profile']);
-    } else {
-      // If it's another user, go to their view profile page
-      this.router.navigate(['/player-view', userId]);
-    }
   }
 
   get isPlayer() {
