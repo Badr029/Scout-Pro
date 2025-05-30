@@ -107,7 +107,7 @@ class AuthController extends Controller
             'socialId' => 'required|string',
             'provider' => 'required|string',
             'idToken' => 'required|string',
-            'user_type' => 'string|in:player,scout' // Make user_type optional
+            'user_type' => 'string|in:player,scout'
         ]);
 
         if ($validator->fails()) {
@@ -115,8 +115,15 @@ class AuthController extends Controller
         }
 
         try {
-            // Check if user already exists
-            $user = User::where('email', $request->email)->first();
+            // Check if user exists by social_id and provider first
+            $user = User::where('social_id', $request->socialId)
+                        ->where('provider', $request->provider)
+                        ->first();
+
+            // If not found by social_id, check by email
+            if (!$user) {
+                $user = User::where('email', $request->email)->first();
+            }
 
             // If user doesn't exist and no user_type provided, return special response
             if (!$user && !$request->user_type) {
@@ -130,14 +137,18 @@ class AuthController extends Controller
                         'provider' => $request->provider,
                         'idToken' => $request->idToken
                     ]
-                ], 202); // 202 Accepted but needs more info
+                ], 202);
             }
 
             if (!$user && $request->user_type) {
                 // Generate a unique username
-                $username = Str::slug($request->firstName . $request->lastName) . rand(1000, 9999);
+                $baseUsername = Str::slug($request->firstName . $request->lastName);
+                $username = $baseUsername;
+                $counter = 1;
+
                 while (User::where('username', $username)->exists()) {
-                    $username = Str::slug($request->firstName . $request->lastName) . rand(1000, 9999);
+                    $username = $baseUsername . $counter;
+                    $counter++;
                 }
 
                 // Create new user
@@ -149,12 +160,21 @@ class AuthController extends Controller
                     'email' => $request->email,
                     'social_id' => $request->socialId,
                     'provider' => $request->provider,
-                    'email_verified_at' => now(), // Email is verified from Google
-                    'password' => Hash::make(Str::random(24)) // Random password for social login
+                    'provider_token' => $request->idToken,
+                    'email_verified_at' => now(),
+                    'password' => null // No password for social login
                 ]);
-            } else if ($user && $request->user_type && !$user->hasCompletedSetup()) {
-                // Update existing user's type if they're trying to register with a different type
-                if ($user->user_type !== $request->user_type) {
+            } else if ($user) {
+                // Update existing user's social credentials if they don't have them
+                if (!$user->social_id) {
+                    $user->social_id = $request->socialId;
+                    $user->provider = $request->provider;
+                    $user->provider_token = $request->idToken;
+                    $user->save();
+                }
+
+                // Update user type if provided and not completed setup
+                if ($request->user_type && !$user->hasCompletedSetup()) {
                     $user->user_type = $request->user_type;
                     $user->save();
                 }
@@ -174,6 +194,10 @@ class AuthController extends Controller
                     'setup_completed' => $setupCompleted
                 ]);
             }
+
+            return response()->json([
+                'error' => 'Unable to process login. Please try again.',
+            ], 400);
 
         } catch (\Exception $e) {
             return response()->json([

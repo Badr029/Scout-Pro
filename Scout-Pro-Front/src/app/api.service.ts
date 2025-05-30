@@ -1,22 +1,25 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient, HttpHeaders, HttpEventType } from '@angular/common/http';
 import { Observable, catchError, throwError } from 'rxjs';
+import { environment } from '../environments/environment';
 
 @Injectable({
   providedIn: 'root'
 })
 export class ApiService {
-  private apiUrl = 'http://localhost:8000/api'; // Updated to use the actual API url
+  private apiUrl = environment.apiUrl;
 
   constructor(private http: HttpClient) { }
 
-  getData(endpoint: string): Observable<any> {
+  private getHeaders(): HttpHeaders {
     const token = localStorage.getItem('auth_token');
-    const headers = token ? new HttpHeaders({
+    return new HttpHeaders({
       'Authorization': `Bearer ${token}`
-    }) : undefined;
+    });
+  }
 
-    return this.http.get(`${this.apiUrl}/${endpoint}`, { headers });
+  getData(endpoint: string): Observable<any> {
+    return this.http.get(`${this.apiUrl}/${endpoint}`, { headers: this.getHeaders() });
   }
 
   postData(endpoint: string, data: any): Observable<any> {
@@ -37,69 +40,48 @@ export class ApiService {
   }
 
   getUserProfile(): Observable<any> {
-    const token = localStorage.getItem('auth_token');
-    const headers = new HttpHeaders({
-      'Authorization': `Bearer ${token}`
-    });
-    return this.http.get(`${this.apiUrl}/profile`, { headers });
+    const userType = localStorage.getItem('user_type');
+    const endpoint = userType === 'scout' ? 'scout/profile' : 'profile';
+    return this.http.get(`${this.apiUrl}/${endpoint}`, { headers: this.getHeaders() });
+  }
+
+  getPlayerProfile(playerId: number): Observable<any> {
+    return this.http.get(`${this.apiUrl}/players/${playerId}`, { headers: this.getHeaders() });
+  }
+
+  followPlayer(playerId: number): Observable<any> {
+    return this.http.post(`${this.apiUrl}/players/${playerId}/follow`, {}, { headers: this.getHeaders() });
+  }
+
+  unfollowPlayer(playerId: number): Observable<any> {
+    return this.http.post(`${this.apiUrl}/players/${playerId}/unfollow`, {}, { headers: this.getHeaders() });
+  }
+
+  getContactedPlayers(): Observable<any> {
+    return this.http.get(`${this.apiUrl}/scout/contacted-players`, { headers: this.getHeaders() });
   }
 
   updatePlayerProfile(profileData: any): Observable<any> {
     const token = localStorage.getItem('auth_token');
-    if (!token) {
-      return new Observable(observer => {
-        observer.error({ message: 'Authentication token is missing' });
-      });
-    }
-
     const headers = new HttpHeaders({
       'Authorization': `Bearer ${token}`
     });
 
-    try {
       // Create FormData for file uploads
       const formData = new FormData();
 
       // Add all profile fields to formData
       for (const key in profileData) {
-        if (profileData[key] !== undefined && profileData[key] !== null) {
-          if (key === 'profile_image') {
-            if (profileData[key] instanceof File) {
-              console.log('Adding file to formData:', key, profileData[key].name);
+      if (key === 'profile_image' && profileData[key] instanceof File) {
               formData.append(key, profileData[key]);
-            } else if (typeof profileData[key] === 'string' && profileData[key].trim() !== '') {
-              // If it's a string path, we don't need to resend it unless it changed
-              // The backend can handle the case where it's not provided if there's no change
-              console.log('Keeping existing profile image path');
-            }
-          } else if (typeof profileData[key] === 'string') {
-            console.log('Adding string field to formData:', key, profileData[key]);
-            formData.append(key, profileData[key].trim());
-          } else if (typeof profileData[key] === 'number') {
-            console.log('Adding numeric field to formData:', key, profileData[key]);
-            formData.append(key, profileData[key].toString());
-          } else if (typeof profileData[key] === 'boolean') {
-            console.log('Adding boolean field to formData:', key, profileData[key]);
-            formData.append(key, profileData[key] ? '1' : '0');
+      } else if (key === 'secondary_position' || key === 'previous_clubs') {
+        formData.append(key, JSON.stringify(profileData[key]));
           } else {
-            console.log('Adding field to formData:', key, profileData[key]);
             formData.append(key, profileData[key]);
           }
         }
-      }
 
-      console.log('Sending form data to server');
-      return this.http.post(`${this.apiUrl}/player-profile/update`, formData, { headers })
-        .pipe(
-          catchError(error => {
-            console.error('API error during profile update:', error);
-            return throwError(() => error);
-          })
-        );
-    } catch (error) {
-      console.error('Exception in updatePlayerProfile:', error);
-      return throwError(() => ({ message: 'Error preparing profile data for submission' }));
-    }
+    return this.http.put(`${this.apiUrl}/player/profile/update`, formData, { headers });
   }
 
   updateScoutProfile(profileData: any): Observable<any> {
@@ -301,6 +283,32 @@ export class ApiService {
     }
 
     return formData;
+  }
+
+  uploadVideoChunk(formData: FormData): Observable<any> {
+    return this.http.post(`${this.apiUrl}/videos/chunk`, formData, {
+      headers: this.getHeaders()
+    });
+  }
+
+  finalizeVideoUpload(data: any): Observable<any> {
+    return this.http.post(`${this.apiUrl}/videos/finalize`, data, {
+      headers: this.getHeaders()
+    });
+  }
+
+  uploadVideo(formData: FormData): Observable<any> {
+    return this.http.post(`${this.apiUrl}/videos/upload`, formData, {
+      headers: this.getHeaders()
+    });
+  }
+
+  putData(endpoint: string, data: any): Observable<any> {
+    return this.http.put(`${this.apiUrl}/${endpoint}`, data, { headers: this.getHeaders() });
+  }
+
+  deleteData(endpoint: string): Observable<any> {
+    return this.http.delete(`${this.apiUrl}/${endpoint}`, { headers: this.getHeaders() });
   }
 
   // Add more methods as needed for PUT, DELETE, etc.

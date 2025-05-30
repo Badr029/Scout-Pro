@@ -26,7 +26,7 @@ body::before {
 body {
     background:
         linear-gradient(rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.85)),
-        url('../../assets/WhatsApp\ Image\ 2025-05-02\ at\ 22.17.46_f8c08b38.jpg');
+        url('/assets/WhatsApp%20Image%202025-05-02%20at%2022.17.46_f8c08b38.jpg');
     background-size: cover;
     background-attachment: fixed;
     display: flex;

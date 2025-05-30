@@ -12,6 +12,7 @@ import { ResetPasswordComponent } from './reset-password/reset-password.componen
 import { EmailVerificationComponent } from './email-verification/email-verification.component';
 import { SubscriptionComponent } from './subscription/subscription.component';
 import { AuthGuard } from './auth.guard';
+import { ScoutProfileComponent } from './Scout/profile/profile.component';
 
 export const routes: Routes = [
     {
@@ -47,6 +48,11 @@ export const routes: Routes = [
     {
         path: 'profile',
         component: ProfileComponent,
+        canActivate: [AuthGuard]
+    },
+    {
+        path: 'scout/profile',
+        component: ScoutProfileComponent,
         canActivate: [AuthGuard]
     },
     {

@@ -1,176 +1,214 @@
 <div class="container">
+  <!-- Loading State -->
+  <div *ngIf="loading" class="loading-state">
+    <div class="spinner"></div>
+    <p>Loading profile...</p>
+  </div>
+
+  <!-- Error State -->
+  <div *ngIf="!loading && error" class="error-state">
+    <p class="error-message">{{ error }}</p>
+    <button class="btn btn-primary" (click)="fetchScoutProfile()">Try Again</button>
+  </div>
+
+  <!-- Profile Content -->
+  <div *ngIf="!loading && !error && scoutData" class="profile-content">
+    <!-- Page Header -->
+    <div class="page-header">
+      <button class="btn-back" (click)="goToHome()">
+        <i class="fas fa-arrow-left"></i>
+        Back to Home
+      </button>
+
+      <!-- Settings Menu -->
+      <div class="settings-menu">
+        <button class="settings-toggle" (click)="toggleSettingsMenu()">
+          <i class="fas fa-cog"></i>
+          <span class="sr-only">Settings</span>
+        </button>
+        <div class="settings-dropdown" [class.show]="showSettingsMenu">
+          <div class="settings-menu-item" (click)="goToEditProfile()">
+            <i class="fas fa-user-edit"></i> Edit Profile
+          </div>
+          <div class="settings-divider"></div>
+          <div class="settings-menu-item" (click)="logout()">
+            <i class="fas fa-sign-out-alt"></i> Logout
+          </div>
+          <div class="settings-menu-item danger" (click)="showDeleteAccountModal()">
+            <i class="fas fa-trash-alt"></i> Delete Account
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Profile Header -->
     <div class="profile-header">
-      <div class="avatar-container">Profile Picture</div>
+      <div class="avatar-container">
+        <img *ngIf="scoutData.profile_image" [src]="'http://localhost:8000/storage/' + scoutData.profile_image" [alt]="scoutData.first_name">
+        <div *ngIf="!scoutData.profile_image" class="no-image">{{ scoutData.first_name[0] }}{{ scoutData.last_name[0] }}</div>
+      </div>
 
-      <div class="player-info">
-        <h1 class="player-name">Scout Name</h1>
-        <p class="player-title">Scouting Role | Affiliation</p>
+      <div class="scout-info">
+        <h1 class="scout-name">
+          {{ scoutData.first_name }} {{ scoutData.last_name }}
+          <span class="username">{{"@"+scoutData.username}}</span>
+        </h1>
+        <p class="scout-title">{{ scoutData.position_title }} | {{ scoutData.organization }}</p>
 
         <div class="key-stats">
           <div class="stat-item">
-            <span class="stat-label">Experience:</span>
-            <span class="stat-value">-- years</span>
+            <span class="stat-label">Location:</span>
+            <span class="stat-value">{{ scoutData.city }}, {{ scoutData.country }}</span>
           </div>
           <div class="stat-item">
-            <span class="stat-label">Regions:</span>
-            <span class="stat-value">--</span>
+            <span class="stat-label">Scouting Regions:</span>
+            <div class="regions-list">
+              <span *ngFor="let region of getArrayFromString(scoutData.scouting_regions)" class="region-tag">{{ region }}</span>
+            </div>
           </div>
           <div class="stat-item">
-            <span class="stat-label">Player Levels:</span>
-            <span class="stat-value">--</span>
+            <span class="stat-label">Looking For:</span>
+            <div class="roles-list">
+              <span *ngFor="let role of getArrayFromString(scoutData.preferred_roles)" class="role-tag">{{ role }}</span>
+            </div>
           </div>
-          <div class="stat-item">
-            <span class="stat-label">Age Groups:</span>
-            <span class="stat-value">--</span>
-          </div>
-        </div>
-
-        <div class="action-buttons">
-          <button class="btn btn-outline" (click)="goToEditProfile()">Edit</button>
-          <button class="btn btn-danger">Delete</button>
-          <button class="btn btn-primary">Logout</button>
         </div>
       </div>
     </div>
 
     <!-- Tabs -->
     <div class="tabs">
-      <div class="tab active" data-tab="about">About</div>
-      <div class="tab" data-tab="portfolio">Portfolio</div>
-      <div class="tab" data-tab="contact">Contact</div>
+      <div class="tab" [class.active]="activeTab === 'about'" (click)="switchTab('about')">About</div>
+      <div class="tab" [class.active]="activeTab === 'players'" (click)="switchTab('players')">Contacted Players</div>
+      <div class="tab" [class.active]="activeTab === 'credentials'" (click)="switchTab('credentials')">Credentials</div>
     </div>
 
     <!-- About Tab -->
-    <div class="tab-content active" id="about">
-      <div class="player-details">
+    <div class="tab-content" [class.active]="activeTab === 'about'" id="about">
+      <div class="scout-details">
+        <div class="detail-group">
+          <h3 class="detail-title">Personal Info</h3>
+          <div class="detail-item">
+            <span class="detail-label">Full Name:</span>
+            <span class="detail-value">{{ scoutData.first_name }} {{ scoutData.last_name }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Location:</span>
+            <span class="detail-value">{{ scoutData.city }}, {{ scoutData.country }}</span>
+          </div>
+          <div class="detail-item" *ngIf="scoutData.linkedin_url">
+            <span class="detail-label">LinkedIn:</span>
+            <span class="detail-value">
+              <a [href]="scoutData.linkedin_url" target="_blank" rel="noopener noreferrer">
+                <i class="fab fa-linkedin"></i> Professional Profile
+              </a>
+            </span>
+          </div>
+        </div>
+
         <div class="detail-group">
           <h3 class="detail-title">Professional Info</h3>
           <div class="detail-item">
-            <span class="detail-label">City:</span>
-            <span class="detail-value">--</span>
+            <span class="detail-label">Organization:</span>
+            <span class="detail-value">{{ scoutData.organization }}</span>
           </div>
           <div class="detail-item">
-            <span class="detail-label">Country:</span>
-            <span class="detail-value">--</span>
+            <span class="detail-label">Position:</span>
+            <span class="detail-value">{{ scoutData.position_title }}</span>
           </div>
           <div class="detail-item">
-            <span class="detail-label">Languages:</span>
-            <span class="detail-value">--</span>
+            <span class="detail-label">Scouting Regions:</span>
+            <div class="regions-list">
+              <span *ngFor="let region of getArrayFromString(scoutData.scouting_regions)" class="region-tag">{{ region }}</span>
+            </div>
           </div>
           <div class="detail-item">
-            <span class="detail-label">Scouting Role:</span>
-            <span class="detail-value">--</span>
-          </div>
-          <div class="detail-item">
-            <span class="detail-label">Affiliation:</span>
-            <span class="detail-value">--</span>
-          </div>
-          <div class="detail-item">
-            <span class="detail-label">Experience:</span>
-            <span class="detail-value">-- years</span>
-          </div>
-          <div class="detail-item">
-            <span class="detail-label">Player Levels:</span>
-            <span class="detail-value">--</span>
-          </div>
-          <div class="detail-item">
-            <span class="detail-label">Regions Covered:</span>
-            <span class="detail-value">--</span>
+            <span class="detail-label">Looking For:</span>
+            <div class="roles-list">
+              <span *ngFor="let role of getArrayFromString(scoutData.preferred_roles)" class="role-tag">{{ role }}</span>
+            </div>
           </div>
           <div class="detail-item">
             <span class="detail-label">Age Groups:</span>
-            <span class="detail-value">--</span>
-          </div>
-          <div class="detail-item">
-            <span class="detail-label">Positions Focused:</span>
-            <span class="detail-value">--</span>
-          </div>
-          <div class="detail-item">
-            <span class="detail-label">Scouting Criteria:</span>
-            <span class="detail-value">--</span>
-          </div>
-          <div class="detail-item">
-            <span class="detail-label">Preferred Playing Style:</span>
-            <span class="detail-value">--</span>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Portfolio Tab -->
-    <div class="tab-content" id="portfolio">
-      <div class="player-details">
-        <div class="detail-group">
-          <h3 class="detail-title">Portfolio</h3>
-          <div class="detail-item">
-            <span class="detail-label">Players Discovered:</span>
-            <span class="detail-value">--</span>
+            <div class="age-groups-list">
+              <span *ngFor="let group of scoutData?.age_groups || []" class="age-group-tag">{{ group }}</span>
+            </div>
           </div>
           <div class="detail-item">
             <span class="detail-label">Clubs Worked With:</span>
-            <span class="detail-value">--</span>
-          </div>
-          <div class="detail-item">
-            <span class="detail-label">Achievements:</span>
-            <span class="detail-value">--</span>
-          </div>
-          <div class="detail-item">
-            <span class="detail-label">References:</span>
-            <span class="detail-value">--</span>
-          </div>
-          <div class="detail-item">
-            <span class="detail-label">Certifications:</span>
-            <span class="detail-value">--</span>
+            <span class="detail-value">{{ scoutData.clubs_worked_with }}</span>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Contact Tab -->
-    <div class="tab-content" id="contact">
-      <div class="player-details">
+    <!-- Contacted Players Tab -->
+    <div class="tab-content" [class.active]="activeTab === 'players'" id="players">
+      <div class="players-container">
+        <!-- Show this when no players are contacted -->
+        <div *ngIf="!contactedPlayers || contactedPlayers.length === 0" class="no-players">
+          <p>No players contacted yet.</p>
+          <button class="btn btn-outline" routerLink="/players">Browse Players</button>
+        </div>
+
+        <!-- Show contacted players list -->
+        <div *ngIf="contactedPlayers && contactedPlayers.length > 0" class="players-list">
+          <div *ngFor="let player of contactedPlayers" class="player-card">
+            <div class="player-status" [ngClass]="player.status">{{ player.status }}</div>
+            <div class="player-info">
+              <h4>{{ player.player_name }}</h4>
+              <p class="contact-date">Contacted on: {{ player.contact_date | date }}</p>
+              <a [href]="player.player_profile_url" class="btn btn-outline btn-sm">View Profile</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Credentials Tab -->
+    <div class="tab-content" [class.active]="activeTab === 'credentials'" id="credentials">
+      <div class="credentials-container">
         <div class="detail-group">
-          <h3 class="detail-title">Contact Info</h3>
-          <div class="detail-item">
-            <span class="detail-label">Email:</span>
-            <span class="detail-value">--</span>
+          <h3 class="detail-title">ID Proof</h3>
+          <div class="document-preview">
+            <img [src]="'http://localhost:8000/storage/' + scoutData.id_proof" alt="ID Proof">
           </div>
-          <div class="detail-item">
-            <span class="detail-label">Phone:</span>
-            <span class="detail-value">--</span>
-          </div>
-          <div class="detail-item">
-            <span class="detail-label">Social Links:</span>
-            <span class="detail-value">--</span>
-          </div>
-          <div class="detail-item">
-            <span class="detail-label">Available for Events:</span>
-            <span class="detail-value">--</span>
-          </div>
-          <div class="detail-item">
-            <span class="detail-label">Willing to Travel:</span>
-            <span class="detail-value">--</span>
+        </div>
+
+        <div class="detail-group">
+          <h3 class="detail-title">Certifications</h3>
+          <div class="certifications-grid">
+            <div *ngFor="let cert of scoutData?.certifications || []" class="certification-item">
+              <img [src]="'http://localhost:8000/storage/' + cert" alt="Certification">
+            </div>
           </div>
         </div>
       </div>
     </div>
   </div>
-  <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const tabs = document.querySelectorAll('.tab');
 
-        tabs.forEach(tab => {
-            tab.addEventListener('click', function() {
-                // Remove active class from all tabs and content
-                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  <!-- Delete Account Modal -->
+  <div class="modal" [class.show]="showDeleteConfirm">
+    <div class="modal-content">
+      <h2>Delete Account</h2>
+      <p>This action cannot be undone. All your data will be permanently deleted.</p>
 
-                // Add active class to clicked tab and corresponding content
-                this.classList.add('active');
-                const tabId = this.getAttribute('data-tab');
-                document.getElementById(tabId).classList.add('active');
-            });
-        });
-    });
-  </script>
+      <div *ngIf="isGoogleAccount">
+        <p>Please type "delete" to confirm:</p>
+        <input type="text" [(ngModel)]="deleteConfirmation" placeholder="Type 'delete' to confirm">
+      </div>
+
+      <div *ngIf="!isGoogleAccount">
+        <p>Please enter your password to confirm:</p>
+        <input type="password" [(ngModel)]="deletePassword" placeholder="Enter your password">
+      </div>
+
+      <p class="error-message" *ngIf="deleteError">{{ deleteError }}</p>
+
+      <div class="modal-actions">
+        <button class="btn btn-danger" (click)="deleteAccount()">Delete Account</button>
+        <button class="btn btn-secondary" (click)="hideDeleteAccountModal()">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>

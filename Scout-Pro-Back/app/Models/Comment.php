@@ -17,7 +17,7 @@ class Comment extends Model
     protected $fillable = [
         'user_id',
         'video_id',
-        'content',
+        'content'
     ];
 
     /**
@@ -29,7 +29,7 @@ class Comment extends Model
     }
 
     /**
-     * Get the video that the comment belongs to.
+     * Get the video that owns the comment.
      */
     public function video()
     {

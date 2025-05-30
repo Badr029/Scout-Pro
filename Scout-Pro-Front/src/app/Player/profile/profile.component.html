@@ -1,4 +1,35 @@
 <div class="container">
+  <!-- Page Header -->
+  <div class="page-header">
+    <button class="btn-back" (click)="goToHome()">
+      <i class="fas fa-arrow-left"></i>
+      Back to Home
+    </button>
+
+    <!-- Settings Menu -->
+    <div class="settings-menu">
+      <button class="settings-toggle" (click)="toggleSettingsMenu()">
+        <i class="fas fa-cog"></i>
+        <span class="sr-only">Settings</span>
+      </button>
+      <div class="settings-dropdown" [class.show]="showSettingsMenu">
+        <div class="settings-menu-item" (click)="goToEditProfile()">
+          <i class="fas fa-user-edit"></i> Edit Profile
+        </div>
+        <div class="settings-menu-item" (click)="goToSubscription()" *ngIf="playerData?.subscription_plan !== 'Premium'">
+          <i class="fas fa-crown"></i> Upgrade to Premium
+        </div>
+        <div class="settings-divider"></div>
+        <div class="settings-menu-item" (click)="logout()">
+          <i class="fas fa-sign-out-alt"></i> Logout
+        </div>
+        <div class="settings-menu-item danger" (click)="showDeleteAccountModal()">
+          <i class="fas fa-trash-alt"></i> Delete Account
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Loading State -->
   <div *ngIf="loading" class="loading-state">
     <div class="spinner"></div>
@@ -13,31 +44,8 @@
 
   <!-- Profile Content -->
   <div *ngIf="!loading && !error && playerData" class="profile-content">
-        <!-- Profile Header -->
+    <!-- Profile Header -->
     <div class="profile-header">
-      <!-- Settings Menu -->
-      <div class="settings-menu">
-        <button class="settings-toggle" (click)="toggleSettingsMenu()">
-          <i class="fas fa-cog"></i>
-          <span class="sr-only">Settings</span>
-        </button>
-        <div class="settings-dropdown" [class.show]="showSettingsMenu">
-          <div class="settings-menu-item" (click)="goToEditProfile()">
-            <i class="fas fa-user-edit"></i> Edit Profile
-          </div>
-          <div class="settings-menu-item" (click)="goToSubscription()" *ngIf="playerData.subscription_plan !== 'Premium'">
-            <i class="fas fa-crown"></i> Upgrade to Premium
-          </div>
-          <div class="settings-divider"></div>
-          <div class="settings-menu-item" (click)="logout()">
-            <i class="fas fa-sign-out-alt"></i> Logout
-          </div>
-          <div class="settings-menu-item danger" (click)="showDeleteAccountModal()">
-            <i class="fas fa-trash-alt"></i> Delete Account
-          </div>
-        </div>
-      </div>
-
       <div class="avatar-container">
         <img *ngIf="playerData.profile_image" [src]="'http://localhost:8000/storage/' + playerData.profile_image" [alt]="playerData.first_name">
         <div *ngIf="!playerData.profile_image" class="no-image">{{ playerData.first_name[0] }}{{ playerData.last_name[0] }}</div>
@@ -198,40 +206,48 @@
         <button class="btn btn-primary" (click)="openUploadModal()">Upload New Video</button>
       </div>
 
-              <div class="videos-container">
-          <!-- Show this when no videos are present -->
-          <div *ngIf="!videos || !Array.isArray(videos) || videos.length === 0" class="no-videos">
-            <p>No videos uploaded yet.</p>
-            <button class="btn btn-outline" (click)="openUploadModal()">Upload Your First Video</button>
-          </div>
-
-          <!-- Only show video cards if videos array exists, is an array, and has items -->
-          <ng-container *ngIf="videos && Array.isArray(videos) && videos.length > 0">
-            <div *ngFor="let video of videos" class="video-card">
-              <div class="video-thumbnail">
-                <img [src]="video.thumbnail || 'assets/default-thumbnail.jpg'" [alt]="video.title">
-                <div class="play-overlay">
-                  <span class="play-icon">▶</span>
-                </div>
-              </div>
-              <div class="video-info">
-                <h4>{{ video.title }}</h4>
-                <p class="video-description">{{ video.description }}</p>
-                <div class="video-stats">
-                  <span>{{ video.views }} views</span>
-                  <span>{{ video.likes }} likes</span>
-                  <span>{{ video.comments }} comments</span>
-                  <span>{{ video.created_at | date }}</span>
-                </div>
-              </div>
-            </div>
-          </ng-container>
+      <div class="videos-container">
+        <!-- Show this when no videos are present -->
+        <div *ngIf="!videos || videos.length === 0" class="no-videos">
+          <p>No videos uploaded yet.</p>
+          <button class="btn btn-outline" (click)="openUploadModal()">Upload Your First Video</button>
         </div>
 
-      <div *ngIf="playerData.subscription_plan !== 'Premium'" class="premium-promo">
-        <h3>Want More Exposure?</h3>
-        <p>Upgrade to Premium to get unlimited video uploads and priority placement in scout search results.</p>
-        <button class="btn btn-upgrade" (click)="goToSubscription()">Upgrade to Premium</button>
+        <!-- Video cards -->
+        <div *ngFor="let video of videos" class="video-card">
+          <div class="video-actions">
+            <button class="btn-delete" (click)="deleteVideo(video)">
+              <i class="fas fa-trash"></i>
+            </button>
+          </div>
+          <div class="video-thumbnail" (click)="playVideo(video)">
+            <img [src]="video.thumbnail_url"
+                 [alt]="video.title"
+                 (error)="handleThumbnailError($event, video)"
+                 class="thumbnail-img">
+            <div class="play-overlay">
+              <span class="play-icon">▶</span>
+              <span class="duration" *ngIf="video.duration">{{ formatDuration(video.duration) }}</span>
+            </div>
+            <!-- Fallback preview when thumbnail fails -->
+            <div *ngIf="!video.thumbnail_url || video.thumbnailError" class="video-preview-fallback">
+              <video [src]="video.url" preload="metadata" (loadedmetadata)="onVideoMetadataLoaded($event, video)">
+                Your browser does not support the video tag.
+              </video>
+              <div class="fallback-title">{{ video.title || 'Untitled Video' }}</div>
+            </div>
+          </div>
+          <div class="video-info">
+            <h4>{{ video.title || 'Untitled Video' }}</h4>
+            <p class="video-description">{{ video.description || 'No description' }}</p>
+            <div class="video-stats">
+              <span><i class="fas fa-eye"></i> {{ video.views || 0 }}</span>
+              <span><i class="fas fa-heart"></i> {{ video.likes_count || 0 }}</span>
+              <span><i class="fas fa-comment"></i> {{ video.comments_count || 0 }}</span>
+              <span><i class="fas fa-clock"></i> {{ video.created_at | date }}</span>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -365,6 +381,119 @@
     <div class="modal-footer">
       <button class="btn btn-outline" (click)="closeBioModal()">Cancel</button>
       <button class="btn btn-primary" (click)="saveBio()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Video Player Modal -->
+<div class="modal" [class.show]="showVideoModal">
+  <div class="modal-content video-modal">
+    <div class="modal-header">
+      <span class="close" (click)="closeVideoModal()">&times;</span>
+    </div>
+    <div class="modal-body">
+      <div class="reel-card" *ngIf="selectedVideo && playerData">
+        <div class="reel-header">
+          <div class="reel-user">
+            <img [src]="playerData.profile_image ? 'http://localhost:8000/storage/' + playerData.profile_image : 'https://ui-avatars.com/api/?name=' + (playerData.first_name + '+' + playerData.last_name || 'User')" class="avatar-sm">
+            <div class="reel-user-info">
+              <span class="username">{{ (playerData.first_name + ' ' + playerData.last_name) || 'Unknown User' }}</span>
+              <span class="user-meta">{{ playerData.position || 'No Position' }} • {{ playerData.nationality || 'No Region' }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="reel-video">
+          <video controls [src]="'http://localhost:8000/storage/' + selectedVideo.file_path" class="video-player">
+            Your browser does not support the video tag.
+          </video>
+        </div>
+
+        <div class="reel-actions">
+          <button (click)="likeVideo(selectedVideo.id)" class="action-btn like-btn" [class.active]="selectedVideo.has_liked">
+            <i class="bi" [ngClass]="{'bi-heart-fill': selectedVideo.has_liked, 'bi-heart': !selectedVideo.has_liked}"></i>
+            <span class="action-count" (click)="showLikesList(selectedVideo.id, $event)">{{ selectedVideo.likes_count || 0 }}</span>
+          </button>
+          <button (click)="toggleCommentBox(selectedVideo.id)" class="action-btn">
+            <i class="bi bi-chat"></i>
+            <span class="action-count">{{ selectedVideo.comments_count || 0 }}</span>
+          </button>
+          <div class="views-count">
+            <i class="bi bi-eye"></i> {{ selectedVideo.views || 0 }}
+          </div>
+        </div>
+
+        <div class="reel-caption">
+          <p><span class="username">{{ (playerData.first_name + ' ' + playerData.last_name) || 'Unknown User' }}</span> {{ selectedVideo.description }}</p>
+          <span class="post-date">{{ selectedVideo.created_at | date }}</span>
+        </div>
+
+        <!-- Comments Section -->
+        <ng-container *ngIf="selectedVideo">
+          <div class="reel-comments" *ngIf="selectedVideo.comments && selectedVideo.comments.length > 0">
+            <div *ngFor="let comment of selectedVideo.comments" class="comment">
+              <span class="comment-user">{{ comment.user?.first_name + ' ' + comment.user?.last_name }}</span>
+              <span class="comment-text">{{ comment.content }}</span>
+              <span class="comment-time">{{ comment.created_at | date:'short' }}</span>
+            </div>
+          </div>
+
+          <!-- Comment Box -->
+          <div class="comment-box" *ngIf="showCommentBox[selectedVideo.id]">
+            <div class="add-comment">
+              <input
+                type="text"
+                placeholder="Add a comment..."
+                [(ngModel)]="newComment"
+                (keyup.enter)="postComment(selectedVideo.id)"
+              >
+              <button class="post-comment-btn" (click)="postComment(selectedVideo.id)">Post</button>
+            </div>
+          </div>
+        </ng-container>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Video Confirmation Modal -->
+<div class="modal" [class.show]="showDeleteVideoModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2>Delete Video</h2>
+      <span class="close" (click)="closeDeleteVideoModal()">&times;</span>
+    </div>
+    <div class="modal-body">
+      <p>Are you sure you want to delete this video? This action cannot be undone.</p>
+      <div class="video-preview" *ngIf="videoToDelete">
+        <img [src]="videoToDelete.thumbnail_url || 'assets/default-thumbnail.jpg'" [alt]="videoToDelete.title">
+        <h4>{{ videoToDelete.title || 'Untitled Video' }}</h4>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" (click)="closeDeleteVideoModal()">Cancel</button>
+      <button class="btn btn-danger" (click)="confirmDeleteVideo()">Delete Video</button>
+    </div>
+  </div>
+</div>
+
+<!-- Likes Modal -->
+<div class="modal" [class.show]="showLikesModal">
+  <div class="modal-content likes-modal">
+    <div class="modal-header">
+      <h2>Likes</h2>
+      <span class="close" (click)="showLikesModal = false">&times;</span>
+    </div>
+    <div class="modal-body">
+      <div class="likes-list">
+        <div *ngFor="let like of selectedPostLikes" class="like-item">
+          <img [src]="like.user.profile_image ? 'http://localhost:8000/storage/' + like.user.profile_image : 'https://ui-avatars.com/api/?name=' + (like.user.first_name + '+' + like.user.last_name || 'User')" class="avatar-sm" [alt]="like.user.first_name + ' ' + like.user.last_name">
+          <div class="like-user-info">
+            <span class="username">{{ like.user.first_name + ' ' + like.user.last_name }}</span>
+            <span class="user-meta" *ngIf="like.user.player">{{ like.user.player.position || 'No Position' }}</span>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </div>

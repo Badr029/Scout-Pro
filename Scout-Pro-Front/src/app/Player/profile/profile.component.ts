@@ -34,11 +34,28 @@ interface Video {
   title: string;
   description: string;
   url: string;
+  thumbnail_url: string;
+  file_path: string;
   thumbnail: string;
   views: number;
-  likes: number;
-  comments: number;
+  likes_count: number;
+  comments_count: number;
   created_at: string;
+  duration?: number;
+  thumbnailError?: boolean;
+  has_liked?: boolean;
+  likes?: any[];
+  comments: {
+    id: number;
+    content: string;
+    created_at: string;
+    user?: {
+      id: number;
+      first_name: string;
+      last_name: string;
+      profile_image?: string;
+    };
+  }[];
 }
 
 @Component({
@@ -73,6 +90,16 @@ export class ProfileComponent implements OnInit, OnDestroy {
   uploadProgress = 0;
   uploadError = '';
   Array = Array; // Make Array available to the template
+  readonly CHUNK_SIZE = 1024 * 1024 * 2; // 2MB chunks
+  showVideoModal = false;
+  selectedVideo: Video | null = null;
+  showDeleteVideoModal = false;
+  videoToDelete: Video | null = null;
+  showCommentBox: { [key: number]: boolean } = {};
+  newComment = '';
+  showLikesModal = false;
+  selectedPostLikes: any[] = [];
+  viewedVideos = new Set<number>();
 
   constructor(
     private router: Router,
@@ -163,40 +190,23 @@ export class ProfileComponent implements OnInit, OnDestroy {
     }
 
     const headers = new HttpHeaders({
-      'Authorization': `Bearer ${token}`
+      'Authorization': `Bearer ${token}`,
+      'X-Profile-Page': 'true'
     });
 
     this.http.get<any>('http://localhost:8000/api/videos', { headers })
       .subscribe({
         next: (response) => {
-          // Ensure we always have an array for videos
           console.log('Videos response:', response);
-
-          if (response && response.data && Array.isArray(response.data) && response.data.length > 0) {
-            // Filter out any invalid video objects
-            this.videos = response.data.filter((video: any) => {
-              return video && typeof video === 'object' && video.title;
-            });
-
-            if (this.videos.length === 0) {
-              console.warn('No valid video objects found in response');
-            }
-          } else if (response && response.data && !Array.isArray(response.data) && typeof response.data === 'object') {
-            console.warn('Videos data is not an array, checking if it\'s a valid video object:', response.data);
-            // If it's a valid video object, put it in an array
-            if (response.data.title) {
-              this.videos = [response.data];
-            } else {
-              this.videos = [];
-            }
+          if (response && response.data) {
+            this.videos = response.data;
           } else {
-            console.log('No videos found or invalid data format');
             this.videos = [];
           }
         },
         error: (error) => {
           console.error('Failed to load videos', error);
-          this.videos = []; // Initialize as empty array on error
+          this.videos = [];
         }
       });
   }
@@ -341,6 +351,7 @@ export class ProfileComponent implements OnInit, OnDestroy {
   }
 
   closeUploadModal() {
+    this.resetUploadForm();
     this.showUploadModal = false;
   }
 
@@ -351,9 +362,9 @@ export class ProfileComponent implements OnInit, OnDestroy {
     }
   }
 
-  uploadVideo() {
-    if (!this.uploadData.title || !this.uploadData.description || !this.uploadData.file) {
-      this.uploadError = 'Please fill all fields and select a video file';
+  async uploadVideo() {
+    if (!this.uploadData.file) {
+      this.uploadError = 'Please select a video file';
       return;
     }
 
@@ -363,32 +374,136 @@ export class ProfileComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const formData = new FormData();
-    formData.append('title', this.uploadData.title);
-    formData.append('description', this.uploadData.description);
-    formData.append('video', this.uploadData.file);
+    const file = this.uploadData.file;
+    const totalChunks = Math.ceil(file.size / this.CHUNK_SIZE);
+    this.uploadProgress = 0;
+
+    try {
+      for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++) {
+        const start = chunkIndex * this.CHUNK_SIZE;
+        const end = Math.min(start + this.CHUNK_SIZE, file.size);
+        const chunk = file.slice(start, end);
+
+        const formData = new FormData();
+        if (this.uploadData.title) {
+          formData.append('title', this.uploadData.title);
+        }
+        if (this.uploadData.description) {
+          formData.append('description', this.uploadData.description);
+        }
+        formData.append('video', chunk);
+        formData.append('chunkIndex', chunkIndex.toString());
+        formData.append('totalChunks', totalChunks.toString());
+        formData.append('fileName', file.name);
+
+        const headers = new HttpHeaders({
+          'Authorization': `Bearer ${token}`
+        });
+
+        await new Promise<void>((resolve, reject) => {
+          this.http.post<any>('http://localhost:8000/api/videos/chunk', formData, {
+            headers,
+          }).subscribe({
+            next: () => {
+              this.uploadProgress = Math.round((chunkIndex + 1) * 100 / totalChunks);
+              resolve();
+            },
+            error: (error) => {
+              this.uploadError = error.error.message || 'Failed to upload video chunk';
+              reject(error);
+            }
+          });
+        });
+      }
+
+      // Final step - tell server to combine chunks
+      const finalizeData = {
+        fileName: file.name,
+        totalChunks: totalChunks,
+        title: this.uploadData.title || '',
+        description: this.uploadData.description || ''
+      };
+
+      const headers = new HttpHeaders({
+        'Authorization': `Bearer ${token}`
+      });
+
+      this.http.post<any>('http://localhost:8000/api/videos/finalize', finalizeData, {
+        headers,
+      }).subscribe({
+        next: () => {
+          this.resetUploadForm();
+          this.fetchPlayerVideos();
+          this.closeUploadModal();
+        },
+        error: (error) => {
+          this.uploadError = error.error.message || 'Failed to finalize video upload';
+        }
+      });
+
+    } catch (error) {
+      this.uploadError = 'Upload failed. Please try again.';
+    }
+  }
+
+  private resetUploadForm() {
+    this.uploadData = {
+      title: '',
+      description: '',
+      file: null
+    };
+
+    const fileInput = document.getElementById('video') as HTMLInputElement;
+    if (fileInput) {
+      fileInput.value = '';
+    }
+
+    this.uploadProgress = 0;
+    this.uploadError = '';
+  }
+
+  formatDuration(seconds: number): string {
+    if (!seconds) return '';
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = Math.floor(seconds % 60);
+    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+  }
+
+  deleteVideo(video: Video) {
+    this.videoToDelete = video;
+    this.showDeleteVideoModal = true;
+  }
+
+  closeDeleteVideoModal() {
+    this.showDeleteVideoModal = false;
+    this.videoToDelete = null;
+  }
+
+  confirmDeleteVideo() {
+    if (!this.videoToDelete) return;
+
+    const token = localStorage.getItem('auth_token');
+    if (!token) {
+      this.router.navigate(['/login']);
+      return;
+    }
 
     const headers = new HttpHeaders({
       'Authorization': `Bearer ${token}`
     });
 
-    this.http.post<any>('http://localhost:8000/api/videos', formData, {
-      headers,
-      reportProgress: true,
-      observe: 'events'
-    }).subscribe({
-      next: (event: any) => {
-        if (event.type === 1) { // HttpEventType.UploadProgress
-          this.uploadProgress = Math.round(100 * event.loaded / event.total);
-        } else if (event.type === 4) { // HttpEventType.Response
-          this.fetchPlayerVideos();
-          this.closeUploadModal();
+    this.http.delete(`http://localhost:8000/api/videos/${this.videoToDelete.id}`, { headers })
+      .subscribe({
+        next: () => {
+          // Remove the video from the videos array
+          this.videos = this.videos.filter(v => v.id !== this.videoToDelete?.id);
+          this.closeDeleteVideoModal();
+        },
+        error: (error) => {
+          console.error('Failed to delete video:', error);
+          // You might want to show an error message to the user here
         }
-      },
-      error: (error) => {
-        this.uploadError = error.error.message || 'Failed to upload video';
-      }
-    });
+      });
   }
 
   goToSubscription() {
@@ -706,6 +821,189 @@ export class ProfileComponent implements OnInit, OnDestroy {
         error: (error) => {
           console.error('Error updating bio:', error);
           this.bioError = error.error?.message || 'Failed to update bio. Please try again.';
+        }
+      });
+  }
+
+  playVideo(video: Video) {
+    this.selectedVideo = video;
+    this.showVideoModal = true;
+
+    // Add a small delay to wait for the video element to be created
+    setTimeout(() => {
+      const videoElement = document.querySelector('.video-player') as HTMLVideoElement;
+      if (videoElement) {
+        videoElement.addEventListener('play', () => this.onVideoPlay(new Event('play'), video.id));
+      }
+    }, 100);
+  }
+
+  closeVideoModal() {
+    this.showVideoModal = false;
+    this.selectedVideo = null;
+  }
+
+  goToHome() {
+    this.router.navigate(['/home-feed']);
+  }
+
+  handleThumbnailError(event: Event, video: Video) {
+    video.thumbnailError = true;
+    // Remove the failed image
+    const img = event.target as HTMLImageElement;
+    img.style.display = 'none';
+  }
+
+  onVideoMetadataLoaded(event: Event, video: Video) {
+    const videoElement = event.target as HTMLVideoElement;
+    // Get a frame from the video as a thumbnail
+    try {
+      const canvas = document.createElement('canvas');
+      canvas.width = videoElement.videoWidth;
+      canvas.height = videoElement.videoHeight;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
+        // Convert the frame to a data URL and use it as the thumbnail
+        const thumbnailDataUrl = canvas.toDataURL('image/jpeg');
+        video.thumbnail_url = thumbnailDataUrl;
+        video.thumbnailError = false;
+
+        // Clean up
+        canvas.remove();
+      }
+    } catch (error) {
+      console.error('Failed to generate thumbnail from video:', error);
+    }
+
+    // Update the video duration if not already set
+    if (!video.duration && videoElement.duration) {
+      video.duration = videoElement.duration;
+    }
+  }
+
+  likeVideo(videoId: number) {
+    if (!videoId) return;
+
+    const token = localStorage.getItem('auth_token');
+    if (!token) {
+      this.router.navigate(['/login']);
+      return;
+    }
+
+    const headers = new HttpHeaders({
+      'Authorization': `Bearer ${token}`
+    });
+
+    this.http.post(`http://localhost:8000/api/videos/${videoId}/like`, {}, { headers })
+      .subscribe({
+        next: (response: any) => {
+          if (response.status === 'success') {
+            // Update the video in both videos array and selectedVideo
+            const video = this.videos.find(v => v.id === videoId);
+            if (video) {
+              video.has_liked = !video.has_liked;
+              video.likes_count = response.data.likes_count;
+            }
+            if (this.selectedVideo?.id === videoId) {
+              this.selectedVideo.has_liked = !this.selectedVideo.has_liked;
+              this.selectedVideo.likes_count = response.data.likes_count;
+            }
+          }
+        },
+        error: (error) => {
+          console.error('Error liking video:', error);
+        }
+      });
+  }
+
+  toggleCommentBox(videoId: number) {
+    this.showCommentBox[videoId] = !this.showCommentBox[videoId];
+  }
+
+  postComment(videoId: number) {
+    if (!videoId || !this.newComment.trim()) return;
+
+    const token = localStorage.getItem('auth_token');
+    if (!token) {
+      this.router.navigate(['/login']);
+      return;
+    }
+
+    const headers = new HttpHeaders({
+      'Authorization': `Bearer ${token}`
+    });
+
+    this.http.post(`http://localhost:8000/api/videos/${videoId}/comment`, {
+      content: this.newComment.trim()
+    }, { headers }).subscribe({
+      next: (response: any) => {
+        if (response.status === 'success' && response.data) {
+          // Update the video in both videos array and selectedVideo
+          const video = this.videos.find(v => v.id === videoId);
+          if (video) {
+            if (!video.comments) video.comments = [];
+            video.comments.unshift(response.data);
+            video.comments_count = (video.comments_count || 0) + 1;
+          }
+          if (this.selectedVideo?.id === videoId) {
+            if (!this.selectedVideo.comments) this.selectedVideo.comments = [];
+            this.selectedVideo.comments.unshift(response.data);
+            this.selectedVideo.comments_count = (this.selectedVideo.comments_count || 0) + 1;
+          }
+          // Clear the input
+          this.newComment = '';
+        }
+      },
+      error: (error) => {
+        console.error('Error posting comment:', error);
+      }
+    });
+  }
+
+  showLikesList(videoId: number, event: Event) {
+    event.stopPropagation(); // Prevent like action from triggering
+    const video = this.videos.find(v => v.id === videoId);
+    if (video && video.likes) {
+      this.selectedPostLikes = video.likes;
+      this.showLikesModal = true;
+    }
+  }
+
+  onVideoPlay(event: Event, videoId: number) {
+    // Check if video has already been viewed in this session
+    if (this.viewedVideos.has(videoId)) {
+      return;
+    }
+
+    const token = localStorage.getItem('auth_token');
+    if (!token) {
+      this.router.navigate(['/login']);
+      return;
+    }
+
+    const headers = new HttpHeaders({
+      'Authorization': `Bearer ${token}`
+    });
+
+    this.http.post(`http://localhost:8000/api/videos/${videoId}/view`, {}, { headers })
+      .subscribe({
+        next: (response: any) => {
+          if (response.status === 'success') {
+            // Find the video and update its view count
+            const video = this.videos.find(v => v.id === videoId);
+            if (video) {
+              video.views = (video.views || 0) + 1;
+              // Add to viewed videos set
+              this.viewedVideos.add(videoId);
+            }
+            if (this.selectedVideo?.id === videoId) {
+              this.selectedVideo.views = (this.selectedVideo.views || 0) + 1;
+            }
+          }
+        },
+        error: (error) => {
+          console.error('Error incrementing video views:', error);
         }
       });
   }

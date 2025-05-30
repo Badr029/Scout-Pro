@@ -1,19 +1,37 @@
 <div class="app-container">
-  <aside class="left-sidebar">
-    <div class="logo">Scout Pro</div>
+  <aside class="left-sidebar" [class.expanded]="sidebarExpanded" (mouseenter)="expandSidebar()" (mouseleave)="collapseSidebar()">
+    <div class="logo">{{ sidebarExpanded ? 'Scout Pro' : 'SP' }}</div>
     <nav class="nav-links">
-      <a href="#" class="active"><i class="bi bi-house-fill"></i> Home</a>
-      <a href="#" class="search-link" (click)="toggleSearchPanel(); $event.preventDefault()"><i class="bi bi-search"></i> Search</a>
-      <a href="#"><i class="bi bi-bell"></i> Notifications</a>
-      <a href="#" (click)="openUploadModal(); $event.preventDefault()"><i class="bi bi-plus-square"></i> Upload</a>
-      <a href="/profile"><img [src]="userProfile?.profile_image || 'https://ui-avatars.com/api/?name=User&size=24'" alt="Profile" class="avatar-xs" /> Profile</a>
+      <a routerLink="/home" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
+        <i class="bi bi-house-fill"></i>
+        <span>Home</span>
+      </a>
+      <a href="#" class="search-link" [class.active]="showSearchPanel" (click)="toggleSearchPanel(); $event.preventDefault()">
+        <i class="bi bi-search"></i>
+        <span>Search</span>
+      </a>
+      <a href="#">
+        <i class="bi bi-bell"></i>
+        <span>Notifications</span>
+      </a>
+      <a href="#" (click)="openUploadModal(); $event.preventDefault()">
+        <i class="bi bi-plus-square"></i>
+        <span>Upload</span>
+      </a>
+      <a href="#" (click)="goToProfile(); $event.preventDefault()" class="profile-link">
+        <img [src]="currentUser?.profile_image || getAvatarUrl(currentUser?.name?.split(' ')[0], currentUser?.name?.split(' ')[1])"
+             [alt]="currentUser?.name"
+             class="avatar-xs"
+             (error)="handleImageError($event, currentUser?.name?.split(' ')[0], currentUser?.name?.split(' ')[1])" />
+        <span>{{ currentUser?.name || 'Profile' }}</span>
+      </a>
     </nav>
   </aside>
 
   <!-- Search Panel -->
   <div class="search-panel" [class.active]="showSearchPanel">
     <div class="search-header">
-    <h2>Search</h2>
+      <h2>Search</h2>
       <button class="close-btn" (click)="toggleSearchPanel()">&times;</button>
     </div>
     <div class="search-form">
@@ -59,12 +77,8 @@
       <h4>Recent</h4>
       <div class="search-history">
         <div class="recent-item">
-          <span>Forward players in London</span>
+          <span></span>
           <button class="history-search-btn" (click)="searchForTerm('Forward London')"><i class="bi bi-search"></i></button>
-        </div>
-        <div class="recent-item">
-          <span>Under 18 midfielders</span>
-          <button class="history-search-btn" (click)="searchForTerm('Under 18 midfielders')"><i class="bi bi-search"></i></button>
         </div>
       </div>
     </div>
@@ -79,11 +93,8 @@
 
     <!-- View Switcher -->
     <div *ngIf="feedData && !loading" class="view-switcher">
-      <button [class.active]="activeView === 'reels'" (click)="switchView('reels')">
-        <i class="bi bi-play-btn"></i> Reels
-      </button>
-      <button [class.active]="activeView === 'grid'" (click)="switchView('grid')">
-        <i class="bi bi-grid-3x3"></i> Grid
+      <button [class.active]="activeView === 'feed'" (click)="switchView('feed')">
+        <i class="bi bi-play-btn"></i> Feed
       </button>
       <button [class.active]="activeView === 'events'" (click)="switchView('events')">
         <i class="bi bi-calendar-event"></i> Events
@@ -92,89 +103,98 @@
 
     <!-- Feed Content -->
     <ng-container *ngIf="feedData">
-      <!-- Reels View (Default) -->
-      <div *ngIf="activeView === 'reels'" class="reels-container">
-        <div *ngIf="!feedData.posts.data.length" class="empty-feed">
+      <!-- Feed View (Default) -->
+      <div *ngIf="activeView === 'feed'" class="reels-container">
+        <div *ngIf="!feedData?.posts?.data?.length" class="empty-feed">
           No videos to show. Try adjusting your filters or check back later!
         </div>
 
-        <div *ngFor="let post of feedData.posts.data" class="reel-card">
+        <div *ngFor="let post of feedData?.posts?.data" class="reel-card">
           <div class="reel-header">
-            <div class="reel-user" (click)="goToPlayerProfile(post.player.id)">
-              <img [src]="post.player.profile_image || 'https://ui-avatars.com/api/?name=' + post.player.name" class="avatar-sm">
+            <div class="reel-user" (click)="goToPlayerProfile(post?.user?.id)">
+              <img [src]="getProfileImageUrl(post?.user?.profile_image)"
+                   class="avatar-sm"
+                   [alt]="post?.user?.full_name"
+                   (error)="handleImageError($event, post?.user?.first_name, post?.user?.last_name)">
               <div class="reel-user-info">
-                <span class="username">{{ post.player.name }}</span>
-                <span class="user-meta">{{ post.player.position }} • {{ post.player.region }}</span>
+                <span class="username">{{ post?.user?.full_name }}</span>
+                <span class="user-meta" *ngIf="post?.user?.player">{{ post?.user?.player?.position || 'No Position' }} • {{ post?.user?.player?.region || post?.user?.player?.nationality || 'No Region' }}</span>
               </div>
             </div>
             <button
               class="follow-btn"
-              *ngIf="!post.player.following"
-              (click)="followPlayer(post.player.id)"
+              *ngIf="post?.user?.id !== currentUser?.id && !post?.user?.following"
+              (click)="followPlayer(post?.user?.id)"
             >Follow</button>
-            <span class="following-label" *ngIf="post.player.following">
+            <span class="following-label" *ngIf="post?.user?.id !== currentUser?.id && post?.user?.following">
               <i class="bi bi-check2"></i> Following
             </span>
           </div>
 
           <div class="reel-video">
-            <video controls [poster]="post.thumbnail" preload="metadata">
-              <source [src]="post.video_url" type="video/mp4">
+            <video controls
+                   [poster]="post?.thumbnail || ''"
+                   preload="metadata"
+                   (play)="onVideoPlay($event, post?.id)"
+                   (error)="onVideoError($event)">
+              <source [src]="getVideoUrl(post?.file_path)" type="video/mp4">
               Your browser does not support the video tag.
             </video>
           </div>
 
           <div class="reel-actions">
-            <button (click)="likePost(post.id)" class="action-btn like-btn" [class.active]="post.liked">
-              <i class="bi" [ngClass]="post.liked ? 'bi-heart-fill' : 'bi-heart'"></i>
-              <span class="action-count">{{ post.likes }}</span>
+            <button (click)="likePost(post?.id)" class="action-btn like-btn" [ngClass]="{'active': post?.has_liked}">
+              <i class="bi" [ngClass]="{'bi-heart-fill': post?.has_liked, 'bi-heart': !post?.has_liked}"></i>
+              <span class="action-count" (click)="showLikesList(post?.id, $event)">{{ post?.likes_count || 0 }}</span>
             </button>
-            <button (click)="toggleCommentBox(post.id)" class="action-btn">
+            <button (click)="toggleCommentBox(post?.id)" class="action-btn">
               <i class="bi bi-chat"></i>
-              <span class="action-count">{{ post.comments.length }}</span>
+              <span class="action-count">{{ post?.comments_count || 0 }}</span>
             </button>
-            <button class="action-btn" (click)="goToPlayerProfile(post.player.id)">
+            <button class="action-btn" (click)="goToPlayerProfile(post?.user?.id)">
               <i class="bi bi-person"></i>
             </button>
             <div class="views-count">
-              <i class="bi bi-eye"></i> {{ post.views }}
+              <i class="bi bi-eye"></i> {{ post?.views || 0 }}
             </div>
           </div>
 
           <div class="reel-caption">
-            <p><span class="username">{{ post.player.name }}</span> {{ post.description }}</p>
-            <span class="post-date">{{ post.created_at | date }}</span>
+            <p><span class="username">{{ (post?.user?.first_name + ' ' + post?.user?.last_name) || 'Unknown User' }}</span> {{ post?.description }}</p>
+            <span class="post-date">{{ post?.created_at | date }}</span>
           </div>
 
           <!-- Comments Section -->
-          <div class="reel-comments" *ngIf="post.comments.length > 0">
-            <div *ngFor="let comment of post.comments.slice(0, 2)" class="comment">
-              <span class="comment-user">{{ comment.user }}</span>
-              <span class="comment-text">{{ comment.text }}</span>
-              <span class="comment-time">{{ comment.timestamp }}</span>
+          <div class="reel-comments" *ngIf="post?.comments?.length > 0">
+            <div *ngFor="let comment of post?.comments?.slice(0, 2)" class="comment">
+              <span class="comment-user" (click)="goToUserProfile(comment.user_id)">
+                {{ comment.user_id === currentUser?.id ? 'You' : comment.user?.full_name }}
+              </span>
+              <span class="comment-text">{{ comment.content }}</span>
+              <span class="comment-time">{{ comment.created_at | date:'short' }}</span>
             </div>
-            <div *ngIf="post.comments.length > 2" class="view-more-comments" (click)="toggleCommentBox(post.id)">
-              View all {{ post.comments.length }} comments
+            <div *ngIf="post?.comments?.length > 2" class="view-more-comments" (click)="toggleCommentBox(post?.id)">
+              View all {{ post?.comments?.length }} comments
             </div>
           </div>
 
           <!-- Comment Box -->
-          <div class="comment-box" *ngIf="showCommentBox[post.id]">
-            <div class="all-comments">
-              <div *ngFor="let comment of post.comments" class="comment">
-                <span class="comment-user">{{ comment.user }}</span>
-                <span class="comment-text">{{ comment.text }}</span>
-                <span class="comment-time">{{ comment.timestamp }}</span>
+          <div class="comment-box" *ngIf="showCommentBox[post?.id]">
+            <!-- <div class="all-comments">
+              <div *ngFor="let comment of post?.comments" class="comment">
+                <span class="comment-user">{{ comment.user_id === currentUser?.id ? 'You' : comment.user?.full_name }}</span>
+                <span class="comment-text">{{ comment.content }}</span>
+                <span class="comment-time">{{ comment.created_at | date:'short' }}</span>
               </div>
-            </div>
+            </div> -->
             <div class="add-comment">
               <input
                 type="text"
                 placeholder="Add a comment..."
                 [(ngModel)]="newComment"
-                (keyup.enter)="postComment(post.id)"
+                (keyup.enter)="postComment(post?.id)"
               >
-              <button class="post-comment-btn" (click)="postComment(post.id)">Post</button>
+              <button class="post-comment-btn" (click)="postComment(post?.id)">Post</button>
             </div>
           </div>
         </div>
@@ -184,35 +204,6 @@
             <span *ngIf="!loading">Load More</span>
             <span *ngIf="loading" class="spinner small"></span>
           </button>
-        </div>
-      </div>
-
-      <!-- Grid View -->
-      <div *ngIf="activeView === 'grid'" class="grid-container">
-        <div *ngIf="!feedData.posts.data.length" class="empty-feed">
-          No videos to show. Try adjusting your filters or check back later!
-        </div>
-
-        <div class="video-grid">
-          <div *ngFor="let post of feedData.posts.data" class="grid-item" (click)="goToPlayerProfile(post.player.id)">
-            <div class="grid-thumbnail">
-              <img [src]="post.thumbnail || 'assets/default-thumbnail.jpg'" alt="{{ post.title }}">
-              <div class="play-overlay">
-                <span class="play-icon"><i class="bi bi-play-circle-fill"></i></span>
-              </div>
-              <div class="video-stats">
-                <span><i class="bi bi-eye"></i> {{ post.views }}</span>
-                <span><i class="bi bi-heart"></i> {{ post.likes }}</span>
-              </div>
-            </div>
-            <div class="grid-info">
-              <div class="grid-user">
-                <img [src]="post.player.profile_image || 'https://ui-avatars.com/api/?name=' + post.player.name" class="avatar-xs">
-                <span>{{ post.player.name }}</span>
-              </div>
-              <p class="grid-title">{{ post.title }}</p>
-            </div>
-          </div>
         </div>
       </div>
 
@@ -244,20 +235,26 @@
   <!-- Right Panel -->
   <aside class="right-panel">
     <div class="profile-info">
-      <a href="/profile" class="profile-link">
-        <img [src]="userProfile?.profile_image || 'https://ui-avatars.com/api/?name=User'" alt="Profile" class="avatar">
-        <div class="profile-name">{{ userProfile?.username || 'username' }}</div>
+      <a href="#" (click)="goToProfile(); $event.preventDefault()" class="profile-link">
+        <img [src]="currentUser?.profile_image || getAvatarUrl(currentUser?.name?.split(' ')[0], currentUser?.name?.split(' ')[1])"
+             [alt]="currentUser?.name"
+             class="avatar"
+             (error)="handleImageError($event, currentUser?.name?.split(' ')[0], currentUser?.name?.split(' ')[1])" />
+        <div class="profile-name">{{ currentUser?.name || 'Profile' }}</div>
       </a>
     </div>
 
     <div class="trending">
       <h4>Trending Players</h4>
       <div class="trending-list">
-        <div *ngFor="let player of feedData?.trending_players" class="trending-item" (click)="goToPlayerProfile(player.id)">
-          <img [src]="player.image || 'https://ui-avatars.com/api/?name=' + player.name" class="avatar-sm">
+        <div *ngFor="let player of feedData?.trending_players" class="trending-item" (click)="goToPlayerProfile(player?.id)">
+          <img [src]="getProfileImageUrl(player?.profile_image)"
+               class="avatar-sm"
+               [alt]="player?.name"
+               (error)="handleImageError($event, player?.name?.split(' ')[0], player?.name?.split(' ')[1])">
           <div class="trending-info">
-            <span class="trending-name">{{ player.name }}</span>
-            <span class="trending-meta">{{ player.position }} • {{ player.region }}</span>
+            <span class="trending-name">{{ player?.name || 'Unknown Player' }}</span>
+            <span class="trending-meta">{{ player?.position || 'No Position' }} • {{ player?.region || 'No Region' }}</span>
           </div>
         </div>
       </div>
@@ -283,11 +280,14 @@
     <div class="recommendations">
       <h4>You May Also Like</h4>
       <div class="recommendation-list">
-        <div *ngFor="let rec of feedData?.recommendations" class="recommendation-item" (click)="goToPlayerProfile(rec.id)">
-          <img [src]="rec.image || 'https://ui-avatars.com/api/?name=' + rec.name" class="avatar-sm">
+        <div *ngFor="let rec of feedData?.recommendations" class="recommendation-item" (click)="goToPlayerProfile(rec?.id)">
+          <img [src]="rec?.image || getAvatarUrl(rec?.name?.split(' ')[0], rec?.name?.split(' ')[1])"
+               class="avatar-sm"
+               [alt]="rec?.name"
+               (error)="handleImageError($event, rec?.name?.split(' ')[0], rec?.name?.split(' ')[1])">
           <div class="recommendation-info">
-            <span class="recommendation-name">{{ rec.name }}</span>
-            <span class="recommendation-meta">{{ rec.position }} • {{ rec.region }}</span>
+            <span class="recommendation-name">{{ rec?.name || 'Unknown Player' }}</span>
+            <span class="recommendation-meta">{{ rec?.position || 'No Position' }} • {{ rec?.region || 'No Region' }}</span>
           </div>
           <button class="btn btn-sm">View</button>
         </div>
@@ -295,11 +295,6 @@
     </div>
   </aside>
 </div>
-
-<!-- Footer -->
-<footer class="app-footer">
-  <span>&copy; {{ currentYear }} ScoutPro. All rights reserved.</span>
-</footer>
 
 <!-- Video Upload Modal -->
 <div class="modal" [class.show]="uploadModalOpen">
@@ -326,10 +321,46 @@
         <span>{{ uploadProgress }}%</span>
       </div>
       <p *ngIf="uploadError" class="error-message">{{ uploadError }}</p>
+      <p *ngIf="userProfile?.subscription_plan === 'Free' && (userProfile?.remaining_uploads ?? 0) > 0" class="upload-limit-info">
+        You have {{ userProfile?.remaining_uploads ?? 0 }}/3 uploads remaining this month.
+      </p>
     </div>
     <div class="modal-footer">
       <button class="btn btn-outline" (click)="closeUploadModal()">Cancel</button>
       <button class="btn btn-primary" (click)="uploadVideo()">Upload</button>
+    </div>
+  </div>
+</div>
+
+<!-- Likes List Modal -->
+<div class="modal" [class.show]="showLikesModal">
+  <div class="modal-content likes-modal">
+    <div class="modal-header">
+      <h2>Likes</h2>
+      <span class="close" (click)="closeLikesModal()">&times;</span>
+    </div>
+    <div class="modal-body">
+      <div class="likes-list">
+        <div *ngFor="let like of selectedPostLikes" class="like-item">
+          <div class="like-user" (click)="goToPlayerProfile(like?.user?.id)">
+            <img [src]="like?.user?.profile_image || getAvatarUrl(like?.user?.first_name, like?.user?.last_name)"
+                 class="avatar-sm"
+                 [alt]="like?.user?.full_name"
+                 (error)="handleImageError($event, like?.user?.first_name, like?.user?.last_name)">
+            <div class="like-user-info">
+              <span class="username">{{ like?.user?.full_name }}</span>
+              <span class="user-meta" *ngIf="like?.user?.player">{{ like?.user?.player?.position || 'No Position' }} • {{ like?.user?.player?.nationality || 'No Region' }}</span>
+            </div>
+          </div>
+          <button
+            *ngIf="like?.user?.id !== currentUser?.id"
+            class="btn btn-sm"
+            (click)="followPlayer(like?.user?.id)"
+          >
+            {{ like?.user?.following ? 'Following' : 'Follow' }}
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 </div>

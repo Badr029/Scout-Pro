@@ -13,6 +13,7 @@ use App\Http\Controllers\API\SubscriptionController;
 use App\Http\Controllers\API\EventController;
 use App\Http\Controllers\API\PlayerController;
 use App\Http\Controllers\API\AccountController;
+use App\Http\Controllers\API\ScoutController;
 
 
 
@@ -47,6 +48,8 @@ Route::post('/reset-password', [ResetPasswordController::class, 'reset']);
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/setup', [SetupController::class, 'setup']);
     Route::get('/profile', [ProfileController::class, 'show']);
+    Route::get('scout/profile', [ProfileController::class, 'show']);
+    Route::get('scout/contacted-players', [ScoutController::class, 'getContactedPlayers']);
     Route::put('player/profile/update', [ProfileController::class, 'update']);
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::delete('/delete',[ProfileController::class , 'delete']);
@@ -63,6 +66,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/videos/upload', [VideoController::class, 'upload']);
     Route::delete('/videos/{id}', [VideoController::class, 'delete']);
     Route::get('/videos/player/{playerId}', [VideoController::class, 'getPlayerVideos']);
+    Route::post('/videos/chunk', [VideoController::class, 'uploadChunk']);
+    Route::post('/videos/finalize', [VideoController::class, 'finalizeUpload']);
+    Route::post('/videos/{video}/like', [VideoController::class, 'like']);
+    Route::post('/videos/{video}/unlike', [VideoController::class, 'unlike']);
+    Route::post('/videos/{video}/comment', [VideoController::class, 'comment']);
+    Route::post('/videos/{video}/view', [VideoController::class, 'view']);
 
     // Setup routes
     Route::post('/player/setup', [SetupController::class, 'playerSetup']);
@@ -72,9 +81,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/videos', [VideoController::class, 'index']);
     Route::post('/videos', [VideoController::class, 'store']);
     Route::get('/videos/{video}', [VideoController::class, 'show']);
-    Route::post('/videos/{video}/like', [VideoController::class, 'like']);
-    Route::post('/videos/{video}/unlike', [VideoController::class, 'unlike']);
-    Route::post('/videos/{video}/comment', [VideoController::class, 'comment']);
 
     // New subscription routes
     Route::get('/subscription', [SubscriptionController::class, 'show']);
@@ -85,9 +91,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/events', [EventController::class, 'index']);
     Route::get('/events/{event}', [EventController::class, 'show']);
 
-    // Follow/unfollow routes
+    // Player routes
+    Route::get('/players/{id}', [PlayerController::class, 'show']);
     Route::post('/players/{player}/follow', [PlayerController::class, 'follow']);
     Route::post('/players/{player}/unfollow', [PlayerController::class, 'unfollow']);
+    Route::get('/trending-players', [PlayerController::class, 'getTrendingPlayers']);
 
     // Account management
     Route::post('/account/delete', [AccountController::class, 'delete']);

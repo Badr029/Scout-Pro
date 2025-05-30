@@ -19,11 +19,14 @@ return new class extends Migration
             $table->string('username')->unique();
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
-            $table->string('password');
-            $table->string('social_id')->nullable();
+            $table->string('password')->nullable();
+            $table->string('social_id')->nullable()->unique();
             $table->string('provider')->nullable();
+            $table->string('provider_token')->nullable();
             $table->rememberToken();
             $table->timestamps();
+
+            $table->unique(['provider', 'social_id'], 'social_login_unique');
         });
 
         Schema::create('password_reset_tokens', function (Blueprint $table) {

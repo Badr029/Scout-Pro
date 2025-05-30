@@ -25,6 +25,25 @@ class Video extends Model
     ];
 
     /**
+     * The attributes that should be cast.
+     *
+     * @var array<string, string>
+     */
+    protected $casts = [
+        'views' => 'integer',
+    ];
+
+    /**
+     * Append these attributes to array/JSON representations.
+     *
+     * @var array
+     */
+    protected $appends = [
+        'likes_count',
+        'comments_count'
+    ];
+
+    /**
      * Get the user that owns the video.
      */
     public function user()
@@ -46,5 +65,21 @@ class Video extends Model
     public function likes()
     {
         return $this->hasMany(Like::class);
+    }
+
+    /**
+     * Get the number of likes for the video.
+     */
+    public function getLikesCountAttribute()
+    {
+        return $this->likes()->count();
+    }
+
+    /**
+     * Get the number of comments for the video.
+     */
+    public function getCommentsCountAttribute()
+    {
+        return $this->comments()->count();
     }
 }

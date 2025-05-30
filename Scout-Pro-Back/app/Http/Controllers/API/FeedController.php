@@ -35,11 +35,18 @@ class FeedController extends Controller
         $transfer_status = $request->input('transfer_status');
 
         // Build query for videos
-        $videosQuery = Video::with(['user', 'comments', 'likes'])
-            ->whereHas('user', function ($query) {
-                $query->where('user_type', 'player');
-            })
-            ->orderBy('created_at', 'desc');
+        $videosQuery = Video::with([
+            'user.player',
+            'comments.user.player',
+            'likes.user.player',
+            'likes' => function ($query) use ($user) {
+                $query->where('user_id', $user->id);
+            }
+        ])
+        ->whereHas('user', function ($query) {
+            $query->where('user_type', 'player');
+        })
+        ->orderBy('created_at', 'desc');
 
         // Apply filters if user is a scout
         if ($userType === 'scout' && $position) {
@@ -79,8 +86,51 @@ class FeedController extends Controller
             });
         }
 
-        // Get videos
+        // Get videos with pagination
         $videos = $videosQuery->paginate(10);
+
+        // Transform the videos to include user-specific data
+        $videos->through(function ($video) use ($user) {
+            // Add has_liked flag
+            $video->has_liked = $video->likes->where('user_id', $user->id)->count() > 0;
+
+            // Format the likes data
+            $video->likes_data = $video->likes->map(function ($like) {
+                return [
+                    'id' => $like->id,
+                    'user_id' => $like->user_id,
+                    'user' => [
+                        'id' => $like->user->id,
+                        'first_name' => $like->user->first_name,
+                        'last_name' => $like->user->last_name,
+                        'profile_image' => $like->user->player ? $like->user->player->profile_image : null
+                    ]
+                ];
+            });
+
+            // Format the comments data
+            $video->comments_data = $video->comments->map(function ($comment) {
+                return [
+                    'id' => $comment->id,
+                    'content' => $comment->content,
+                    'created_at' => $comment->created_at,
+                    'user_id' => $comment->user_id,
+                    'user' => [
+                        'id' => $comment->user->id,
+                        'first_name' => $comment->user->first_name,
+                        'last_name' => $comment->user->last_name,
+                        'profile_image' => $comment->user->player ? $comment->user->player->profile_image : null
+                    ]
+                ];
+            });
+
+            // Add user data with proper profile image path
+            if ($video->user && $video->user->player) {
+                $video->user->profile_image = $video->user->player->profile_image;
+            }
+
+            return $video;
+        });
 
         // Get trending players (based on video views and likes)
         $trendingPlayers = User::where('user_type', 'player')

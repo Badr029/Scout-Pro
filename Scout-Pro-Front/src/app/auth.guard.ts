@@ -38,6 +38,17 @@ export class AuthGuard implements CanActivate {
       return false;
     }
 
+    // Handle profile access based on user type
+    if (url === '/profile' && userType === 'scout') {
+      this.router.navigate(['/scout/profile']);
+      return false;
+    }
+
+    if (url === '/scout/profile' && userType === 'player') {
+      this.router.navigate(['/profile']);
+      return false;
+    }
+
     return true;
   }
 

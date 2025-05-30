@@ -11,7 +11,7 @@ class View extends Model
 
     protected $fillable = [
         'user_id',
-        'post_id',
+        'video_id',
         'viewed_at',
         'watch_duration',
     ];
@@ -26,8 +26,8 @@ class View extends Model
         return $this->belongsTo(User::class);
     }
 
-    public function post()
+    public function video()
     {
-        return $this->belongsTo(Post::class);
+        return $this->belongsTo(Video::class);
     }
 }

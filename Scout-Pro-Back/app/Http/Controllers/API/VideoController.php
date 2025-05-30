@@ -10,8 +10,10 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Validator;
+use App\Models\View;
 
 class VideoController extends Controller
 {
@@ -25,15 +27,88 @@ class VideoController extends Controller
         // Get user's videos or filter by user ID if provided
         $query = Video::query();
 
-        if ($request->has('user_id')) {
-            $query->where('user_id', $request->user_id);
-        } else {
+        // If accessed from profile page, only show current user's videos
+        if ($request->header('X-Profile-Page') === 'true') {
             $query->where('user_id', $user->id);
+        } else if ($request->has('user_id')) {
+            $query->where('user_id', $request->user_id);
         }
 
-        $videos = $query->with(['user', 'comments', 'likes'])
+        $videos = $query->with(['user.player', 'likes.user.player', 'comments.user.player'])
+            ->withCount('likes')
             ->orderBy('created_at', 'desc')
-            ->paginate(10);
+            ->get()
+            ->map(function ($video) use ($user) {
+                // Get player info from the user's player relation
+                $playerInfo = $video->user->player ?? null;
+
+                // Check if current user has liked this video
+                $hasLiked = $video->likes->contains(function ($like) use ($user) {
+                    return $like->user_id === $user->id;
+                });
+
+                return [
+                    'id' => $video->id,
+                    'title' => $video->title,
+                    'description' => $video->description,
+                    'file_path' => $video->file_path,
+                    'thumbnail' => $video->thumbnail,
+                    'views' => $video->views,
+                    'likes_count' => $video->likes_count,
+                    'comments_count' => $video->comments->count(),
+                    'has_liked' => $hasLiked,
+                    'likes' => $video->likes->map(function ($like) {
+                        return [
+                            'id' => $like->id,
+                            'user' => [
+                                'id' => $like->user->id,
+                                'first_name' => $like->user->first_name,
+                                'last_name' => $like->user->last_name,
+                                'full_name' => $like->user->first_name . ' ' . $like->user->last_name,
+                                'profile_image' => $like->user->player ? url('storage/' . $like->user->player->profile_image) : null,
+                                'player' => $like->user->player ? [
+                                    'position' => $like->user->player->position,
+                                    'nationality' => $like->user->player->nationality,
+                                ] : null
+                            ]
+                        ];
+                    }),
+                    'comments' => $video->comments->map(function ($comment) {
+                        return [
+                            'id' => $comment->id,
+                            'content' => $comment->content,
+                            'created_at' => $comment->created_at,
+                            'user_id' => $comment->user_id,
+                            'user' => [
+                                'id' => $comment->user->id,
+                                'first_name' => $comment->user->first_name,
+                                'last_name' => $comment->user->last_name,
+                                'profile_image' => $comment->user->player ? url('storage/' . $comment->user->player->profile_image) : null,
+                                'full_name' => $comment->user->first_name . ' ' . $comment->user->last_name
+                            ]
+                        ];
+                    }),
+                    'created_at' => $video->created_at,
+                    'user' => [
+                        'id' => $video->user->id,
+                        'first_name' => $video->user->first_name,
+                        'last_name' => $video->user->last_name,
+                        'full_name' => $video->user->first_name . ' ' . $video->user->last_name,
+                        'user_type' => $video->user->user_type,
+                        'profile_image' => $playerInfo ? url('storage/' . $playerInfo->profile_image) : null,
+                        'player' => $playerInfo ? [
+                            'position' => $playerInfo->position,
+                            'secondary_position' => $playerInfo->secondary_position,
+                            'nationality' => $playerInfo->nationality,
+                            'region' => $playerInfo->current_city,
+                            'age' => $playerInfo->getAge(),
+                            'height' => $playerInfo->height,
+                            'weight' => $playerInfo->weight,
+                            'preferred_foot' => $playerInfo->preferred_foot,
+                        ] : null
+                    ]
+                ];
+            });
 
         return response()->json([
             'status' => 'success',
@@ -49,7 +124,7 @@ class VideoController extends Controller
         $user = Auth::user();
 
         // Check if user is a player
-        if ($user->role !== 'player') {
+        if ($user->role !== 'player' && $user->user_type !== 'player') {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Only players can upload videos'
@@ -77,8 +152,8 @@ class VideoController extends Controller
 
         // Validate request
         $validator = Validator::make($request->all(), [
-            'title' => 'required|string|max:255',
-            'description' => 'required|string|max:1000',
+            'title' => 'nullable|string|max:255',
+            'description' => 'nullable|string|max:1000',
             'video' => 'required|file|mimetypes:video/mp4,video/quicktime,video/x-ms-wmv|max:100000' // 100MB max
         ]);
 
@@ -123,8 +198,10 @@ class VideoController extends Controller
         $video->views++;
         $video->save();
 
-        // Load relationships
-        $video->load(['user', 'comments.user', 'likes']);
+        // Load relationships and add URLs
+        $video->load(['user.player', 'comments.user', 'likes']);
+        $video->url = url('storage/' . $video->file_path);
+        $video->thumbnail_url = url('storage/' . $video->thumbnail);
 
         return response()->json([
             'status' => 'success',
@@ -140,21 +217,50 @@ class VideoController extends Controller
         $user = Auth::user();
 
         // Check if already liked
-        if ($video->likes()->where('user_id', $user->id)->exists()) {
+        $existingLike = $video->likes()->where('user_id', $user->id)->first();
+        if ($existingLike) {
+            // If already liked, unlike it
+            $existingLike->delete();
+
             return response()->json([
-                'status' => 'error',
-                'message' => 'You have already liked this video'
-            ], 400);
+                'status' => 'success',
+                'message' => 'Video unliked successfully',
+                'data' => [
+                    'likes_count' => $video->fresh()->likes()->count(),
+                    'has_liked' => false
+                ]
+            ]);
         }
 
         // Add like
-        $video->likes()->create([
+        $like = $video->likes()->create([
             'user_id' => $user->id
         ]);
 
+        // Load the user relationship for the response
+        $like->load('user.player');
+
         return response()->json([
             'status' => 'success',
-            'message' => 'Video liked successfully'
+            'message' => 'Video liked successfully',
+            'data' => [
+                'like' => [
+                    'id' => $like->id,
+                    'user' => [
+                        'id' => $like->user->id,
+                        'first_name' => $like->user->first_name,
+                        'last_name' => $like->user->last_name,
+                        'full_name' => $like->user->first_name . ' ' . $like->user->last_name,
+                        'profile_image' => $like->user->player ? url('storage/' . $like->user->player->profile_image) : null,
+                        'player' => $like->user->player ? [
+                            'position' => $like->user->player->position,
+                            'nationality' => $like->user->player->nationality,
+                        ] : null
+                    ]
+                ],
+                'likes_count' => $video->fresh()->likes()->count(),
+                'has_liked' => true
+            ]
         ]);
     }
 
@@ -170,7 +276,11 @@ class VideoController extends Controller
 
         return response()->json([
             'status' => 'success',
-            'message' => 'Video unliked successfully'
+            'message' => 'Video unliked successfully',
+            'data' => [
+                'likes_count' => $video->fresh()->likes()->count(),
+                'has_liked' => false
+            ]
         ]);
     }
 
@@ -197,12 +307,28 @@ class VideoController extends Controller
             'content' => $request->content
         ]);
 
-        $comment->load('user');
+        // Load the user with their player relationship
+        $comment->load(['user.player']);
+
+        // Format the response data
+        $responseData = [
+            'id' => $comment->id,
+            'content' => $comment->content,
+            'created_at' => $comment->created_at,
+            'user_id' => $comment->user_id,
+            'user' => [
+                'id' => $comment->user->id,
+                'first_name' => $comment->user->first_name,
+                'last_name' => $comment->user->last_name,
+                'profile_image' => $comment->user->player ? url('storage/' . $comment->user->player->profile_image) : null,
+                'full_name' => $comment->user->first_name . ' ' . $comment->user->last_name
+            ]
+        ];
 
         return response()->json([
             'status' => 'success',
             'message' => 'Comment added successfully',
-            'data' => $comment
+            'data' => $responseData
         ]);
     }
 
@@ -286,13 +412,13 @@ class VideoController extends Controller
     /**
      * Delete a video
      */
-    public function delete(Request $request, $id)
+    public function delete($id)
     {
         $user = Auth::user();
-        $post = Post::findOrFail($id);
+        $video = Video::findOrFail($id);
 
         // Check if user owns the video
-        if ($user->player->id !== $post->player_id) {
+        if ($user->id !== $video->user_id) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Unauthorized to delete this video'
@@ -301,17 +427,17 @@ class VideoController extends Controller
 
         try {
             // Delete video file
-            $videoPath = str_replace('/storage/', '', parse_url($post->video_url, PHP_URL_PATH));
-            Storage::disk('public')->delete($videoPath);
-
-            // Delete thumbnail if exists
-            if ($post->thumbnail_url) {
-                $thumbnailPath = str_replace('/storage/', '', parse_url($post->thumbnail_url, PHP_URL_PATH));
-                Storage::disk('public')->delete($thumbnailPath);
+            if ($video->file_path) {
+                Storage::disk('public')->delete($video->file_path);
             }
 
-            // Delete post
-            $post->delete();
+            // Delete thumbnail
+            if ($video->thumbnail) {
+                Storage::disk('public')->delete($video->thumbnail);
+            }
+
+            // Delete video record
+            $video->delete();
 
             return response()->json([
                 'status' => 'success',
@@ -341,20 +467,70 @@ class VideoController extends Controller
      */
     private function generateThumbnail($videoPath, $userId)
     {
-        $thumbnailPath = 'thumbnails/players/' . $userId . '/' . Str::random(40) . '.jpg';
-        $fullThumbnailPath = Storage::disk('public')->path($thumbnailPath);
+        try {
+            $thumbnailFileName = time() . '_thumbnail.jpg';
+            $thumbnailPath = 'thumbnails/' . $userId;
+            $thumbnailFullPath = storage_path('app/public/' . $thumbnailPath);
 
-        // Create directory if it doesn't exist
-        if (!file_exists(dirname($fullThumbnailPath))) {
-            mkdir(dirname($fullThumbnailPath), 0755, true);
+            if (!file_exists($thumbnailFullPath)) {
+                mkdir($thumbnailFullPath, 0777, true);
+            }
+
+            $thumbnailFullPath = $thumbnailFullPath . '/' . $thumbnailFileName;
+            $videoFullPath = storage_path('app/public/' . $videoPath);
+
+            // Get video duration using ffprobe
+            $durationCmd = "ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 " . escapeshellarg($videoFullPath);
+            $duration = shell_exec($durationCmd);
+
+            if ($duration === null) {
+                Log::error('Failed to get video duration using ffprobe');
+                throw new \Exception('Failed to get video duration');
+            }
+
+            $duration = (float)$duration;
+
+            // Generate thumbnail from middle of video or at 3 seconds, whichever is earlier
+            $timestamp = min(3, $duration / 2);
+
+            // Format timestamp for ffmpeg (HH:MM:SS.mmm)
+            $timestampFormatted = sprintf('%02d:%02d:%02d.000',
+                floor($timestamp / 3600),
+                floor(($timestamp % 3600) / 60),
+                floor($timestamp % 60)
+            );
+
+            // Generate thumbnail with improved command formatting
+            // Note: Removed single quotes around filter and using double quotes for Windows compatibility
+            $ffmpegCommand = sprintf('ffmpeg -i %s -ss %s -vframes 1 -vf "scale=640:360:force_original_aspect_ratio=decrease,pad=640:360:(ow-iw)/2:(oh-ih)/2:color=black" -y %s 2>&1',
+                escapeshellarg($videoFullPath),
+                $timestampFormatted,
+                escapeshellarg($thumbnailFullPath)
+            );
+
+            // Execute the command and capture output
+            $output = shell_exec($ffmpegCommand);
+
+            // Verify the thumbnail was created and is a valid image
+            if (!file_exists($thumbnailFullPath) || filesize($thumbnailFullPath) === 0) {
+                Log::error('Failed to generate thumbnail. FFmpeg output: ' . $output);
+                throw new \Exception('Failed to generate thumbnail');
+            }
+
+            // Verify the thumbnail is a valid image
+            if (!@getimagesize($thumbnailFullPath)) {
+                Log::error('Generated thumbnail is not a valid image. FFmpeg output: ' . $output);
+                unlink($thumbnailFullPath); // Delete the invalid file
+                throw new \Exception('Generated thumbnail is not a valid image');
+            }
+
+            return $thumbnailPath . '/' . $thumbnailFileName;
+        } catch (\Exception $e) {
+            Log::error('Thumbnail generation failed: ' . $e->getMessage());
+            Log::error('FFmpeg command (if available): ' . ($ffmpegCommand ?? 'N/A'));
+            Log::error('FFmpeg output (if available): ' . ($output ?? 'N/A'));
+            return null;
         }
-
-        // Generate thumbnail from middle of video
-        $command = "ffmpeg -i " . escapeshellarg(Storage::disk('public')->path($videoPath)) .
-                  " -ss 00:00:01 -vframes 1 " . escapeshellarg($fullThumbnailPath);
-        shell_exec($command);
-
-        return $thumbnailPath;
     }
 
     /**
@@ -371,6 +547,179 @@ class VideoController extends Controller
         return response()->json([
             'status' => 'success',
             'data' => $videos
+        ]);
+    }
+
+    /**
+     * Handle chunk upload
+     */
+    public function uploadChunk(Request $request)
+    {
+        $user = Auth::user();
+
+        if ($user->role !== 'player' && $user->user_type !== 'player') {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Only players can upload videos'
+            ], 403);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'video' => 'required|file',
+            'chunkIndex' => 'required|integer',
+            'totalChunks' => 'required|integer',
+            'fileName' => 'required|string'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        $chunkIndex = $request->chunkIndex;
+        $fileName = $request->fileName;
+        $tempPath = storage_path('app/temp/' . $user->id);
+
+        if (!file_exists($tempPath)) {
+            mkdir($tempPath, 0777, true);
+        }
+
+        $chunk = $request->file('video');
+        $chunk->move($tempPath, $fileName . '.part' . $chunkIndex);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Chunk uploaded successfully'
+        ]);
+    }
+
+    /**
+     * Finalize chunk upload
+     */
+    public function finalizeUpload(Request $request)
+    {
+        $user = Auth::user();
+
+        $validator = Validator::make($request->all(), [
+            'fileName' => 'required|string',
+            'totalChunks' => 'required|integer',
+            'title' => 'nullable|string|max:255',
+            'description' => 'nullable|string'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        $fileName = $request->fileName;
+        $totalChunks = $request->totalChunks;
+        $tempPath = storage_path('app/temp/' . $user->id);
+        $finalPath = 'videos/' . $user->id;
+        $finalStoragePath = storage_path('app/public/' . $finalPath);
+
+        if (!file_exists($finalStoragePath)) {
+            mkdir($finalStoragePath, 0777, true);
+        }
+
+        $finalFileName = time() . '_' . $fileName;
+        $finalFilePath = $finalPath . '/' . $finalFileName;
+        $finalFullPath = storage_path('app/public/' . $finalFilePath);
+        $finalFile = fopen($finalFullPath, 'wb');
+
+        // Combine all chunks
+        for ($i = 0; $i < $totalChunks; $i++) {
+            $chunkFile = $tempPath . '/' . $fileName . '.part' . $i;
+            if (!file_exists($chunkFile)) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Missing chunk file'
+                ], 400);
+            }
+
+            $chunk = file_get_contents($chunkFile);
+            fwrite($finalFile, $chunk);
+            unlink($chunkFile); // Delete chunk after combining
+        }
+
+        fclose($finalFile);
+
+        // Clean up temp directory
+        if (file_exists($tempPath)) {
+            rmdir($tempPath);
+        }
+
+        // Get the count of existing videos for this user
+        $videoCount = Video::where('user_id', $user->id)->count();
+
+        // Create video record in database
+        $video = new Video();
+        $video->user_id = $user->id;
+
+        // Handle title
+        if (!empty($request->title)) {
+            $video->title = $request->title;
+        } else {
+            $video->title = 'Video ' . ($videoCount + 1);
+        }
+
+        // Handle description
+        $video->description = $request->description ?? '';
+        $video->file_path = $finalFilePath;
+
+        // Generate thumbnail from video frame
+        $thumbnailPath = $this->generateThumbnail($finalFilePath, $user->id);
+        $video->thumbnail = $thumbnailPath;
+
+        $video->views = 0;
+        $video->save();
+
+        // Return the video with proper URLs
+        $video->url = url('storage/' . $video->file_path);
+        $video->thumbnail_url = $thumbnailPath ? url('storage/' . $video->thumbnail) : null;
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Video upload completed',
+            'data' => $video
+        ]);
+    }
+
+    /**
+     * Increment video views.
+     */
+    public function view(Video $video)
+    {
+        $user = Auth::user();
+
+        // Check if user has already viewed this video in the last 24 hours
+        $recentView = View::where('user_id', $user->id)
+            ->where('video_id', $video->id)
+            ->where('viewed_at', '>=', now()->subHours(24))
+            ->first();
+
+        if (!$recentView) {
+            // Create new view record
+            View::create([
+                'user_id' => $user->id,
+                'video_id' => $video->id,
+                'viewed_at' => now()
+            ]);
+
+            // Increment video views
+            $video->increment('views');
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'View recorded successfully',
+            'data' => [
+                'views' => $video->views
+            ]
         ]);
     }
 }
