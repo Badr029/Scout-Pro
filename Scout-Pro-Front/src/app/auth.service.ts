@@ -1,8 +1,9 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { BehaviorSubject, Observable } from 'rxjs';
-import { tap } from 'rxjs/operators';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { BehaviorSubject, Observable, throwError, of } from 'rxjs';
+import { catchError, tap } from 'rxjs/operators';
 import { Router } from '@angular/router';
+import { SocialAuthService } from '@abacritt/angularx-social-login';
 
 interface LoginResponse {
   message: string;
@@ -55,7 +56,8 @@ export class AuthService {
 
   constructor(
     private http: HttpClient,
-    private router: Router
+    private router: Router,
+    private socialAuthService: SocialAuthService
   ) {}
 
   private hasToken(): boolean {
@@ -113,23 +115,50 @@ export class AuthService {
     return this.http.post(`${this.apiUrl}/reset-password`, data);
   }
 
-  logout(): void {
-    if (this.getToken()) {
-      this.http.post(`${this.apiUrl}/logout`, {}).subscribe({
-        next: () => this.handleLogout(),
-        error: () => this.handleLogout()
-      });
-    } else {
-      this.handleLogout();
-    }
+  private clearAllStorageAndCookies(): void {
+    // Clear localStorage
+    localStorage.clear();
+
+    // Clear sessionStorage
+    sessionStorage.clear();
+
+    // Clear all cookies
+    document.cookie.split(';').forEach(cookie => {
+      const [name] = cookie.split('=');
+      document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/`;
+    });
   }
 
-  private handleLogout(): void {
-    localStorage.removeItem(this.tokenKey);
-    localStorage.removeItem(this.userTypeKey);
-    localStorage.removeItem(this.setupCompletedKey);
-    this.isAuthenticated.next(false);
-    this.router.navigate(['/login']);
+  async logout(): Promise<void> {
+    const token = localStorage.getItem('auth_token');
+    const headers = token ? new HttpHeaders({ 'Authorization': `Bearer ${token}` }) : undefined;
+
+    try {
+      // First, try to sign out from Google if it's a Google account
+      try {
+        await this.socialAuthService.signOut(true);
+        // Also try to revoke Google access
+        const auth2 = await (window as any).gapi?.auth2?.getAuthInstance();
+        if (auth2) {
+          await auth2.disconnect();
+        }
+      } catch (error) {
+        console.log('Not a Google account or Google sign-out failed');
+      }
+
+      // Then, call backend logout if we have a token
+      if (headers) {
+        await this.http.post<any>(`${this.apiUrl}/logout`, {}, { headers }).toPromise();
+      }
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      // Always clear storage and cookies, regardless of any errors
+      this.clearAllStorageAndCookies();
+
+      // Force reload the application to clear any remaining state
+      window.location.href = '/login';
+    }
   }
 
   getToken(): string | null {

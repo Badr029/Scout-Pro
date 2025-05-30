@@ -3,6 +3,7 @@ import { Router } from '@angular/router';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { AuthService } from '../../auth.service';
 
 interface PlayerProfile {
   username: string;
@@ -103,7 +104,8 @@ export class ProfileComponent implements OnInit, OnDestroy {
 
   constructor(
     private router: Router,
-    private http: HttpClient
+    private http: HttpClient,
+    private authService: AuthService
   ) {}
 
   ngOnInit() {
@@ -215,29 +217,8 @@ export class ProfileComponent implements OnInit, OnDestroy {
     this.router.navigate(['/edit-profile']);
   }
 
-  logout() {
-    const token = localStorage.getItem('auth_token');
-    if (!token) {
-      localStorage.removeItem('auth_token');
-      this.router.navigate(['/login']);
-      return;
-    }
-
-    const headers = new HttpHeaders({
-      'Authorization': `Bearer ${token}`
-    });
-
-    this.http.post<any>('http://localhost:8000/api/logout', {}, { headers })
-      .subscribe({
-        next: () => {
-          localStorage.removeItem('auth_token');
-          this.router.navigate(['/login']);
-        },
-        error: () => {
-          localStorage.removeItem('auth_token');
-          this.router.navigate(['/login']);
-        }
-      });
+  async logout() {
+    await this.authService.logout();
   }
 
   showDeleteAccountModal() {
