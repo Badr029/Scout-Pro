@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { ApiService } from '../api.service';
 import { NgForm } from '@angular/forms';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { AuthService } from '../auth.service';
 
 const API_URL = 'http://localhost:8000';
 
@@ -61,16 +62,23 @@ export class HomeFeedComponent implements OnInit {
   readonly CHUNK_SIZE = 1024 * 1024 * 2; // 2MB chunks
   private viewedVideos = new Set<number>();
   sidebarExpanded = false;
+  searchResults: any[] = [];
+  recentSearches: string[] = [];
+  private _isInitialScout: boolean = false;
 
   constructor(
     private router: Router,
     private apiService: ApiService,
-    private http: HttpClient
-  ) {}
+    private http: HttpClient,
+    private authService: AuthService
+  ) {
+    this._isInitialScout = this.authService.getUserType() === 'scout';
+  }
 
   ngOnInit() {
     this.getUserProfile();
     this.loadFeedData();
+    this.loadRecentSearches();
   }
 
   getUserProfile() {
@@ -95,7 +103,7 @@ export class HomeFeedComponent implements OnInit {
       error: (error: any) => {
         console.error('Error fetching user profile:', error);
         if (error.status === 401) {
-          this.router.navigate(['/login']);
+      this.router.navigate(['/login']);
         }
       }
     });
@@ -540,13 +548,20 @@ export class HomeFeedComponent implements OnInit {
   }
 
   searchForTerm(term: string) {
+    console.log('Searching for term:', term); // Debug log
     this.searchQuery = term;
     this.onSearch();
   }
 
   clearSearch() {
     this.searchQuery = '';
-    this.onSearch();
+    this.searchResults = [];
+    this.filters = {
+      age_range: '',
+      preferred_foot: '',
+      region: '',
+      transfer_status: ''
+    };
   }
 
   goToEvent(eventId: number) {
@@ -646,10 +661,11 @@ export class HomeFeedComponent implements OnInit {
     return this.currentUser?.user_type === 'scout';
   }
 
-  // Add proper types for these methods
   onFilterChange(key: string, value: string) {
     this.filters[key] = value;
-    this.loadFeedData();
+    if (this.searchQuery.trim()) {
+      this.onSearch();
+    }
   }
 
   toggleFilter() {
@@ -657,12 +673,46 @@ export class HomeFeedComponent implements OnInit {
   }
 
   onSearch() {
-    this.loadFeedData();
-    this.showSearchPanel = false;
+    if (!this.searchQuery.trim()) return;
+
+    console.log('Performing search with query:', this.searchQuery); // Debug log
+    this.loading = true;
+
+    // Save the search term to localStorage first
+    let recentSearches = JSON.parse(localStorage.getItem('recentSearches') || '[]');
+    if (!recentSearches.includes(this.searchQuery.trim())) {
+      recentSearches.unshift(this.searchQuery.trim());
+      recentSearches = recentSearches.slice(0, 10); // Keep only last 10 searches
+      localStorage.setItem('recentSearches', JSON.stringify(recentSearches));
+      this.recentSearches = recentSearches;
+    }
+
+    const searchData = {
+      query: this.searchQuery,
+      filters: this.isScout ? this.filters : {}
+    };
+
+    this.apiService.postData('search', searchData).subscribe({
+      next: (response: any) => {
+        console.log('Search response:', response); // Debug log
+        this.searchResults = response.data.players || [];
+        if (response.data.filter_options) {
+          this.feedData.filter_options = response.data.filter_options;
+        }
+        this.loading = false;
+      },
+      error: (error) => {
+        console.error('Search error:', error);
+        this.loading = false;
+      }
+    });
   }
 
   toggleSearchPanel() {
     this.showSearchPanel = !this.showSearchPanel;
+    if (this.showSearchPanel) {
+      this.loadRecentSearches();
+    }
   }
 
   showNotification(message: string) {
@@ -715,5 +765,24 @@ export class HomeFeedComponent implements OnInit {
       return filePath;
     }
     return `${API_URL}/storage/${filePath.replace(/^\/+/, '')}`;
+  }
+
+  loadRecentSearches() {
+    // Load from localStorage
+    const searches = JSON.parse(localStorage.getItem('recentSearches') || '[]');
+    this.recentSearches = searches;
+    console.log('Loaded recent searches:', this.recentSearches);
+  }
+
+  deleteRecentSearch(search: string): void {
+    console.log('Deleting search term:', search);
+
+    // Remove from localStorage
+    let searches = JSON.parse(localStorage.getItem('recentSearches') || '[]');
+    searches = searches.filter((s: string) => s !== search);
+    localStorage.setItem('recentSearches', JSON.stringify(searches));
+
+    // Update the UI
+    this.recentSearches = searches;
   }
 }

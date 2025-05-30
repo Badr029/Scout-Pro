@@ -1,0 +1,136 @@
+<div class="search-container">
+  <!-- Search Bar -->
+  <div class="search-bar">
+    <form [formGroup]="searchForm">
+      <div class="search-input-wrapper">
+        <i class="fas fa-search"></i>
+        <input
+          type="text"
+          formControlName="query"
+          placeholder="Search players by name or position..."
+          class="search-input">
+        <button
+          *ngIf="searchForm.get('query')?.value"
+          (click)="clearSearch()"
+          class="clear-button">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Recent Searches -->
+  <div class="recent-searches" *ngIf="recentSearches.length > 0">
+    <h4>Recent Searches</h4>
+    <div class="recent-search-items">
+      <button
+        *ngFor="let search of recentSearches"
+        (click)="useRecentSearch(search)"
+        class="recent-search-item">
+        <i class="fas fa-history"></i>
+        {{ search }}
+      </button>
+    </div>
+  </div>
+
+  <!-- Scout Filters -->
+  <div class="filters-section" *ngIf="isScout">
+    <form [formGroup]="filterForm" class="filters-form">
+      <!-- Age Range Filter -->
+      <div class="filter-group">
+        <label>Age Range</label>
+        <select formControlName="age_range">
+          <option value="">All Ages</option>
+          <option *ngFor="let range of filterOptions.age_ranges" [value]="range.value">
+            {{ range.label }}
+          </option>
+        </select>
+      </div>
+
+      <!-- Preferred Foot Filter -->
+      <div class="filter-group">
+        <label>Preferred Foot</label>
+        <select formControlName="preferred_foot">
+          <option value="">Any</option>
+          <option *ngFor="let foot of filterOptions.preferred_foot" [value]="foot.value">
+            {{ foot.label }}
+          </option>
+        </select>
+      </div>
+
+      <!-- Region Filter -->
+      <div class="filter-group">
+        <label>Region</label>
+        <select formControlName="region">
+          <option value="">All Regions</option>
+          <option *ngFor="let region of filterOptions.regions" [value]="region.value">
+            {{ region.label }}
+          </option>
+        </select>
+      </div>
+
+      <!-- Transfer Status Filter -->
+      <div class="filter-group">
+        <label>Transfer Status</label>
+        <select formControlName="transfer_status">
+          <option value="">Any Status</option>
+          <option *ngFor="let status of filterOptions.transfer_status" [value]="status.value">
+            {{ status.label }}
+          </option>
+        </select>
+      </div>
+
+      <!-- Suggested Roles -->
+      <div class="suggested-roles" *ngIf="filterOptions.suggested_roles?.length">
+        <h4>Suggested Roles</h4>
+        <div class="role-tags">
+          <span *ngFor="let role of filterOptions.suggested_roles"
+                class="role-tag"
+                (click)="searchForm.patchValue({ query: role })">
+            {{ role }}
+          </span>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <!-- Loading State -->
+  <div class="loading-spinner" *ngIf="loading">
+    <i class="fas fa-spinner fa-spin"></i>
+  </div>
+
+  <!-- Search Results -->
+  <div class="search-results" *ngIf="searchResults.length > 0">
+    <div *ngFor="let player of searchResults" class="player-card">
+      <img [src]="player.profile_image || 'assets/default-avatar.png'"
+           [alt]="player.full_name"
+           class="player-avatar">
+      <div class="player-info">
+        <h3>{{ player.full_name }}</h3>
+        <p class="position">{{ player.position }}</p>
+        <p class="meta">
+          {{ player.age }} years • {{ player.current_city }}
+        </p>
+        <div class="player-stats">
+          <span class="stat">
+            <i class="fas fa-futbol"></i>
+            {{ player.matches_played || 0 }} matches
+          </span>
+          <span class="stat">
+            <i class="fas fa-trophy"></i>
+            {{ player.goals || 0 }} goals
+          </span>
+        </div>
+      </div>
+      <button class="view-profile-btn" [routerLink]="['/player-view', player.id]">
+        View Profile
+      </button>
+    </div>
+  </div>
+
+  <!-- No Results State -->
+  <div class="no-results" *ngIf="searchForm.get('query')?.value && searchResults.length === 0 && !loading">
+    <i class="fas fa-search"></i>
+    <p>No players found matching your search criteria</p>
+  </div>
+</div>

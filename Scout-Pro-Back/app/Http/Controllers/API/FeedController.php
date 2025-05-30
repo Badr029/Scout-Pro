@@ -13,6 +13,9 @@ use App\Models\Video;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Database\Eloquent\Builder;
+use App\Models\Scout;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class FeedController extends Controller
 {
@@ -579,100 +582,154 @@ class FeedController extends Controller
     public function search(Request $request)
     {
         $user = Auth::user();
-        $query = Player::query()->with('user');
+        $query = $request->get('query', '');
+        $filters = $request->get('filters', []);
 
-        if ($user->user_type === 'scout') {
-            // Full search capabilities for scouts
-            if ($request->has('position')) {
-                $query->where('position', $request->position)
-                      ->orWhere('secondary_position', $request->position);
-            }
+        // Base query for players
+        $playersQuery = User::where('user_type', 'player')
+            ->join('players', 'users.id', '=', 'players.user_id')
+            ->select('users.*', 'players.*');
 
-            if ($request->has('region')) {
-                $query->where('current_city', 'LIKE', "%{$request->region}%");
-            }
-
-            if ($request->has('playing_style')) {
-                $query->where('playing_style', $request->playing_style);
-            }
-
-            if ($request->has('preferred_foot')) {
-                $query->where('preferred_foot', $request->preferred_foot);
-            }
-
-            // Filter by age range
-            if ($request->has('min_age') || $request->has('max_age')) {
-                $now = now();
-
-                if ($request->has('min_age')) {
-                    $maxDate = $now->subYears($request->min_age)->format('Y-m-d');
-                    $query->whereDate('DateofBirth', '<=', $maxDate);
-                }
-
-                if ($request->has('max_age')) {
-                    $now = now(); // Reset date
-                    $minDate = $now->subYears($request->max_age)->format('Y-m-d');
-                    $query->whereDate('DateofBirth', '>=', $minDate);
-                }
-            }
-
-            // Filter by transfer status
-            if ($request->has('transfer_status')) {
-                if ($request->transfer_status === 'free') {
-                    $query->where('transfer_status', 'available')
-                          ->where(function ($q) {
-                              $q->whereNull('current_club')
-                                ->orWhere('current_club', '');
-                          });
-                } else {
-                    $query->where('transfer_status', $request->transfer_status);
-                }
-            }
-
-            // Order by premium status first for scouts
-            $query->orderByDesc(function ($query) {
-                $query->select('membership')
-                      ->from('players')
-                      ->whereColumn('players.id', 'players.id')
-                      ->where('membership', 'premium');
+        // Apply search term to name and position
+        if ($query) {
+            $playersQuery->where(function($q) use ($query) {
+                $q->where(DB::raw("CONCAT(users.first_name, ' ', users.last_name)"), 'LIKE', "%{$query}%")
+                  ->orWhere('players.position', 'LIKE', "%{$query}%");
             });
+        }
 
-        } else {
-            // Limited search capabilities for players
-            if ($request->has('position')) {
-                $query->where('position', $request->position)
-                      ->orWhere('secondary_position', $request->position);
+        // Apply filters for scouts
+        if ($user->user_type === 'scout' && !empty($filters)) {
+            if (!empty($filters['age_range'])) {
+                $ages = explode('-', $filters['age_range']);
+                if (count($ages) === 2) {
+                    $minDate = now()->subYears($ages[1])->format('Y-m-d');
+                    $maxDate = now()->subYears($ages[0])->format('Y-m-d');
+                    $playersQuery->whereBetween('players.DateofBirth', [$minDate, $maxDate]);
+                }
             }
 
-            // Search by name for players
-            if ($request->has('search')) {
-                $search = $request->search;
-                $query->whereHas('user', function (Builder $query) use ($search) {
-                    $query->where('first_name', 'LIKE', "%{$search}%")
-                          ->orWhere('last_name', 'LIKE', "%{$search}%");
-                });
+            if (!empty($filters['preferred_foot'])) {
+                $playersQuery->where('players.preferred_foot', $filters['preferred_foot']);
+            }
+
+            if (!empty($filters['region'])) {
+                $playersQuery->where('players.current_city', 'LIKE', "%{$filters['region']}%");
+            }
+
+            if (!empty($filters['transfer_status'])) {
+                $playersQuery->where('players.transfer_status', $filters['transfer_status']);
             }
         }
 
-        // Common ordering
-        $query->latest();
+        $players = $playersQuery->get();
 
-        $players = $query->paginate(10);
-
-        // Add age calculation only for scouts
+        // Get filter options for scouts
+        $filterOptions = [];
         if ($user->user_type === 'scout') {
-            $players->through(function ($player) {
-                if ($player->DateofBirth) {
-                    $player->age = now()->diffInYears($player->DateofBirth);
-                }
-                return $player;
-            });
+            $scout = Scout::where('user_id', $user->id)->first();
+
+            $filterOptions = [
+                'age_ranges' => [
+                    ['label' => '15-18', 'value' => '15-18'],
+                    ['label' => '19-23', 'value' => '19-23'],
+                    ['label' => '24-30', 'value' => '24-30'],
+                    ['label' => '31+', 'value' => '31+']
+                ],
+                'preferred_foot' => [
+                    ['label' => 'Right', 'value' => 'right'],
+                    ['label' => 'Left', 'value' => 'left'],
+                    ['label' => 'Both', 'value' => 'both']
+                ],
+                'regions' => $this->getUniqueRegions(),
+                'transfer_status' => [
+                    ['label' => 'Available', 'value' => 'available'],
+                    ['label' => 'Not Available', 'value' => 'not_available'],
+                    ['label' => 'Loan', 'value' => 'loan']
+                ],
+                'suggested_roles' => $scout ? json_decode($scout->preferred_roles) : []
+            ];
+        }
+
+        // Save search to recent searches
+        if ($query) {
+            $this->saveRecentSearch($user->id, $query);
         }
 
         return response()->json([
             'status' => 'success',
-            'data' => $players
+            'data' => [
+                'players' => $players,
+                'filter_options' => $filterOptions,
+                'recent_searches' => $this->getRecentSearches($user->id)
+            ]
         ]);
+    }
+
+    /**
+     * Get unique regions from players
+     */
+    private function getUniqueRegions()
+    {
+        $regions = Player::distinct('current_city')
+            ->pluck('current_city')
+            ->filter()
+            ->map(function($region) {
+                return [
+                    'label' => $region,
+                    'value' => $region
+                ];
+            });
+
+        return $regions;
+    }
+
+    /**
+     * Save recent search
+     */
+    private function saveRecentSearch($userId, $query)
+    {
+        try {
+            DB::table('recent_searches')->insert([
+                'user_id' => $userId,
+                'query' => $query,
+                'created_at' => now()
+            ]);
+
+            // Keep only last 10 searches
+            $recentSearches = DB::table('recent_searches')
+                ->where('user_id', $userId)
+                ->orderBy('created_at', 'desc')
+                ->get();
+
+            if ($recentSearches->count() > 10) {
+                DB::table('recent_searches')
+                    ->where('user_id', $userId)
+                    ->whereNotIn('id', $recentSearches->take(10)->pluck('id'))
+                    ->delete();
+            }
+        } catch (\Exception $e) {
+            // Log error but don't fail the search
+            Log::error('Error saving recent search: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Get recent searches
+     */
+    private function getRecentSearches($userId)
+    {
+        try {
+            return DB::table('recent_searches')
+                ->where('user_id', $userId)
+                ->orderBy('created_at', 'desc')
+                ->take(10)
+                ->pluck('query');
+        } catch (\Exception $e) {
+            // Log error and return empty array
+            Log::error('Error getting recent searches: ' . $e->getMessage());
+            return collect([]);
+        }
     }
 
     /**

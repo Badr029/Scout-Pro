@@ -311,5 +311,18 @@ export class ApiService {
     return this.http.delete(`${this.apiUrl}/${endpoint}`, { headers: this.getHeaders() });
   }
 
+  // Recent Searches Methods
+  getRecentSearches(): Observable<any> {
+    return this.getData('recent-searches');
+  }
+
+  deleteRecentSearch(term: string): Observable<any> {
+    return this.postData('recent-searches/delete', { term });
+  }
+
+  addRecentSearch(term: string): Observable<any> {
+    return this.postData('recent-searches/add', { term });
+  }
+
   // Add more methods as needed for PUT, DELETE, etc.
 }

@@ -103,4 +103,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Account management
     Route::post('/account/delete', [AccountController::class, 'delete']);
+
+    // Feed and Search Routes
+    Route::post('/search', [FeedController::class, 'search']);
 });

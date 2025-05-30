@@ -34,53 +34,141 @@
       <h2>Search</h2>
       <button class="close-btn" (click)="toggleSearchPanel()">&times;</button>
     </div>
+
     <div class="search-form">
       <div class="search-input-container">
+        <i class="fas fa-search"></i>
         <input
           type="text"
-          placeholder="Search players, positions, locations..."
+          placeholder="Search players by name or position..."
           class="search-input"
           [(ngModel)]="searchQuery"
           (keyup.enter)="onSearch()"
         />
-        <button *ngIf="searchQuery" class="clear-search" (click)="clearSearch()">&times;</button>
-        <button class="search-button" (click)="onSearch()"><i class="bi bi-search"></i></button>
-      </div>
-      <div class="filter-toggle" (click)="toggleFilter()">
-        <span><i class="bi bi-funnel"></i> Filters</span>
-        <span class="toggle-indicator" [class.active]="showFilters">▼</span>
+        <button *ngIf="searchQuery" class="clear-search" (click)="clearSearch()">
+          <i class="fas fa-times"></i>
+        </button>
       </div>
 
-      <!-- Advanced Filters -->
-      <div class="advanced-filters" [class.active]="showFilters">
-        <div *ngIf="feedData?.filter_options" class="filter-container">
-          <div *ngFor="let filter of feedData.filter_options" class="filter-group">
-            <label>{{ filter.label }}</label>
-            <select [(ngModel)]="filters[filter.key]" (change)="onFilterChange(filter.key, filters[filter.key])">
-              <option *ngFor="let option of filter.options" [value]="option.value">{{ option.label }}</option>
-            </select>
+      <!-- Recent Searches -->
+      <div class="recent-searches">
+        <h4>Recent Searches</h4>
+        <div class="recent-search-items">
+          <div *ngIf="recentSearches && recentSearches.length > 0">
+            <button
+              *ngFor="let search of recentSearches"
+              class="recent-search-item">
+              <div class="search-text" (click)="searchForTerm(search)">
+                <i class="bi bi-clock-history"></i>
+                {{ search }}
+              </div>
+              <i class="bi bi-x-circle delete-search" (click)="$event.stopPropagation(); deleteRecentSearch(search)"></i>
+            </button>
+          </div>
+          <div *ngIf="!recentSearches || recentSearches.length === 0" class="no-searches">
+            No recent searches
           </div>
         </div>
       </div>
-    </div>
 
-    <div class="search-suggestions">
-      <h4>Suggested Searches</h4>
-      <div class="tag-container">
-        <div *ngFor="let tag of feedData?.suggested_searches" class="search-tag" (click)="searchForTerm(tag)">
-          {{ tag }}
+      <!-- Scout Filters -->
+      <div class="filter-toggle" (click)="toggleFilter()" *ngIf="isScout">
+        <span><i class="fas fa-filter"></i> Filters</span>
+        <span class="toggle-indicator" [class.active]="showFilters">▼</span>
+      </div>
+
+      <div class="advanced-filters" [class.active]="showFilters && isScout">
+        <div class="filter-container">
+          <!-- Age Range Filter -->
+          <div class="filter-group">
+            <label>Age Range</label>
+            <select [(ngModel)]="filters.age_range" (change)="onFilterChange('age_range', filters.age_range)">
+              <option value="">All Ages</option>
+              <option *ngFor="let range of feedData?.filter_options?.age_ranges" [value]="range.value">
+                {{ range.label }}
+              </option>
+            </select>
+          </div>
+
+          <!-- Preferred Foot Filter -->
+          <div class="filter-group">
+            <label>Preferred Foot</label>
+            <select [(ngModel)]="filters.preferred_foot" (change)="onFilterChange('preferred_foot', filters.preferred_foot)">
+              <option value="">Any</option>
+              <option *ngFor="let foot of feedData?.filter_options?.preferred_foot" [value]="foot.value">
+                {{ foot.label }}
+              </option>
+            </select>
+          </div>
+
+          <!-- Region Filter -->
+          <div class="filter-group">
+            <label>Region</label>
+            <select [(ngModel)]="filters.region" (change)="onFilterChange('region', filters.region)">
+              <option value="">All Regions</option>
+              <option *ngFor="let region of feedData?.filter_options?.regions" [value]="region.value">
+                {{ region.label }}
+              </option>
+            </select>
+          </div>
+
+          <!-- Transfer Status Filter -->
+          <div class="filter-group">
+            <label>Transfer Status</label>
+            <select [(ngModel)]="filters.transfer_status" (change)="onFilterChange('transfer_status', filters.transfer_status)">
+              <option value="">Any Status</option>
+              <option *ngFor="let status of feedData?.filter_options?.transfer_status" [value]="status.value">
+                {{ status.label }}
+              </option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Suggested Roles -->
+        <div class="suggested-roles" *ngIf="feedData?.filter_options?.suggested_roles?.length">
+          <h4>Suggested Roles</h4>
+          <div class="role-tags">
+            <span *ngFor="let role of feedData?.filter_options?.suggested_roles"
+                  class="role-tag"
+                  (click)="searchForTerm(role)">
+              {{ role }}
+            </span>
+    </div>
         </div>
       </div>
     </div>
 
-    <div class="recent-searches">
-      <h4>Recent</h4>
-      <div class="search-history">
-        <div class="recent-item">
-          <span></span>
-          <button class="history-search-btn" (click)="searchForTerm('Forward London')"><i class="bi bi-search"></i></button>
+    <!-- Loading State -->
+    <div class="loading-spinner" *ngIf="loading">
+      <i class="fas fa-spinner fa-spin"></i>
+    </div>
+
+    <!-- Search Results -->
+    <div class="search-results" *ngIf="searchResults.length > 0">
+      <div *ngFor="let player of searchResults" class="player-card">
+        <img [src]="player.profile_image ? getProfileImageUrl(player.profile_image) : getAvatarUrl(player.first_name, player.last_name)"
+             [alt]="player.first_name + ' ' + player.last_name"
+             class="player-avatar"
+             (error)="handleImageError($event, player.first_name, player.last_name)">
+        <div class="player-info">
+          <h3>{{ player.first_name }} {{ player.last_name }}</h3>
+          <div class="position">{{ player.position }}</div>
+          <div class="meta">{{ player.nationality }} • {{ player.current_city }}</div>
+          <div class="player-stats">
+            <div class="stat">
+              <i class="bi bi-people"></i>
+              <span>{{ player.followers_count || 0 }} Followers</span>
+            </div>
+          </div>
         </div>
+        <button class="view-profile-btn" (click)="goToPlayerProfile(player.id)">View Profile</button>
       </div>
+    </div>
+
+    <!-- No Results State -->
+    <div class="no-results" *ngIf="searchQuery && searchResults.length === 0 && !loading">
+      <i class="fas fa-search"></i>
+      <p>No players found matching your search criteria</p>
     </div>
   </div>
 
