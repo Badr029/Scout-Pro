@@ -13,6 +13,7 @@ use App\Http\Controllers\API\SubscriptionController;
 use App\Http\Controllers\API\EventController;
 use App\Http\Controllers\API\PlayerController;
 use App\Http\Controllers\API\AccountController;
+use App\Http\Controllers\API\HomeController;
 use App\Http\Controllers\API\ScoutController;
 
 
@@ -43,6 +44,9 @@ use App\Http\Controllers\API\ScoutController;
 Route::post('/forgot-password', [ResetPasswordController::class, 'sendResetLink']);
 Route::post('/reset-password', [ResetPasswordController::class, 'reset']);
 
+
+Route::get('/scout-count', [HomeController::class, 'scoutCount']);
+Route::get('/player-count', [HomeController::class, 'playerCount']);
 
 
 Route::middleware('auth:sanctum')->group(function () {
