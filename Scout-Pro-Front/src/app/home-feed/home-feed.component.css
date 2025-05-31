@@ -1659,6 +1659,7 @@ body {
 }
 
 .like-user {
+  color: var(--text-primary);
   display: flex;
   align-items: center;
   gap: 0.8rem;

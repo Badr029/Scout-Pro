@@ -284,10 +284,10 @@ export class HomeFeedComponent implements OnInit {
   followPlayer(playerId: number) {
     if (!playerId || playerId === this.currentUser?.id) return;
 
-    this.apiService.postData(`players/${playerId}/follow`, {}).subscribe({
+    this.apiService.postData(`users/${playerId}/follow`, {}).subscribe({
       next: (response: any) => {
         if (response.status === 'success') {
-          // Update UI to show following status
+          // Update following status in posts
           this.feedData.posts.data = this.feedData.posts.data.map((post: any) => {
             if (post.user.id === playerId) {
               return {
@@ -300,12 +300,29 @@ export class HomeFeedComponent implements OnInit {
             }
             return post;
           });
-          this.showNotification('Successfully followed player');
+
+          // Update following status in likes if modal is open
+          if (this.selectedPostLikes) {
+            this.selectedPostLikes = this.selectedPostLikes.map((like: any) => {
+              if (like.user.id === playerId) {
+                return {
+                  ...like,
+                  user: {
+                    ...like.user,
+                    following: true
+                  }
+                };
+              }
+              return like;
+            });
+          }
+
+          this.showNotification('Successfully followed user');
         }
       },
       error: (error: any) => {
-        console.error('Error following player:', error);
-        this.showNotification('Failed to follow player');
+        console.error('Error following user:', error);
+        this.showNotification('Failed to follow user');
       }
     });
   }
@@ -313,10 +330,10 @@ export class HomeFeedComponent implements OnInit {
   unfollowPlayer(playerId: number) {
     if (!playerId || playerId === this.currentUser?.id) return;
 
-    this.apiService.postData(`players/${playerId}/unfollow`, {}).subscribe({
+    this.apiService.postData(`users/${playerId}/unfollow`, {}).subscribe({
       next: (response: any) => {
         if (response.status === 'success') {
-          // Update UI to show unfollowed status
+          // Update following status in posts
           this.feedData.posts.data = this.feedData.posts.data.map((post: any) => {
             if (post.user.id === playerId) {
               return {
@@ -329,12 +346,29 @@ export class HomeFeedComponent implements OnInit {
             }
             return post;
           });
-          this.showNotification('Successfully unfollowed player');
+
+          // Update following status in likes if modal is open
+          if (this.selectedPostLikes) {
+            this.selectedPostLikes = this.selectedPostLikes.map((like: any) => {
+              if (like.user.id === playerId) {
+                return {
+                  ...like,
+                  user: {
+                    ...like.user,
+                    following: false
+                  }
+                };
+              }
+              return like;
+            });
+          }
+
+          this.showNotification('Successfully unfollowed user');
         }
       },
       error: (error: any) => {
-        console.error('Error unfollowing player:', error);
-        this.showNotification('Failed to unfollow player');
+        console.error('Error unfollowing user:', error);
+        this.showNotification('Failed to unfollow user');
       }
     });
   }
@@ -345,30 +379,43 @@ export class HomeFeedComponent implements OnInit {
     const post = this.feedData.posts.data.find((p: any) => p.id === postId);
     if (!post) return;
 
-    // We'll only use the like endpoint now, as it handles both like and unlike
     this.apiService.postData(`videos/${postId}/like`, {}).subscribe({
       next: (response: any) => {
-        console.log('Like response:', response); // Debug log
         if (response.status === 'success') {
           // Update the post's like status
           post.has_liked = response.data.has_liked;
           post.likes_count = response.data.likes_count;
 
-          // Update likes array
-          if (response.data.has_liked && response.data.like) {
-            if (!post.likes) post.likes = [];
-            // Remove any existing like by this user
-            post.likes = post.likes.filter((like: any) => like.user.id !== this.currentUser.id);
-            // Add the new like
-            post.likes.unshift(response.data.like);
-          } else {
-            // Remove this user's like
-            if (post.likes) {
-              post.likes = post.likes.filter((like: any) => like.user.id !== this.currentUser.id);
-            }
-          }
+          // Fetch fresh likes data to ensure we have the latest state
+          this.apiService.getVideoLikes(postId).subscribe({
+            next: (likesResponse: any) => {
+              if (likesResponse.data) {
+                // Process the likes data
+                const processedLikes = likesResponse.data.map((like: any) => ({
+                  id: like.id,
+                  user: {
+                    id: like.user.id,
+                    first_name: like.user.first_name,
+                    last_name: like.user.last_name,
+                    full_name: `${like.user.first_name} ${like.user.last_name}`.trim(),
+                    profile_image: like.user.profile_image,
+                    user_type: like.user.user_type,
+                    player: like.user.player,
+                    following: like.user.following || false
+                  }
+                }));
 
-          console.log('Updated post:', post); // Debug log
+                post.likes = processedLikes;
+                // Update selectedPostLikes if the likes modal is open for this post
+                if (this.showLikesModal && this.selectedPostLikes) {
+                  this.selectedPostLikes = processedLikes;
+                }
+              }
+            },
+            error: (error: any) => {
+              console.error('Error fetching updated likes:', error);
+            }
+          });
         }
       },
       error: (error: any) => {
@@ -614,9 +661,45 @@ export class HomeFeedComponent implements OnInit {
   showLikesList(postId: number, event: Event) {
     event.stopPropagation(); // Prevent like action from triggering
     const post = this.feedData.posts.data.find((p: any) => p.id === postId);
-    if (post && post.likes) {
-      this.selectedPostLikes = post.likes;
-      this.showLikesModal = true;
+    if (post) {
+      // Show loading state
+      this.loading = true;
+
+      // Fetch fresh likes data from the API
+      this.apiService.getData(`videos/${postId}/likes`).subscribe({
+        next: (response: any) => {
+          if (response.data) {
+            // Process the likes data to ensure all required fields are present
+            const processedLikes = response.data.map((like: any) => ({
+              id: like.id,
+              user: {
+                id: like.user.id,
+                first_name: like.user.first_name,
+                last_name: like.user.last_name,
+                full_name: `${like.user.first_name} ${like.user.last_name}`.trim(),
+                profile_image: like.user.profile_image,
+                user_type: like.user.user_type,
+                role: like.user.role,
+                player: like.user.player,
+                following: like.user.following || false,
+                isCurrentUser: like.user.id === this.currentUser?.id
+              }
+            }));
+
+            // Update the post's likes with fresh data
+            post.likes = processedLikes;
+            this.selectedPostLikes = processedLikes;
+            this.showLikesModal = true;
+          }
+          this.loading = false;
+        },
+        error: (error: any) => {
+          console.error('Error fetching likes:', error);
+          this.showNotification('Failed to load likes. Please try again.');
+          this.loading = false;
+          this.showLikesModal = false; // Close modal on error
+        }
+      });
     }
   }
 

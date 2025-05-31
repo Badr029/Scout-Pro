@@ -722,4 +722,53 @@ class VideoController extends Controller
             ]
         ]);
     }
+
+    /**
+     * Get likes for a video.
+     */
+    public function getLikes(Video $video)
+    {
+        $user = Auth::user();
+
+        // Load likes with user and player relationships
+        $likes = $video->likes()
+            ->with(['user.player', 'user.scout'])
+            ->get()
+            ->map(function ($like) use ($user) {
+                $userData = [
+                    'id' => $like->user->id,
+                    'first_name' => $like->user->first_name,
+                    'last_name' => $like->user->last_name,
+                    'full_name' => $like->user->first_name . ' ' . $like->user->last_name,
+                    'profile_image' => null,
+                    'user_type' => $like->user->user_type,
+                    'role' => $like->user->user_type === 'scout' ? $like->user->scout->role : null,
+                    'following' => false
+                ];
+
+                // Set profile image based on user type
+                if ($like->user->user_type === 'player' && $like->user->player) {
+                    $userData['profile_image'] = $like->user->player->profile_image ? url('storage/' . $like->user->player->profile_image) : null;
+                    $userData['player'] = [
+                        'position' => $like->user->player->position,
+                        'nationality' => $like->user->player->nationality,
+                    ];
+                } elseif ($like->user->user_type === 'scout' && $like->user->scout) {
+                    $userData['profile_image'] = $like->user->scout->profile_image ? url('storage/' . $like->user->scout->profile_image) : null;
+                }
+
+                // Check if the current user is following this user
+                $userData['following'] = $user->following()->where('following_id', $like->user->id)->exists();
+
+                return [
+                    'id' => $like->id,
+                    'user' => $userData
+                ];
+            });
+
+        return response()->json([
+            'status' => 'success',
+            'data' => $likes
+        ]);
+    }
 }

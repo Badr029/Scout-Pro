@@ -447,19 +447,23 @@
                  class="avatar-sm"
                  [alt]="like?.user?.full_name"
                  (error)="handleImageError($event, like?.user?.first_name, like?.user?.last_name)">
-            <div class="like-user-info">
-              <span class="username">{{ like?.user?.full_name }}</span>
-              <span class="user-meta" *ngIf="like?.user?.player">{{ like?.user?.player?.position || 'No Position' }} • {{ like?.user?.player?.nationality || 'No Region' }}</span>
+            <div class="user-info">
+              <div class="user-name">{{ like?.user?.full_name }}</div>
+              <div class="user-details" *ngIf="like?.user?.user_type === 'player' && like?.user?.player">
+                <span class="position">Player - {{ like?.user?.player?.position }}</span>
+              </div>
+              <div class="user-details" *ngIf="like?.user?.user_type === 'scout'">
+                <span class="role">Scout {{ like?.user?.role }}</span>
+              </div>
             </div>
           </div>
-          <button
-            *ngIf="like?.user?.id !== currentUser?.id &&
-                   like?.user?.user_type === 'player'"
-            class="btn btn-sm"
-            (click)="followPlayer(like?.user?.id)"
-          >
-            {{ like?.user?.following ? 'Following' : 'Follow' }}
-          </button>
+          <div class="action-buttons" *ngIf="like?.user?.id !== currentUser?.id">
+            <button class="follow-btn"
+                    (click)="like?.user?.following ? unfollowPlayer(like?.user?.id) : followPlayer(like?.user?.id)"
+                    [class.following]="like?.user?.following">
+              {{ like?.user?.following ? 'Following' : 'Follow' }}
+            </button>
+          </div>
         </div>
       </div>
     </div>

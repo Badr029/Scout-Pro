@@ -76,6 +76,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/videos/{video}/unlike', [VideoController::class, 'unlike']);
     Route::post('/videos/{video}/comment', [VideoController::class, 'comment']);
     Route::post('/videos/{video}/view', [VideoController::class, 'view']);
+    Route::get('/videos/{video}/likes', [VideoController::class, 'getLikes']);
 
     // Setup routes
     Route::post('/player/setup', [SetupController::class, 'playerSetup']);

@@ -324,5 +324,15 @@ export class ApiService {
     return this.postData('recent-searches/add', { term });
   }
 
+  getVideoLikes(videoId: number): Observable<any> {
+    return this.http.get(`${this.apiUrl}/videos/${videoId}/likes`, { headers: this.getHeaders() })
+      .pipe(
+        catchError(error => {
+          console.error('Error fetching video likes:', error);
+          return throwError(() => error);
+        })
+      );
+  }
+
   // Add more methods as needed for PUT, DELETE, etc.
 }
