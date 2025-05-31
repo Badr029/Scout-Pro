@@ -86,7 +86,7 @@ export class HomeFeedComponent implements OnInit {
       next: (response: any) => {
         if (response.data) {
           this.userProfile = response.data;
-          this.currentUser = {
+        this.currentUser = {
             id: response.data.user_id,
             name: `${response.data.first_name} ${response.data.last_name}`,
             profile_image: response.data.profile_image
@@ -96,7 +96,7 @@ export class HomeFeedComponent implements OnInit {
             player_id: response.data.id,
             role: response.data.role
           };
-          console.log('Current user data:', this.currentUser);
+        console.log('Current user data:', this.currentUser);
           console.log('User profile data:', this.userProfile);
         }
       },
@@ -253,15 +253,15 @@ export class HomeFeedComponent implements OnInit {
     if (!userId) return;
 
     if (userId === this.currentUser?.id) {
-      // If it's the current user, go to their profile based on user type
-      if (this.currentUser.user_type === 'scout') {
-        this.router.navigate(['/scout-profile']);
-      } else {
-        this.router.navigate(['/profile']);
-      }
+      this.goToProfile(); // Use the existing goToProfile method for current user
     } else {
-      // If it's another user, only allow viewing player profiles
-      this.router.navigate(['/player-view', userId]);
+      // If it's another user, determine their type and navigate accordingly
+      const user = this.findUserInFeed(userId);
+      if (user?.user_type === 'scout') {
+        this.router.navigate(['/scout-view', userId]);
+      } else {
+        this.router.navigate(['/player-view', userId]);
+      }
     }
   }
 
@@ -269,16 +269,38 @@ export class HomeFeedComponent implements OnInit {
     if (!playerId) return;
 
     if (playerId === this.currentUser?.id) {
-      // If it's the current user, go to their profile based on user type
-      if (this.currentUser.user_type === 'scout') {
-        this.router.navigate(['/scout-profile']);
-      } else {
-        this.router.navigate(['/profile']);
-      }
+      this.goToProfile(); // Use the existing goToProfile method for current user
     } else {
-      // If it's another player, go to their view profile page
       this.router.navigate(['/player-view', playerId]);
     }
+  }
+
+  goToScoutProfile(scoutId: number) {
+    if (!scoutId) return;
+
+    if (scoutId === this.currentUser?.id) {
+      this.goToProfile(); // Use the existing goToProfile method for current user
+          } else {
+      this.router.navigate(['/scout-view', scoutId]);
+    }
+  }
+
+  // Helper method to find a user in the feed data
+  private findUserInFeed(userId: number): any {
+    // Check in posts
+    for (const post of this.feedData.posts.data) {
+      if (post.user.id === userId) {
+        return post.user;
+      }
+    }
+    // Check in likes if modal is open
+    if (this.selectedPostLikes) {
+      const like = this.selectedPostLikes.find(like => like.user.id === userId);
+      if (like) {
+        return like.user;
+      }
+    }
+    return null;
   }
 
   followPlayer(playerId: number) {
@@ -689,7 +711,7 @@ export class HomeFeedComponent implements OnInit {
             // Update the post's likes with fresh data
             post.likes = processedLikes;
             this.selectedPostLikes = processedLikes;
-            this.showLikesModal = true;
+      this.showLikesModal = true;
           }
           this.loading = false;
         },
@@ -758,7 +780,7 @@ export class HomeFeedComponent implements OnInit {
   onSearch() {
     if (!this.searchQuery.trim()) return;
 
-    console.log('Performing search with query:', this.searchQuery); // Debug log
+    console.log('Performing search with query:', this.searchQuery);
     this.loading = true;
 
     // Save the search term to localStorage first
@@ -777,8 +799,19 @@ export class HomeFeedComponent implements OnInit {
 
     this.apiService.postData('search', searchData).subscribe({
       next: (response: any) => {
-        console.log('Search response:', response); // Debug log
-        this.searchResults = response.data.players || [];
+        console.log('Search response:', response);
+        // Update to use results instead of players
+        this.searchResults = response.data.results || [];
+
+        // Process each result to ensure proper image URLs
+        this.searchResults = this.searchResults.map((result: any) => ({
+          ...result,
+          profile_image: result.profile_image ? this.getProfileImageUrl(result.profile_image) : null,
+          full_name: `${result.first_name} ${result.last_name}`.trim()
+        }));
+
+        console.log('Processed search results:', this.searchResults);
+
         if (response.data.filter_options) {
           this.feedData.filter_options = response.data.filter_options;
         }
@@ -787,6 +820,7 @@ export class HomeFeedComponent implements OnInit {
       error: (error) => {
         console.error('Search error:', error);
         this.loading = false;
+        this.showNotification('Failed to perform search');
       }
     });
   }

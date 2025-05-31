@@ -37,7 +37,7 @@
 
     <div class="search-form">
       <div class="search-input-container">
-        <i class="fas fa-search"></i>
+        <i class="bi bi-search"></i>
         <input
           type="text"
           placeholder="Search players by name or position..."
@@ -46,7 +46,7 @@
           (keyup.enter)="onSearch()"
         />
         <button *ngIf="searchQuery" class="clear-search" (click)="clearSearch()">
-          <i class="fas fa-times"></i>
+          <i class="fa-solid fa-times"></i>
         </button>
       </div>
 
@@ -145,30 +145,38 @@
 
     <!-- Search Results -->
     <div class="search-results" *ngIf="searchResults.length > 0">
-      <div *ngFor="let player of searchResults" class="player-card">
-        <img [src]="player.profile_image ? getProfileImageUrl(player.profile_image) : getAvatarUrl(player.first_name, player.last_name)"
-             [alt]="player.first_name + ' ' + player.last_name"
+      <div *ngFor="let result of searchResults" class="player-card" [ngClass]="{'scout-card': result.type === 'scout'}">
+        <img [src]="result.profile_image || getAvatarUrl(result.first_name, result.last_name)"
+             [alt]="result.full_name"
              class="player-avatar"
-             (error)="handleImageError($event, player.first_name, player.last_name)">
+             (error)="handleImageError($event, result.first_name, result.last_name)">
         <div class="player-info">
-          <h3>{{ player.first_name }} {{ player.last_name }}</h3>
-          <div class="position">{{ player.position }}</div>
-          <div class="meta">{{ player.nationality }} • {{ player.current_city }}</div>
-          <div class="player-stats">
-            <div class="stat">
-              <i class="bi bi-people"></i>
-              <span>{{ player.followers_count || 0 }} Followers</span>
-            </div>
-          </div>
+          <h3>{{ result.full_name }}</h3>
+          <div class="type-badge" [ngClass]="result.type">{{ result.type | titlecase }}</div>
+
+          <!-- Player-specific info -->
+          <ng-container *ngIf="result.type === 'player'">
+            <div class="position">{{ result.position }}</div>
+            <div class="meta">{{ result.nationality }} • {{ result.current_city }}</div>
+          </ng-container>
+
+          <!-- Scout-specific info -->
+          <ng-container *ngIf="result.type === 'scout'">
+            <div class="position">{{ result.position_title }}</div>
+            <div class="organization">{{ result.organization }}</div>
+            <div class="meta">{{ result.city }}, {{ result.country }}</div>
+          </ng-container>
         </div>
-        <button class="view-profile-btn" (click)="goToPlayerProfile(player.id)">View Profile</button>
+        <button class="view-profile-btn" (click)="result.type === 'player' ? goToPlayerProfile(result.id) : goToScoutProfile(result.id)">
+          View Profile
+        </button>
       </div>
     </div>
 
     <!-- No Results State -->
     <div class="no-results" *ngIf="searchQuery && searchResults.length === 0 && !loading">
       <i class="fas fa-search"></i>
-      <p>No players found matching your search criteria</p>
+      <p>No players or scouts found matching your search criteria</p>
     </div>
   </div>
 
@@ -254,12 +262,14 @@
 
           <div class="reel-caption">
             <p>
-              <span class="username" (click)="post?.user?.isCurrentUser ? goToProfile() : goToPlayerProfile(post?.user?.player_id)">
-                {{ post?.user?.isCurrentUser ? 'You' : post?.user?.full_name }}
+              <span>
+                <span class="username" (click)="post?.user?.isCurrentUser ? goToProfile() : goToPlayerProfile(post?.user?.player_id)">
+                  {{ post?.user?.isCurrentUser ? 'You' : post?.user?.full_name }}
+                </span>
+                {{ post?.description }}
               </span>
-              {{ post?.description }}
+              <span class="post-date">{{ post?.created_at | date }}</span>
             </p>
-            <span class="post-date">{{ post?.created_at | date }}</span>
           </div>
 
           <!-- Comments Section -->

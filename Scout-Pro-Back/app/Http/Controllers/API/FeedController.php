@@ -585,20 +585,26 @@ class FeedController extends Controller
         $query = $request->get('query', '');
         $filters = $request->get('filters', []);
 
-        // Base query for players
-        $playersQuery = User::where('user_type', 'player')
-            ->join('players', 'users.id', '=', 'players.user_id')
-            ->select('users.*', 'players.*');
-
-        // Apply search term to name and position
-        if ($query) {
-            $playersQuery->where(function($q) use ($query) {
-                $q->where(DB::raw("CONCAT(users.first_name, ' ', users.last_name)"), 'LIKE', "%{$query}%")
+        // Search in players table
+        $playersQuery = Player::select('players.*')
+            ->join('users', 'players.user_id', '=', 'users.id')
+            ->where(function($q) use ($query) {
+                $q->where('players.first_name', 'LIKE', "%{$query}%")
+                  ->orWhere('players.last_name', 'LIKE', "%{$query}%")
                   ->orWhere('players.position', 'LIKE', "%{$query}%");
             });
-        }
 
-        // Apply filters for scouts
+        // Search in scouts table
+        $scoutsQuery = Scout::select('scouts.*')
+            ->join('users', 'scouts.user_id', '=', 'users.id')
+            ->where(function($q) use ($query) {
+                $q->where('scouts.first_name', 'LIKE', "%{$query}%")
+                  ->orWhere('scouts.last_name', 'LIKE', "%{$query}%")
+                  ->orWhere('scouts.organization', 'LIKE', "%{$query}%")
+                  ->orWhere('scouts.position_title', 'LIKE', "%{$query}%");
+            });
+
+        // Apply filters for players if user is a scout
         if ($user->user_type === 'scout' && !empty($filters)) {
             if (!empty($filters['age_range'])) {
                 $ages = explode('-', $filters['age_range']);
@@ -614,7 +620,10 @@ class FeedController extends Controller
             }
 
             if (!empty($filters['region'])) {
-                $playersQuery->where('players.current_city', 'LIKE', "%{$filters['region']}%");
+                $playersQuery->where(function($q) use ($filters) {
+                    $q->where('players.current_city', 'LIKE', "%{$filters['region']}%")
+                      ->orWhere('players.nationality', 'LIKE', "%{$filters['region']}%");
+                });
             }
 
             if (!empty($filters['transfer_status'])) {
@@ -622,7 +631,38 @@ class FeedController extends Controller
             }
         }
 
-        $players = $playersQuery->get();
+        // Get results
+        $players = $playersQuery->get()->map(function($player) {
+            return [
+                'id' => $player->id,
+                'user_id' => $player->user_id,
+                'first_name' => $player->first_name,
+                'last_name' => $player->last_name,
+                'profile_image' => $player->profile_image,
+                'position' => $player->position,
+                'nationality' => $player->nationality,
+                'current_city' => $player->current_city,
+                'type' => 'player'
+            ];
+        });
+
+        $scouts = $scoutsQuery->get()->map(function($scout) {
+            return [
+                'id' => $scout->id,
+                'user_id' => $scout->user_id,
+                'first_name' => $scout->first_name,
+                'last_name' => $scout->last_name,
+                'profile_image' => $scout->profile_image,
+                'organization' => $scout->organization,
+                'position_title' => $scout->position_title,
+                'city' => $scout->city,
+                'country' => $scout->country,
+                'type' => 'scout'
+            ];
+        });
+
+        // Merge results
+        $results = $players->concat($scouts);
 
         // Get filter options for scouts
         $filterOptions = [];
@@ -659,7 +699,7 @@ class FeedController extends Controller
         return response()->json([
             'status' => 'success',
             'data' => [
-                'players' => $players,
+                'results' => $results,
                 'filter_options' => $filterOptions,
                 'recent_searches' => $this->getRecentSearches($user->id)
             ]
@@ -682,7 +722,7 @@ class FeedController extends Controller
             });
 
         return $regions;
-    }
+            }
 
     /**
      * Save recent search
@@ -981,3 +1021,4 @@ class FeedController extends Controller
         return $filters;
     }
 }
+

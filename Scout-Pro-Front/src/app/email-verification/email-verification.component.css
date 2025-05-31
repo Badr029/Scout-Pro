@@ -13,8 +13,7 @@
     justify-content: center;
     padding: 20px;
     background:
-        linear-gradient(rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.85)),
-        url('../../assets/WhatsApp\ Image\ 2025-05-02\ at\ 22.17.46_f8c08b38.jpg');
+        linear-gradient(rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.85));
     background-size: cover;
     background-attachment: fixed;
 }

@@ -424,7 +424,10 @@
         </div>
 
         <div class="reel-caption">
-          <p><span class="username">{{ (playerData.first_name + ' ' + playerData.last_name) || 'Unknown User' }}</span> {{ selectedVideo.description }}</p>
+          <p>
+            <span class="username">{{ (playerData.first_name + ' ' + playerData.last_name) || 'Unknown User' }}</span>
+            <span>{{ selectedVideo.description }}</span>
+          </p>
           <span class="post-date">{{ selectedVideo.created_at | date }}</span>
         </div>
 

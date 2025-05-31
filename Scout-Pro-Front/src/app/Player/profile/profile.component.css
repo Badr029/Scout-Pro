@@ -1255,52 +1255,64 @@ body {
 }
 
 .reel-caption {
-    padding: 0.8rem 1rem;
-    font-size: 0.9rem;
+    padding: 8px;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    width: 100%;
 }
 
 .reel-caption p {
     margin: 0;
-    line-height: 1.4;
+    display: flex;
+    align-items: center;
+    flex: 1;
+    gap: 8px;
 }
 
 .reel-caption .username {
     font-weight: 600;
-    margin-right: 0.3rem;
+    margin-right: 8px;
+    min-width: fit-content;
 }
 
-.post-date {
-    display: block;
-    margin-top: 0.4rem;
+.reel-caption .post-date {
     font-size: 0.8rem;
     color: var(--text-secondary);
+    min-width: fit-content;
+    margin-left: auto;
 }
 
 .reel-comments {
-    padding: 0 1rem 0.8rem;
-    font-size: 0.9rem;
+    padding: 8px;
 }
 
 .comment {
-    margin-bottom: 0.4rem;
     display: flex;
-    flex-wrap: wrap;
+    flex-direction: row;
+    align-items: center;
+    padding: 4px 8px;
+    width: 100%;
 }
 
 .comment-user {
     font-weight: 600;
-    margin-right: 0.4rem;
+    color: var(--light);
+    margin-right: 8px;
+    min-width: fit-content;
 }
 
 .comment-text {
+    color: var(--gray);
     flex: 1;
-    min-width: 150px;
+    padding: 0 8px;
 }
 
 .comment-time {
-    font-size: 0.8rem;
     color: var(--text-secondary);
-    margin-left: 0.4rem;
+    font-size: 0.8rem;
+    min-width: fit-content;
+    margin-left: auto;
 }
 
 /* Modal adjustments for reel card */
@@ -1465,33 +1477,33 @@ body {
 
 /* Comments Section */
 .reel-comments {
-    padding: 0.8rem 1rem;
+    padding: 8px;
 }
 
 .comment {
-    margin-bottom: 0.8rem;
     display: flex;
-    flex-direction: column;
-}
-
-.comment:last-child {
-    margin-bottom: 0;
+    flex-direction: row;
+    align-items: center;
+    padding: 4px 8px;
+    width: 100%;
 }
 
 .comment-user {
     font-weight: 600;
     color: var(--light);
-    margin-right: 0.5rem;
+    margin-right: 8px;
+    min-width: fit-content;
 }
 
 .comment-text {
     color: var(--gray);
-    font-size: 0.9rem;
-    margin-top: 0.2rem;
+    flex: 1;
+    padding: 0 8px;
 }
 
 .comment-time {
-    font-size: 0.8rem;
     color: var(--text-secondary);
-    margin-top: 0.2rem;
+    font-size: 0.8rem;
+    min-width: fit-content;
+    margin-left: auto;
 }
