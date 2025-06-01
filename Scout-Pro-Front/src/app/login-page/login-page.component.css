@@ -13,19 +13,6 @@ html, body {
     height: 100%;
 }
 
-body::before {
-    content: "";
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background:
-        linear-gradient(rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.85)),
-        url('/assets/WhatsApp Image 2025-05-02 at 22.17.46_f8c08b38') center center/cover no-repeat;
-    z-index: -1;
-}
-
 .login-container {
     min-height: 100vh;
     min-width: 100%;
@@ -33,11 +20,6 @@ body::before {
     align-items: center;
     justify-content: center;
     padding: 20px;
-    background:
-        linear-gradient(rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.85)),
-        url('/assets/WhatsApp Image 2025-05-02 at 22.17.46_f8c08b38');
-    background-size: cover;
-    background-attachment: fixed;
 }
 
 .login-box {

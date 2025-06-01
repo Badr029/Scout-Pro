@@ -1,7 +1,7 @@
 import { Component, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { SocialAuthService, GoogleLoginProvider, SocialUser, GoogleSigninButtonModule } from '@abacritt/angularx-social-login';
 import { AuthService } from '../auth.service';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
@@ -19,7 +19,7 @@ interface RegisterFormData {
 @Component({
   selector: 'app-register-page',
   standalone: true,
-  imports: [CommonModule, FormsModule, GoogleSigninButtonModule],
+  imports: [CommonModule, FormsModule, GoogleSigninButtonModule, RouterModule],
   templateUrl: './register-page.component.html',
   styleUrls: ['./register-page.component.css'],
   schemas: [CUSTOM_ELEMENTS_SCHEMA]

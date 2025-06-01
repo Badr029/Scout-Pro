@@ -33,7 +33,10 @@ interface ScoutFormData {
   standalone: true,
   imports: [CommonModule, FormsModule],
   templateUrl: './scout-register.component.html',
-  styleUrls: ['./scout-register.component.css']
+  styleUrls: [
+    './scout-register.component.css',
+    '../shared/styles/auth-background.css'
+  ]
 })
 export class ScoutRegisterComponent {
   previewUrl: string | null = null;

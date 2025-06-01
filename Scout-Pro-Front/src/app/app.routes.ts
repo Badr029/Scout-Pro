@@ -18,8 +18,12 @@ import { WelcomeComponent } from './welcome/welcome.component';
 export const routes: Routes = [
     {
         path: '',
-        redirectTo: 'login',
+        redirectTo: 'welcome',
         pathMatch: 'full'
+    },
+    {
+        path: 'welcome',
+        component: WelcomeComponent
     },
     {
         path: 'register',
@@ -100,7 +104,7 @@ export const routes: Routes = [
         component: WelcomeComponent,
         canActivate: [AuthGuard]
     },
-    
+
 
 
 ];

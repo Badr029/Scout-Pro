@@ -10,7 +10,7 @@ $section-bg: #1e1e1e;
 $border-radius: 8px;
 $font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 
-          
+
 
 :root {
     /* Dark Theme Colors */
@@ -159,6 +159,15 @@ $font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       color: #cbe3ff;
       margin-bottom: 0.4rem;
       font-family: $font-family;
+      min-height: 4rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      &:empty::before {
+        content: "0";
+        opacity: 0.5;
+      }
     }
 
     .stat-label {

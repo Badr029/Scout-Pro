@@ -1,9 +1,9 @@
 <div class="welcome-container">
     <div class="content">
-        
+
         <h1 class="title">Welcome to ScoutPro</h1>
         <p class="subtitle">Every Legend Starts Somewhere, Start with ScoutPro.</p>
-        
+
 
         <section class="about-us">
             <h2>About Us</h2>
@@ -36,7 +36,7 @@
                             <path d="M14.31 8L9.69 16.94M9.69 8h6.62L9.69 16.94" />
                         </svg>
                     </div>
-                    <div class="stat-number" data-target="1250">0</div>
+                    <div class="stat-number">{{ statistics.scoutCount }}</div>
                     <div class="stat-label">Registered Scouts</div>
                 </div>
                 <div class="stat-card">
@@ -47,14 +47,14 @@
                             <path d="M12 17v5M17 9v2" />
                         </svg>
                     </div>
-                    <div class="stat-number" data-target="8340">0</div>
+                    <div class="stat-number">{{ statistics.playerCount }}</div>
                     <div class="stat-label">Players Profiled</div>
                 </div>
             </div>
         </section>
         <button class="cta-button" (click)="navigateToRegister()">Get Started</button>
     </div>
-    
+
 </div>
 
 <script>

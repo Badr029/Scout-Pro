@@ -5,14 +5,17 @@ import { Router } from '@angular/router';
 @Component({
   selector: 'app-welcome',
   templateUrl: './welcome.component.html',
-  styleUrls: ['./welcome.component.scss'],
+  styleUrls: [
+    './welcome.component.scss',
+    '../shared/styles/auth-background.css'
+  ],
   encapsulation: ViewEncapsulation.None,
 })
 export class WelcomeComponent implements OnInit {
-  
+
   statistics = {
-    totalScouts: '0',
-    totalPlayers: '0',
+    scoutCount: 0,
+    playerCount: 0,
   };
 
   constructor(private http: HttpClient, private router: Router) {}
@@ -23,9 +26,9 @@ export class WelcomeComponent implements OnInit {
 
   loadStatistics(): void {
     // Fetch scout count
-    this.http.get<{ scout_no: number }>('/api/scoutCount').subscribe({
+    this.http.get<{ scout_no: number }>('http://localhost:8000/api/scout-count').subscribe({
       next: (res) => {
-        this.statistics.totalScouts = res.scout_no.toLocaleString();
+        this.statistics.scoutCount = res.scout_no;
       },
       error: (err) => {
         console.error('Failed to load scout count', err);
@@ -33,9 +36,9 @@ export class WelcomeComponent implements OnInit {
     });
 
     // Fetch player count
-    this.http.get<{ player_no: number }>('/api/playerCount').subscribe({
+    this.http.get<{ player_no: number }>('http://localhost:8000/api/player-count').subscribe({
       next: (res) => {
-        this.statistics.totalPlayers = res.player_no.toLocaleString();
+        this.statistics.playerCount = res.player_no;
       },
       error: (err) => {
         console.error('Failed to load player count', err);

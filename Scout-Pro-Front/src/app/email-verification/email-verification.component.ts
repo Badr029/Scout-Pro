@@ -2,13 +2,17 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, ActivatedRoute } from '@angular/router';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { AuthService } from '../auth.service';
 
 @Component({
   selector: 'app-email-verification',
   standalone: true,
   imports: [CommonModule],
   templateUrl: './email-verification.component.html',
-  styleUrls: ['./email-verification.component.css']
+  styleUrls: [
+    './email-verification.component.css',
+    '../shared/styles/auth-background.css'
+  ]
 })
 export class EmailVerificationComponent implements OnInit {
   loading = true;

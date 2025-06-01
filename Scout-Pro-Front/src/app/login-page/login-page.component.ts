@@ -10,7 +10,10 @@ import { AuthService } from '../auth.service';
   standalone: true,
   imports: [CommonModule, FormsModule, GoogleSigninButtonModule, RouterModule],
   templateUrl: './login-page.component.html',
-  styleUrls: ['./login-page.component.css']
+  styleUrls: [
+    './login-page.component.css',
+    '../shared/styles/auth-background.css'
+  ]
 })
 export class LoginPageComponent {
   formData = {

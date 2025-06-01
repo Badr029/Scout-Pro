@@ -30,7 +30,10 @@ interface PlayerFormData {
   standalone: true,
   imports: [CommonModule, FormsModule],
   templateUrl: './register-player.component.html',
-  styleUrls: ['./register-player.component.css']
+  styleUrls: [
+    './register-player.component.css',
+    '../shared/styles/auth-background.css'
+  ]
 })
 export class RegisterPlayerComponent {
   previewUrl: string | null = null;
