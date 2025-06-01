@@ -14,6 +14,7 @@ import { SubscriptionComponent } from './subscription/subscription.component';
 import { AuthGuard } from './auth.guard';
 import { ScoutProfileComponent } from './Scout/profile/profile.component';
 import { WelcomeComponent } from './welcome/welcome.component';
+import { ScoutEditComponent } from './Scout/scout-edit/scout-edit.component';
 
 export const routes: Routes = [
     {
@@ -102,6 +103,11 @@ export const routes: Routes = [
     {
         path: 'welcome',
         component: WelcomeComponent,
+        canActivate: [AuthGuard]
+    },
+    {
+        path: 'scout-edit',
+        component: ScoutEditComponent,
         canActivate: [AuthGuard]
     },
 

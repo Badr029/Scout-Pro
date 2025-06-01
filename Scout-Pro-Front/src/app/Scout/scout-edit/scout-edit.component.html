@@ -1,0 +1,113 @@
+<div class="profile-container">
+    <div *ngIf="loading" class="loading-state">
+        <div class="spinner"></div>
+        <p>Loading scout profile...</p>
+    </div>
+
+    <div *ngIf="!loading && error" class="error-state">
+        <p class="error-message">{{ error }}</p>
+        <button class="btn btn-primary" (click)="fetchScoutProfile()">Try Again</button>
+    </div>
+
+    <div *ngIf="!loading && !error && scoutData">
+        <div class="profile-header">
+            <h1>Edit Scout Profile</h1>
+        </div>
+
+        <!-- Profile Picture -->
+        <div class="profile-picture">
+            <img [src]="scoutData.profile_image ? 'http://localhost:8000/storage/' + scoutData.profile_image : 'https://ui-avatars.com/api/?name=' + scoutData.first_name + '+' + scoutData.last_name" alt="Profile Picture">
+            <button class="change-photo-btn" (click)="openPhotoUpload()">Change Photo</button>
+            <input type="file" accept="image/*" style="display: none;" (change)="onProfileImageChange($event)">
+        </div>
+
+        <form (ngSubmit)="saveChanges()" #scoutForm="ngForm">
+            <div class="form-grid">
+
+                <!-- Personal Information -->
+                <div class="form-group">
+                    <label for="first-name">First Name <span class="required">*</span></label>
+                    <input type="text" id="first-name" name="first_name" [(ngModel)]="scoutData.first_name" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="last-name">Last Name <span class="required">*</span></label>
+                    <input type="text" id="last-name" name="last_name" [(ngModel)]="scoutData.last_name" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="city">City <span class="required">*</span></label>
+                    <input type="text" id="city" name="city" [(ngModel)]="scoutData.city" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="country">Country <span class="required">*</span></label>
+                    <input type="text" id="country" name="country" [(ngModel)]="scoutData.country" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="contact-email">Contact Email <span class="required">*</span></label>
+                    <input type="email" id="contact-email" name="contact_email" [(ngModel)]="scoutData.contact_email" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="contact-phone">Phone Number <span class="required">*</span></label>
+                    <input type="tel" id="contact-phone" name="contact_phone" [(ngModel)]="scoutData.contact_phone" required>
+                </div>
+
+                <!-- Organization Info -->
+                <div class="form-group">
+                    <label for="organization">Organization <span class="required">*</span></label>
+                    <input type="text" id="organization" name="organization" [(ngModel)]="scoutData.organization" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="position_title">Position Title <span class="required">*</span></label>
+                    <input type="text" id="position_title" name="position_title" [(ngModel)]="scoutData.position_title" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="scouting_regions">Scouting Regions <span class="required">*</span></label>
+                    <input type="text" id="scouting_regions" name="scouting_regions" [(ngModel)]="scoutData.scouting_regions" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="age_groups">Age Groups <span class="required">*</span></label>
+                    <input type="text" id="age_groups" name="age_groups" [(ngModel)]="scoutData.age_groups" required placeholder="e.g. U15, U17">
+                </div>
+
+                <div class="form-group">
+                    <label for="preferred_roles">Preferred Roles <span class="required">*</span></label>
+                    <input type="text" id="preferred_roles" name="preferred_roles" [(ngModel)]="scoutData.preferred_roles" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="clubs_worked_with">Clubs Worked With <span class="required">*</span></label>
+                    <textarea id="clubs_worked_with" name="clubs_worked_with" [(ngModel)]="scoutData.clubs_worked_with" required></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="linkedin_url">LinkedIn URL</label>
+                    <input type="url" id="linkedin_url" name="linkedin_url" [(ngModel)]="scoutData.linkedin_url">
+                </div>
+
+                <!-- File Uploads -->
+                <div class="form-group">
+                    <label for="id_proof">ID Proof (PDF/JPG/PNG, max 5MB) <span class="required">*</span></label>
+                    <input type="file" id="id_proof" name="id_proof" (change)="onIDProofUpload($event)" accept=".pdf,image/jpeg,image/png" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="certifications">Certifications (Multiple files allowed) <span class="required">*</span></label>
+                    <input type="file" id="certifications" name="certifications" multiple (change)="onCertificationsUpload($event)" accept=".pdf,image/jpeg,image/png" required>
+                </div>
+
+            </div>
+
+            <div class="form-actions">
+                <button type="button" class="btn btn-secondary" (click)="goToProfile()">Cancel</button>
+                <button type="submit" class="btn btn-primary" [disabled]="scoutForm.invalid">Save Changes</button>
+            </div>
+        </form>
+    </div>
+</div>
