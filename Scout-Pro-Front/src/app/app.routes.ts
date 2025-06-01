@@ -13,6 +13,7 @@ import { EmailVerificationComponent } from './email-verification/email-verificat
 import { SubscriptionComponent } from './subscription/subscription.component';
 import { AuthGuard } from './auth.guard';
 import { ScoutProfileComponent } from './Scout/profile/profile.component';
+import { WelcomeComponent } from './welcome/welcome.component';
 
 export const routes: Routes = [
     {
@@ -93,5 +94,13 @@ export const routes: Routes = [
         path: 'event/:id',
         component: HomeFeedComponent,
         canActivate: [AuthGuard]
-    }
+    },
+    {
+        path: 'welcome',
+        component: WelcomeComponent,
+        canActivate: [AuthGuard]
+    },
+    
+
+
 ];

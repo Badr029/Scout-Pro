@@ -1,0 +1,79 @@
+<div class="welcome-container">
+    <div class="content">
+        
+        <h1 class="title">Welcome to ScoutPro</h1>
+        <p class="subtitle">Every Legend Starts Somewhere, Start with ScoutPro.</p>
+        
+
+        <section class="about-us">
+            <h2>About Us</h2>
+            <p>
+                ScoutPro simplifies talent discovery by building a direct connection between aspiring players and
+                professional scouts. Through affordable and competitive tools, the platform gives players a chance to
+                showcase their potential, while helping scouts save time by bringing top talent together in one place.
+                Less noise. Less effort. More real potential and opportunities.
+            </p>
+        </section>
+
+        <section class="why-scoutpro">
+            <h2>Why ScoutPro?</h2>
+            <ul>
+                <li>Comprehensive player database and stats.</li>
+                <li>Advanced scouting tools built for professionals.</li>
+                <li>Community-driven platform for networking and discovery.</li>
+                <li>Accessible, modern, and secure platform to empower scouts worldwide.</li>
+            </ul>
+        </section>
+
+        <section class="statistics">
+            <h2>Statistics</h2>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="icon" aria-hidden="true">
+                        <svg width="40" height="40" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+                            <circle cx="12" cy="12" r="10" />
+                            <path d="M14.31 8L9.69 16.94M9.69 8h6.62L9.69 16.94" />
+                        </svg>
+                    </div>
+                    <div class="stat-number" data-target="1250">0</div>
+                    <div class="stat-label">Registered Scouts</div>
+                </div>
+                <div class="stat-card">
+                    <div class="icon" aria-hidden="true">
+                        <svg width="40" height="40" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+                            <path d="M19 11c0 2.21-4 4-7 4s-7-1.79-7-4 4-4 7-4 7 1.79 7 4z" />
+                            <path d="M12 17v5M17 9v2" />
+                        </svg>
+                    </div>
+                    <div class="stat-number" data-target="8340">0</div>
+                    <div class="stat-label">Players Profiled</div>
+                </div>
+            </div>
+        </section>
+        <button class="cta-button" (click)="navigateToRegister()">Get Started</button>
+    </div>
+    
+</div>
+
+<script>
+    // Count-up animation for statistics numbers
+    document.addEventListener('DOMContentLoaded', () => {
+        const counters = document.querySelectorAll('.stat-number');
+        counters.forEach(counter => {
+            const updateCount = () => {
+                const target = +counter.getAttribute('data-target');
+                const current = +counter.innerText.replace(/\D/g, '') || 0;
+                const increment = target / 200;
+                if (current < target) {
+                    counter.innerText = Math.ceil(current + increment);
+                    setTimeout(updateCount, 10);
+                } else {
+                    counter.innerText = target.toLocaleString();
+                }
+            };
+            updateCount();
+        });
+    });
+</script>

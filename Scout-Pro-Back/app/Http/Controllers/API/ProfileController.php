@@ -173,8 +173,38 @@ class ProfileController extends Controller
         } else {
             return response()->json(['message' => 'Invalid user type.'], 400);
         }
-    }
 
+    }
+  public function playerviewprofile($user_id) {
+    $playerprofiledata = Player::with('user')->where('user_id', $user_id)->first();
+    if (!$playerprofiledata) {
+        return response()->json([
+            'message' => 'No profile found'
+        ], 404); 
+    }
+    return response()->json([
+        'data' => $playerprofiledata
+    ]);
+}
+
+public function scoutviewprofile($user_id) {
+    $scoutprofiledata = Scout::with('user')->where('user_id', $user_id)->first();
+    if (!$scoutprofiledata) {
+        return response()->json([
+            'message' => 'No profile found'
+        ], 404);
+    }
+    return response()->json([
+        'data' => $scoutprofiledata
+    ]);
+}
+
+
+    
+}
+
+   
+    
 //     public function delete(Request $request) {
 //         $user = auth()->user();
 
@@ -197,4 +227,4 @@ class ProfileController extends Controller
 //             return response()->json(['message' => 'Scout account deactivated permanently'],200);
 //         }
 //     }
-}
+
