@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
-import { Observable, catchError, throwError } from 'rxjs';
+import { Observable, catchError, throwError, tap } from 'rxjs';
 import { environment } from '../environments/environment';
 
 @Injectable({
@@ -44,10 +44,15 @@ export class ApiService {
     return this.http.post(`${this.apiUrl}/login/google/callback`, data);
   }
 
-  getUserProfile(): Observable<any> {
+  getUserProfile(endpoint?: string): Observable<any> {
     const userType = localStorage.getItem('user_type');
-    const endpoint = userType === 'scout' ? 'scout/profile' : 'profile';
-    return this.http.get(`${this.apiUrl}/${endpoint}`, { headers: this.getHeaders() });
+    endpoint = endpoint || (userType === 'scout' ? 'profile' : 'profile');
+
+    return this.http.get(`${this.apiUrl}/${endpoint}`, { headers: this.getHeaders() }).pipe(
+      tap(response => {
+        console.log('Profile response:', response);
+      })
+    );
   }
 
   getPlayerProfile(playerId: number): Observable<any> {

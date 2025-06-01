@@ -90,6 +90,8 @@ export class HomeFeedComponent implements OnInit {
   recentSearches: string[] = [];
   private _isInitialScout: boolean = false;
   showAccountMenu = false;
+  isMobile = false;
+  showRightPanel = false;
 
   // Filter Options
   ageRanges = [
@@ -208,6 +210,8 @@ export class HomeFeedComponent implements OnInit {
     const userType = localStorage.getItem('user_type');
     console.log('User type from localStorage:', userType);
     this._isInitialScout = this.authService.getUserType() === 'scout';
+    this.checkMobileView();
+    window.addEventListener('resize', () => this.checkMobileView());
   }
 
   ngOnInit() {
@@ -220,31 +224,66 @@ export class HomeFeedComponent implements OnInit {
     this.initializeFilteredLists();
   }
 
+  ngOnDestroy() {
+    window.removeEventListener('resize', () => this.checkMobileView());
+  }
+
+  private checkMobileView() {
+    this.isMobile = window.innerWidth <= 768;
+  }
+
   getUserProfile() {
     console.log('Getting user profile...');
+    const userType = localStorage.getItem('user_type');
+    console.log('User type when getting profile:', userType);
+
+    if (!userType) {
+      console.error('No user type found in localStorage');
+      localStorage.clear();
+      this.router.navigate(['/login']);
+      return;
+    }
+
     this.apiService.getUserProfile().subscribe({
       next: (response: any) => {
         console.log('User profile response:', response);
         if (response.data) {
           this.userProfile = response.data;
-        this.currentUser = {
-            id: response.data.user_id || response.data.id, // ID from users table
-            name: `${response.data.first_name} ${response.data.last_name}`,
-            profile_image: response.data.profile_image
-              ? `${API_URL}/storage/${response.data.profile_image}`
-              : null,
-            user_type: response.data.user_type || localStorage.getItem('user_type'),
-            player_id: response.data.player_id || response.data.id, // Player/Scout ID
-            role: response.data.role
-          };
+
+          // Handle scout profile data structure
+          if (userType === 'scout') {
+            this.currentUser = {
+              id: response.data.user_id || response.data.id,
+              name: `${response.data.first_name} ${response.data.last_name}`,
+              profile_image: response.data.profile_image
+                ? `${API_URL}/storage/${response.data.profile_image}`
+                : null,
+              user_type: userType,
+              scout_id: response.data.scout_id || response.data.id,
+              role: response.data.role || 'scout'
+            };
+          } else {
+            // Handle player profile data structure
+            this.currentUser = {
+              id: response.data.user_id || response.data.id,
+              name: `${response.data.first_name} ${response.data.last_name}`,
+              profile_image: response.data.profile_image
+                ? `${API_URL}/storage/${response.data.profile_image}`
+                : null,
+              user_type: userType,
+              player_id: response.data.player_id || response.data.id,
+              role: response.data.role
+            };
+          }
+
           console.log('Current user data after setup:', this.currentUser);
-          console.log('Is Player check:', this.isPlayer);
-          console.log('Is Scout check:', this.isScout);
         }
       },
       error: (error: any) => {
         console.error('Error fetching user profile:', error);
-        if (error.status === 401) {
+        if (error.status === 401 || error.status === 404) {
+          console.log('Authentication error or profile not found, redirecting to login');
+          localStorage.clear();
           this.router.navigate(['/login']);
         }
       }
@@ -277,7 +316,7 @@ export class HomeFeedComponent implements OnInit {
               description: video.description,
               file_path: video.file_path ? `${API_URL}/storage/${video.file_path}` : null,
               thumbnail: video.thumbnail ? `${API_URL}/storage/${video.thumbnail}` : null,
-              user: {
+                user: {
                 id: video.user.id,
                 player_id: video.user.player?.id,
                 first_name: video.user.first_name,
@@ -385,7 +424,7 @@ export class HomeFeedComponent implements OnInit {
 
     if (playerId === this.currentUser?.id) {
       this.goToProfile(); // Use the existing goToProfile method for current user
-    } else {
+          } else {
       this.router.navigate(['/player', playerId]);
     }
   }
@@ -395,7 +434,7 @@ export class HomeFeedComponent implements OnInit {
 
     if (scoutId === this.currentUser?.id) {
       this.goToProfile(); // Use the existing goToProfile method for current user
-    } else {
+        } else {
       this.router.navigate(['/scout/profile', scoutId]);
     }
   }
@@ -890,11 +929,11 @@ export class HomeFeedComponent implements OnInit {
 
   get isScout(): boolean {
     const isScoutType = this.currentUser?.user_type === 'scout';
-    const isScoutID = this.currentUser?.player_id && this.currentUser.player_id >= 2000000;
+    const isScoutID = this.currentUser?.scout_id && this.currentUser.scout_id >= 2000000;
     console.log('isScout check:', {
       userType: this.currentUser?.user_type,
       userId: this.currentUser?.id,
-      playerId: this.currentUser?.player_id,
+      scoutId: this.currentUser?.scout_id,
       isScoutType,
       isScoutID
     });
@@ -1359,5 +1398,13 @@ export class HomeFeedComponent implements OnInit {
 
   async logout() {
     await this.authService.logout();
+  }
+
+  toggleRightPanel() {
+    this.showRightPanel = !this.showRightPanel;
+  }
+
+  closeRightPanel() {
+    this.showRightPanel = false;
   }
 }

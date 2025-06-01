@@ -87,7 +87,7 @@ export class ScoutProfileComponent implements OnInit, OnDestroy {
       'Authorization': `Bearer ${token}`
     });
 
-    this.http.get<any>('http://localhost:8000/api/scout/profile', { headers })
+    this.http.get<any>('http://localhost:8000/api/profile', { headers })
       .subscribe({
         next: (response) => {
           console.log('Profile response:', response);

@@ -22,6 +22,9 @@
         </label>
         <span class="background"></span>
     </div>
+    <div class="login-link" style="margin-top: 20px;" *ngIf="!formData.user_type && !socialUserType">
+        Already have an account? <a routerLink="/login">Log in</a>
+    </div>
 </div>
 
 <!-- Registration Container - Only shown after role selection -->

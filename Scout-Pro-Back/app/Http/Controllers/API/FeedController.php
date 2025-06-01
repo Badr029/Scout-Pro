@@ -54,30 +54,30 @@ class FeedController extends Controller
         // Apply filters if user is a scout
         if ($userType === 'scout') {
             if ($position) {
-                $videosQuery->whereHas('user.player', function ($query) use ($position) {
-                    $query->where('position', $position);
-                });
-            }
+            $videosQuery->whereHas('user.player', function ($query) use ($position) {
+                $query->where('position', $position);
+            });
+        }
             if ($region) {
-                $videosQuery->whereHas('user.player', function ($query) use ($region) {
+            $videosQuery->whereHas('user.player', function ($query) use ($region) {
                     $query->where('current_city', $region);
-                });
-            }
+            });
+        }
             if ($preferred_foot) {
-                $videosQuery->whereHas('user.player', function ($query) use ($preferred_foot) {
-                    $query->where('preferred_foot', $preferred_foot);
-                });
-            }
+            $videosQuery->whereHas('user.player', function ($query) use ($preferred_foot) {
+                $query->where('preferred_foot', $preferred_foot);
+            });
+        }
             if ($age) {
                 $videosQuery->whereHas('user.player', function ($query) use ($age) {
                     // Since age is stored as a negative number, we use abs() to compare
                     $query->whereRaw('ABS(age) = ?', [abs((int)$age)]);
-                });
-            }
+            });
+        }
             if ($transfer_status) {
-                $videosQuery->whereHas('user.player', function ($query) use ($transfer_status) {
-                    $query->where('transfer_status', $transfer_status);
-                });
+            $videosQuery->whereHas('user.player', function ($query) use ($transfer_status) {
+                $query->where('transfer_status', $transfer_status);
+            });
                 Log::info('Applying transfer status filter:', [
                     'transfer_status' => $transfer_status,
                     'sql' => $videosQuery->toSql(),
@@ -726,7 +726,7 @@ class FeedController extends Controller
             });
 
         return $regions;
-    }
+            }
 
     /**
      * Save recent search

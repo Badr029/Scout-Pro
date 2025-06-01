@@ -98,11 +98,23 @@ export class AuthService {
     return this.http.post<any>(`${this.apiUrl}/auth/google/callback`, data).pipe(
       tap((response) => {
         if (!response.needs_registration) {
-        this.setToken(response.access_token);
-        this.setUserType(response.user_type);
-        this.setSetupCompleted(response.setup_completed);
-        this.handleLoginRedirect(response.user_type, response.setup_completed);
+          // Store the token and user type first
+          this.setToken(response.access_token);
+          this.setUserType(response.user_type);
+          this.setSetupCompleted(response.setup_completed);
+
+          // Store additional user data if available
+          if (response.user_data) {
+            localStorage.setItem('user_data', JSON.stringify(response.user_data));
+          }
+
+          // Handle redirection after successful login
+          this.handleLoginRedirect(response.user_type, response.setup_completed);
         }
+      }),
+      catchError(error => {
+        console.error('Social login error:', error);
+        return throwError(() => error);
       })
     );
   }

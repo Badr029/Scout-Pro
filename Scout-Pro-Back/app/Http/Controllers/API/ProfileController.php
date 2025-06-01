@@ -27,7 +27,9 @@ class ProfileController extends Controller
                 'first_name' => $user->first_name,
                 'last_name' => $user->last_name,
                 'username' => $user->username,
-                'email' => $user->email
+                'email' => $user->email,
+                'user_type' => $user->user_type,
+                'user_id' => $user->id
             ];
             $profileData = array_merge($playerData, $userData);
 
@@ -39,13 +41,22 @@ class ProfileController extends Controller
         elseif ($user->user_type === 'scout') {
             $scout = $user->scout;
 
+            if (!$scout) {
+                return response()->json([
+                    'message' => 'Scout profile not found.',
+                    'data' => null
+                ], 404);
+            }
+
             // Merge scout data with user data
             $scoutData = $scout->toArray();
             $userData = [
                 'first_name' => $user->first_name,
                 'last_name' => $user->last_name,
                 'username' => $user->username,
-                'email' => $user->email
+                'email' => $user->email,
+                'user_type' => $user->user_type,
+                'user_id' => $user->id
             ];
             $profileData = array_merge($scoutData, $userData);
 
@@ -180,7 +191,7 @@ class ProfileController extends Controller
     if (!$playerprofiledata) {
         return response()->json([
             'message' => 'No profile found'
-        ], 404); 
+        ], 404);
     }
     return response()->json([
         'data' => $playerprofiledata
@@ -200,11 +211,11 @@ public function scoutviewprofile($user_id) {
 }
 
 
-    
+
 }
 
-   
-    
+
+
 //     public function delete(Request $request) {
 //         $user = auth()->user();
 
