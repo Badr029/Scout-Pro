@@ -82,6 +82,10 @@
             <span class="detail-label">Preferred Foot:</span>
             <span class="detail-value">{{ playerData.preferred_foot }}</span>
           </div>
+          <div class="detail-item">
+            <span class="detail-label">Transfer Status:</span>
+            <span class="detail-value">{{ playerData.transfer_status || 'Not specified' }}</span>
+          </div>
         </div>
 
 
@@ -154,10 +158,7 @@
             <span class="detail-label">Playing Style:</span>
             <span class="detail-value">{{ playerData.playing_style || 'Not specified' }}</span>
           </div>
-          <div class="detail-item">
-            <span class="detail-label">Transfer Status:</span>
-            <span class="detail-value">{{ playerData.transfer_status || 'Not specified' }}</span>
-          </div>
+
         </div>
 
         <!-- Bio section -->
