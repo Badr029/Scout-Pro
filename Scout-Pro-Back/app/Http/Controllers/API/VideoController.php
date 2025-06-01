@@ -105,6 +105,7 @@ class VideoController extends Controller
                             'height' => $playerInfo->height,
                             'weight' => $playerInfo->weight,
                             'preferred_foot' => $playerInfo->preferred_foot,
+                            'transfer_status' => $playerInfo->transfer_status
                         ] : null
                     ]
                 ];

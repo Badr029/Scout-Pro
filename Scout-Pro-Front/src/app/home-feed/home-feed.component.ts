@@ -9,6 +9,30 @@ import { AuthService } from '../auth.service';
 
 const API_URL = 'http://localhost:8000';
 
+interface FeedFilters {
+  age_range?: string;
+  preferred_foot?: string;
+  region?: string;
+  position?: string;
+  playing_style?: string;
+  min_age?: string;
+  max_age?: string;
+  transfer_status?: string;
+}
+
+interface FilterOption {
+  value: string;
+  label: string;
+}
+
+interface FilteredLists {
+  positions: string[];
+  regions: string[];
+  ageRanges: any[];
+  preferredFoot: any[];
+  transferStatus: FilterOption[];
+}
+
 @Component({
   selector: 'app-home-feed',
   standalone: true,
@@ -65,6 +89,114 @@ export class HomeFeedComponent implements OnInit {
   searchResults: any[] = [];
   recentSearches: string[] = [];
   private _isInitialScout: boolean = false;
+  showAccountMenu = false;
+
+  // Filter Options
+  ageRanges = [
+    { value: '15-18', label: '15-18 years' },
+    { value: '19-23', label: '19-23 years' },
+    { value: '24-28', label: '24-28 years' },
+    { value: '29-35', label: '29+ years' }
+  ];
+
+  preferredFootOptions = [
+    { value: 'right', label: 'Right Foot' },
+    { value: 'left', label: 'Left Foot' },
+    { value: 'both', label: 'Both Feet' }
+  ];
+
+  positions = [
+    // Goalkeeper
+    'GK - Goalkeeper',
+    // Defenders
+    'CB - Center Back',
+    'RB - Right Back',
+    'LB - Left Back',
+    'RWB - Right Wing Back',
+    'LWB - Left Wing Back',
+    'SW - Sweeper',
+    // Midfielders
+    'CDM - Defensive Midfielder',
+    'CM - Central Midfielder',
+    'CAM - Attacking Midfielder',
+    'RM - Right Midfielder',
+    'LM - Left Midfielder',
+    // Forwards
+    'RW - Right Winger',
+    'LW - Left Winger',
+    'CF - Center Forward',
+    'ST - Striker',
+    'SS - Second Striker'
+  ];
+
+  regions = [
+    'Cairo',
+    'Alexandria',
+    'Giza',
+    'Qalyubia',
+    'Gharbia',
+    'Menoufia',
+    'Dakahlia',
+    'Sharqia',
+    'Port Said',
+    'Damietta',
+    'Ismailia',
+    'Suez',
+    'North Sinai',
+    'South Sinai',
+    'Beheira',
+    'Kafr El Sheikh',
+    'Matrouh',
+    'Red Sea',
+    'New Valley',
+    'Fayoum',
+    'Beni Suef',
+    'Minya',
+    'Assiut',
+    'Sohag',
+    'Qena',
+    'Luxor',
+    'Aswan'
+  ];
+
+  transferStatusOptions: FilterOption[] = [
+    { value: 'available', label: 'Available' },
+    { value: 'not_available', label: 'Not Available' },
+    { value: 'loan', label: 'Loan' }
+  ];
+
+  showFeedFilter = false;
+  feedFilters: FeedFilters = {
+    age_range: '',
+    preferred_foot: '',
+    region: '',
+    position: '',
+    playing_style: '',
+    transfer_status: ''
+  };
+
+  // Position suggestions
+  filteredPositions: string[] = [];
+  showPositionSuggestions: boolean = false;
+  selectedSuggestionIndex: number = -1;
+
+  // Search terms for each dropdown
+  searchTerms = {
+    position: '',
+    region: '',
+    age: '',
+    foot: '',
+    status: ''
+  };
+
+  // Filtered lists
+  filteredLists: FilteredLists = {
+    positions: [] as string[],
+    regions: [] as string[],
+    ageRanges: [] as any[],
+    preferredFoot: [] as any[],
+    transferStatus: [] as FilterOption[]
+  };
 
   constructor(
     private router: Router,
@@ -72,38 +204,48 @@ export class HomeFeedComponent implements OnInit {
     private http: HttpClient,
     private authService: AuthService
   ) {
+    console.log('HomeFeedComponent constructor');
+    const userType = localStorage.getItem('user_type');
+    console.log('User type from localStorage:', userType);
     this._isInitialScout = this.authService.getUserType() === 'scout';
   }
 
   ngOnInit() {
+    console.log('HomeFeedComponent ngOnInit');
+    // Get user data first
     this.getUserProfile();
+    // Then load other data
     this.loadFeedData();
     this.loadRecentSearches();
+    this.initializeFilteredLists();
   }
 
   getUserProfile() {
+    console.log('Getting user profile...');
     this.apiService.getUserProfile().subscribe({
       next: (response: any) => {
+        console.log('User profile response:', response);
         if (response.data) {
           this.userProfile = response.data;
         this.currentUser = {
-            id: response.data.user_id,
+            id: response.data.user_id || response.data.id, // ID from users table
             name: `${response.data.first_name} ${response.data.last_name}`,
             profile_image: response.data.profile_image
               ? `${API_URL}/storage/${response.data.profile_image}`
               : null,
-            user_type: response.data.user_type,
-            player_id: response.data.id,
+            user_type: response.data.user_type || localStorage.getItem('user_type'),
+            player_id: response.data.player_id || response.data.id, // Player/Scout ID
             role: response.data.role
           };
-        console.log('Current user data:', this.currentUser);
-          console.log('User profile data:', this.userProfile);
+          console.log('Current user data after setup:', this.currentUser);
+          console.log('Is Player check:', this.isPlayer);
+          console.log('Is Scout check:', this.isScout);
         }
       },
       error: (error: any) => {
         console.error('Error fetching user profile:', error);
         if (error.status === 401) {
-      this.router.navigate(['/login']);
+          this.router.navigate(['/login']);
         }
       }
     });
@@ -129,9 +271,6 @@ export class HomeFeedComponent implements OnInit {
             console.log('Current user ID (users table):', this.currentUser?.id);
             console.log('Current user player ID:', this.userProfile?.id);
 
-            // Check if the video's user ID matches the current user's ID
-            const isCurrentUser = video.user.id === this.currentUser?.id;
-
             return {
               id: video.id,
               title: video.title,
@@ -147,45 +286,17 @@ export class HomeFeedComponent implements OnInit {
                 full_name: video.user.full_name,
                 user_type: video.user.user_type,
                 player: video.user.player,
-                isCurrentUser: isCurrentUser
+                isCurrentUser: video.user.id === this.currentUser?.id
               },
               likes_count: video.likes_count || 0,
               comments_count: video.comments?.length || 0,
               views: video.views || 0,
               has_liked: video.has_liked || false,
-              likes: (video.likes || []).map((like: any) => ({
-                id: like.id,
-                user: {
-                  id: like.user.id,
-                  player_id: like.user.player?.id,
-                  first_name: like.user.first_name,
-                  last_name: like.user.last_name,
-                  profile_image: like.user.profile_image,
-                  full_name: `${like.user.first_name} ${like.user.last_name}`.trim(),
-                  player: like.user.player,
-                  isCurrentUser: like.user.id === this.currentUser?.id
-                }
-              })),
-              comments: (video.comments || []).map((comment: any) => ({
-                id: comment.id,
-                content: comment.content,
-                created_at: comment.created_at,
-                user_id: comment.user_id,
-                user: {
-                  id: comment.user.id,
-                  player_id: comment.user.player?.id,
-                  first_name: comment.user.first_name,
-                  last_name: comment.user.last_name,
-                  profile_image: comment.user.profile_image ? `${API_URL}/storage/${comment.user.profile_image}` : null,
-                  full_name: `${comment.user.first_name} ${comment.user.last_name}`.trim(),
-                  isCurrentUser: comment.user.id === this.currentUser?.id
-                }
-              })),
+              likes: video.likes || [],
+              comments: video.comments || [],
               created_at: video.created_at
             };
           });
-
-          console.log('Processed videos:', processedVideos);
 
           this.feedData = {
             ...this.feedData,
@@ -241,9 +352,13 @@ export class HomeFeedComponent implements OnInit {
       return;
     }
 
+    console.log('Navigating to profile. Current user:', this.currentUser);
+    console.log('User type:', this.currentUser.user_type);
+    console.log('Is Scout:', this.isScout);
+
     // Navigate based on user type
-    if (this.currentUser.user_type === 'scout') {
-      this.router.navigate(['/scout-profile']);
+    if (this.currentUser.user_type === 'scout' || this.isScout) {
+      this.router.navigate(['/scout/profile']);
     } else {
       this.router.navigate(['/profile']);
     }
@@ -258,9 +373,9 @@ export class HomeFeedComponent implements OnInit {
       // If it's another user, determine their type and navigate accordingly
       const user = this.findUserInFeed(userId);
       if (user?.user_type === 'scout') {
-        this.router.navigate(['/scout-view', userId]);
+        this.router.navigate(['/scout/profile', userId]);
       } else {
-        this.router.navigate(['/player-view', userId]);
+        this.router.navigate(['/player', userId]);
       }
     }
   }
@@ -271,7 +386,7 @@ export class HomeFeedComponent implements OnInit {
     if (playerId === this.currentUser?.id) {
       this.goToProfile(); // Use the existing goToProfile method for current user
     } else {
-      this.router.navigate(['/player-view', playerId]);
+      this.router.navigate(['/player', playerId]);
     }
   }
 
@@ -280,8 +395,8 @@ export class HomeFeedComponent implements OnInit {
 
     if (scoutId === this.currentUser?.id) {
       this.goToProfile(); // Use the existing goToProfile method for current user
-          } else {
-      this.router.navigate(['/scout-view', scoutId]);
+    } else {
+      this.router.navigate(['/scout/profile', scoutId]);
     }
   }
 
@@ -631,6 +746,8 @@ export class HomeFeedComponent implements OnInit {
       region: '',
       transfer_status: ''
     };
+    this.showPositionSuggestions = false;
+    this.selectedSuggestionIndex = -1;
   }
 
   goToEvent(eventId: number) {
@@ -758,12 +875,30 @@ export class HomeFeedComponent implements OnInit {
     this.incrementVideoViews(postId);
   }
 
-  get isPlayer() {
-    return this.currentUser?.user_type === 'player';
+  get isPlayer(): boolean {
+    const isPlayerType = this.currentUser?.user_type === 'player';
+    const isPlayerID = this.currentUser?.player_id && this.currentUser.player_id >= 1000000 && this.currentUser.player_id < 2000000;
+    console.log('isPlayer check:', {
+      userType: this.currentUser?.user_type,
+      userId: this.currentUser?.id,
+      playerId: this.currentUser?.player_id,
+      isPlayerType,
+      isPlayerID
+    });
+    return isPlayerType || isPlayerID;
   }
 
-  get isScout() {
-    return this.currentUser?.user_type === 'scout';
+  get isScout(): boolean {
+    const isScoutType = this.currentUser?.user_type === 'scout';
+    const isScoutID = this.currentUser?.player_id && this.currentUser.player_id >= 2000000;
+    console.log('isScout check:', {
+      userType: this.currentUser?.user_type,
+      userId: this.currentUser?.id,
+      playerId: this.currentUser?.player_id,
+      isScoutType,
+      isScoutID
+    });
+    return isScoutType || isScoutID;
   }
 
   onFilterChange(key: string, value: string) {
@@ -858,7 +993,7 @@ export class HomeFeedComponent implements OnInit {
   }
 
   collapseSidebar() {
-    if (!this.showSearchPanel) {
+    if (!this.showSearchPanel && !this.showAccountMenu) {
       this.sidebarExpanded = false;
     }
   }
@@ -901,5 +1036,328 @@ export class HomeFeedComponent implements OnInit {
 
     // Update the UI
     this.recentSearches = searches;
+  }
+
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent) {
+    const searchContainer = document.querySelector('.search-input-container');
+    if (searchContainer && !searchContainer.contains(event.target as Node)) {
+      this.showPositionSuggestions = false;
+    }
+  }
+
+  @HostListener('keydown', ['$event'])
+  onKeyDown(event: KeyboardEvent) {
+    if (!this.showPositionSuggestions) return;
+
+    switch (event.key) {
+      case 'ArrowDown':
+        event.preventDefault();
+        this.selectedSuggestionIndex = Math.min(
+          this.selectedSuggestionIndex + 1,
+          this.filteredPositions.length - 1
+        );
+        break;
+      case 'ArrowUp':
+        event.preventDefault();
+        this.selectedSuggestionIndex = Math.max(this.selectedSuggestionIndex - 1, -1);
+        break;
+      case 'Enter':
+        event.preventDefault();
+        if (this.selectedSuggestionIndex >= 0) {
+          this.selectPosition(this.filteredPositions[this.selectedSuggestionIndex]);
+        }
+        break;
+      case 'Escape':
+        this.showPositionSuggestions = false;
+        break;
+    }
+  }
+
+  onSearchInput(event: KeyboardEvent) {
+    if (['ArrowUp', 'ArrowDown', 'Enter', 'Escape'].includes(event.key)) return;
+
+    const query = this.searchQuery.toLowerCase();
+    this.filteredPositions = this.positions.filter(position =>
+      position.toLowerCase().includes(query)
+    );
+
+    this.showPositionSuggestions = this.filteredPositions.length > 0 && query.length > 0;
+    this.selectedSuggestionIndex = -1;
+  }
+
+  selectPosition(position: string) {
+    this.searchQuery = position;
+    this.showPositionSuggestions = false;
+    this.onSearch();
+  }
+
+  toggleFeedFilter() {
+    this.showFeedFilter = !this.showFeedFilter;
+    if (this.showFeedFilter) {
+      // Get the feed container element
+      const feedContainer = document.querySelector('.reels-container');
+      if (feedContainer) {
+        feedContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }
+  }
+
+  applyFeedFilters() {
+    this.loading = true;
+
+    const filters: FeedFilters = { ...this.feedFilters };
+    // Remove empty filters
+    Object.entries(filters).forEach(([key, value]) => {
+      if (!value) {
+        delete (filters as any)[key];
+      }
+    });
+
+    // Add age calculation for backend
+    if (filters.age_range) {
+      const [minAge, maxAge] = filters.age_range.split('-');
+      filters.min_age = minAge;
+      filters.max_age = maxAge || '100'; // If no max age specified
+      delete filters.age_range;
+    }
+
+    // Map frontend filter names to backend filter names
+    interface MappedFilters {
+      [key: string]: string | undefined;
+    }
+
+    const mappedFilters: MappedFilters = {
+      player_position: filters.position,
+      preferred_foot: filters.preferred_foot?.toLowerCase(),
+      region: filters.region,
+      playing_style: filters.playing_style?.toLowerCase(),
+      min_age: filters.min_age,
+      max_age: filters.max_age,
+      transfer_status: filters.transfer_status
+    };
+
+    // Remove undefined or null values
+    Object.keys(mappedFilters).forEach(key => {
+      if (!mappedFilters[key]) {
+        delete mappedFilters[key];
+      }
+    });
+
+    console.log('Applied filters:', mappedFilters);
+
+    // Get all videos first
+    this.apiService.getData('videos').subscribe({
+      next: (response: any) => {
+        if (response.data) {
+          // Filter videos based on player attributes
+          let filteredVideos = response.data.filter((video: any) => {
+            const player = video.user?.player;
+            if (!player) {
+              console.log('No player data found for video:', video);
+              return false;
+            }
+
+            console.log('Checking player:', player);
+            console.log('Against filters:', mappedFilters);
+
+            // Check each filter condition
+            if (mappedFilters['player_position'] && player.position !== mappedFilters['player_position']) {
+              console.log('Position mismatch:', player.position, mappedFilters['player_position']);
+              return false;
+            }
+            if (mappedFilters['preferred_foot'] && player.preferred_foot?.toLowerCase() !== mappedFilters['preferred_foot']) {
+              console.log('Preferred foot mismatch:', player.preferred_foot?.toLowerCase(), mappedFilters['preferred_foot']);
+              return false;
+            }
+            if (mappedFilters['region'] && player.region !== mappedFilters['region']) {
+              console.log('Region mismatch:', player.region, mappedFilters['region']);
+              return false;
+            }
+            if (mappedFilters['transfer_status'] && player.transfer_status?.toLowerCase() !== mappedFilters['transfer_status']) {
+              console.log('Transfer status mismatch:', player.transfer_status?.toLowerCase(), mappedFilters['transfer_status']);
+              return false;
+            }
+            // Age filter using the calculated age from the backend
+            if (mappedFilters['min_age'] || mappedFilters['max_age']) {
+              const playerAge = Math.abs(player.age); // Use absolute value since age is negative
+              console.log('Age check:', playerAge, mappedFilters['min_age'], mappedFilters['max_age']);
+              if (mappedFilters['min_age'] && playerAge < parseInt(mappedFilters['min_age'])) {
+                console.log('Age below minimum:', playerAge, mappedFilters['min_age']);
+                return false;
+              }
+              if (mappedFilters['max_age'] && playerAge > parseInt(mappedFilters['max_age'])) {
+                console.log('Age above maximum:', playerAge, mappedFilters['max_age']);
+                return false;
+              }
+            }
+
+            console.log('Player matches all filters');
+            return true;
+          });
+
+          console.log('Filtered videos:', filteredVideos);
+
+          // Process the filtered videos
+          const processedVideos = filteredVideos.map((video: any) => ({
+            id: video.id,
+            title: video.title,
+            description: video.description,
+            file_path: video.file_path ? `${API_URL}/storage/${video.file_path}` : null,
+            thumbnail: video.thumbnail ? `${API_URL}/storage/${video.thumbnail}` : null,
+            user: {
+              id: video.user.id,
+              player_id: video.user.player?.id,
+              first_name: video.user.first_name,
+              last_name: video.user.last_name,
+              profile_image: video.user.profile_image,
+              full_name: video.user.full_name,
+              user_type: video.user.user_type,
+              player: video.user.player,
+              isCurrentUser: video.user.id === this.currentUser?.id
+            },
+            likes_count: video.likes_count || 0,
+            comments_count: video.comments?.length || 0,
+            views: video.views || 0,
+            has_liked: video.has_liked || false,
+            likes: video.likes || [],
+            comments: video.comments || [],
+            created_at: video.created_at
+          }));
+
+          this.feedData = {
+            ...this.feedData,
+            posts: {
+              data: processedVideos,
+              current_page: 1,
+              last_page: 1
+            }
+          };
+        }
+        this.loading = false;
+      },
+      error: (error: any) => {
+        console.error('Error applying filters:', error);
+        this.error = 'Failed to apply filters';
+        this.loading = false;
+      }
+    });
+  }
+
+  private calculateAge(birthDate: Date): number {
+    const today = new Date();
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+
+    return age;
+  }
+
+  clearFeedFilters() {
+    this.feedFilters = {
+      age_range: '',
+      preferred_foot: '',
+      region: '',
+      position: '',
+      playing_style: '',
+      transfer_status: ''
+    };
+
+    // Reset search terms and filtered lists
+    Object.keys(this.searchTerms).forEach(key => {
+      this.searchTerms[key as keyof typeof this.searchTerms] = '';
+    });
+    this.initializeFilteredLists();
+
+    this.loadFeedData();
+  }
+
+  private initializeFilteredLists() {
+    this.filteredLists.positions = [...this.positions];
+    this.filteredLists.regions = [...this.regions];
+    this.filteredLists.ageRanges = [...this.ageRanges];
+    this.filteredLists.preferredFoot = [...this.preferredFootOptions];
+    this.filteredLists.transferStatus = [...this.transferStatusOptions];
+  }
+
+  // Filter functions for each dropdown
+  filterOptions(type: 'position' | 'region' | 'age' | 'foot' | 'status', searchTerm: string) {
+    const term = searchTerm.toLowerCase();
+
+    switch(type) {
+      case 'position':
+        this.filteredLists.positions = this.positions.filter(pos =>
+          pos.toLowerCase().includes(term));
+        break;
+      case 'region':
+        this.filteredLists.regions = this.regions.filter(reg =>
+          reg.toLowerCase().includes(term));
+        break;
+      case 'age':
+        this.filteredLists.ageRanges = this.ageRanges.filter(age =>
+          age.label.toLowerCase().includes(term));
+        break;
+      case 'foot':
+        this.filteredLists.preferredFoot = this.preferredFootOptions.filter(foot =>
+          foot.label.toLowerCase().includes(term));
+        break;
+      case 'status':
+        this.filteredLists.transferStatus = this.transferStatusOptions.filter(status =>
+          status.label.toLowerCase().includes(term));
+        break;
+    }
+  }
+
+  // Event handler for select focus
+  onSelectFocus(type: 'position' | 'region' | 'age' | 'foot' | 'status') {
+    // Reset the filtered list when the select is focused
+    this.searchTerms[type] = '';
+    this.filterOptions(type, '');
+  }
+
+  // Event handler for select keydown
+  onSelectKeydown(event: KeyboardEvent, type: 'position' | 'region' | 'age' | 'foot' | 'status') {
+    const key = event.key.toLowerCase();
+    if (key.length === 1 && /[a-z0-9]/.test(key)) {
+      this.searchTerms[type] += key;
+      this.filterOptions(type, this.searchTerms[type]);
+    } else if (key === 'backspace') {
+      this.searchTerms[type] = this.searchTerms[type].slice(0, -1);
+      this.filterOptions(type, this.searchTerms[type]);
+    }
+  }
+
+  toggleAccountMenu(event: Event) {
+    event.preventDefault();
+    event.stopPropagation();
+    this.showAccountMenu = !this.showAccountMenu;
+
+    // Keep sidebar expanded when menu is open
+    if (this.showAccountMenu) {
+      this.sidebarExpanded = true;
+      // Add click outside listener when menu is opened
+      setTimeout(() => {
+        document.addEventListener('click', this.handleClickOutside);
+      });
+    }
+  }
+
+  handleClickOutside = (event: Event) => {
+    const accountMenu = document.querySelector('.account-menu');
+    if (accountMenu && !accountMenu.contains(event.target as Node)) {
+      this.showAccountMenu = false;
+      document.removeEventListener('click', this.handleClickOutside);
+      // Allow sidebar to collapse after menu is closed
+      if (!this.showSearchPanel) {
+        this.sidebarExpanded = false;
+      }
+    }
+  }
+
+  async logout() {
+    await this.authService.logout();
   }
 }

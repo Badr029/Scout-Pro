@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpHeaders, HttpEventType } from '@angular/common/http';
+import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Observable, catchError, throwError } from 'rxjs';
 import { environment } from '../environments/environment';
 
@@ -14,12 +14,17 @@ export class ApiService {
   private getHeaders(): HttpHeaders {
     const token = localStorage.getItem('auth_token');
     return new HttpHeaders({
-      'Authorization': `Bearer ${token}`
+      'Authorization': `Bearer ${token}`,
+      'Accept': 'application/json'
     });
   }
 
-  getData(endpoint: string): Observable<any> {
-    return this.http.get(`${this.apiUrl}/${endpoint}`, { headers: this.getHeaders() });
+  getData(endpoint: string, params?: any): Observable<any> {
+    const options = {
+      headers: this.getHeaders(),
+      params: new HttpParams({ fromObject: params || {} })
+    };
+    return this.http.get(`${this.apiUrl}/${endpoint}`, options);
   }
 
   postData(endpoint: string, data: any): Observable<any> {

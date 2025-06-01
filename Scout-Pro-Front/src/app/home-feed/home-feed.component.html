@@ -14,17 +14,34 @@
         <i class="bi bi-bell"></i>
         <span>Notifications</span>
       </a>
-      <a href="#" (click)="openUploadModal(); $event.preventDefault()">
+      <a href="#" *ngIf="isPlayer" (click)="openUploadModal(); $event.preventDefault()">
         <i class="bi bi-plus-square"></i>
         <span>Upload</span>
       </a>
-      <a href="#" (click)="goToProfile(); $event.preventDefault()" class="profile-link">
-        <img [src]="currentUser?.profile_image || getAvatarUrl(currentUser?.name?.split(' ')[0], currentUser?.name?.split(' ')[1])"
-             [alt]="currentUser?.name"
-             class="avatar-xs"
-             (error)="handleImageError($event, currentUser?.name?.split(' ')[0], currentUser?.name?.split(' ')[1])" />
-        <span>{{ currentUser?.name || 'Profile' }}</span>
+      <a href="#" *ngIf="isScout" (click)="toggleFeedFilter(); $event.preventDefault()" [class.active]="showFeedFilter">
+        <i class="bi bi-funnel"></i>
+        <span>Filter Feed</span>
       </a>
+      <div class="profile-menu-container">
+        <a href="#" (click)="toggleAccountMenu($event)" class="profile-link" [class.active]="showAccountMenu">
+          <img [src]="currentUser?.profile_image || getAvatarUrl(currentUser?.name?.split(' ')[0], currentUser?.name?.split(' ')[1])"
+               [alt]="currentUser?.name"
+               class="avatar-xs"
+               (error)="handleImageError($event, currentUser?.name?.split(' ')[0], currentUser?.name?.split(' ')[1])" />
+          <span>{{ currentUser?.name || 'Profile' }}</span>
+        </a>
+        <div class="account-menu" [class.show]="showAccountMenu">
+          <div class="menu-item" (click)="goToProfile()">
+            <i class="bi bi-person"></i>
+            <span>View Profile</span>
+          </div>
+          <div class="menu-divider"></div>
+          <div class="menu-item" (click)="logout()">
+            <i class="bi bi-box-arrow-right"></i>
+            <span>Logout</span>
+          </div>
+        </div>
+      </div>
     </nav>
   </aside>
 
@@ -43,11 +60,25 @@
           placeholder="Search players by name or position..."
           class="search-input"
           [(ngModel)]="searchQuery"
+          (keyup)="onSearchInput($event)"
           (keyup.enter)="onSearch()"
         />
         <button *ngIf="searchQuery" class="clear-search" (click)="clearSearch()">
-          <i class="fa-solid fa-times"></i>
+          <i class="bi bi-x"></i>
         </button>
+
+        <!-- Position Suggestions Dropdown -->
+        <div class="position-suggestions" *ngIf="showPositionSuggestions && filteredPositions.length > 0">
+          <div
+            *ngFor="let position of filteredPositions; let i = index"
+            class="position-suggestion-item"
+            [class.active]="i === selectedSuggestionIndex"
+            (click)="selectPosition(position)"
+            (mouseenter)="selectedSuggestionIndex = i">
+            <i class="bi bi-tag"></i>
+            {{ position }}
+          </div>
+        </div>
       </div>
 
       <!-- Recent Searches -->
@@ -133,7 +164,7 @@
                   (click)="searchForTerm(role)">
               {{ role }}
             </span>
-    </div>
+          </div>
         </div>
       </div>
     </div>
@@ -186,6 +217,86 @@
     <div *ngIf="loading" class="loading"><span class="spinner"></span> Loading feed...</div>
     <div *ngIf="error" class="error" aria-live="assertive">{{ error }}</div>
     <div *ngIf="notification" class="notification" aria-live="polite">{{ notification }}</div>
+
+    <!-- Feed Filter Panel for Scouts -->
+    <div class="feed-filter-panel" *ngIf="isScout && showFeedFilter">
+      <div class="filter-header">
+        <h3>Filter Feed</h3>
+        <button class="close-btn" (click)="toggleFeedFilter()">&times;</button>
+      </div>
+      <div class="filter-container">
+        <!-- Age Range Filter -->
+        <div class="filter-group">
+          <label>Age Range</label>
+          <select [(ngModel)]="feedFilters.age_range"
+                  (focus)="onSelectFocus('age')"
+                  (keydown)="onSelectKeydown($event, 'age')">
+            <option value="">All Ages</option>
+            <option *ngFor="let range of filteredLists.ageRanges" [value]="range.value">
+              {{ range.label }}
+            </option>
+          </select>
+        </div>
+
+        <!-- Preferred Foot Filter -->
+        <div class="filter-group">
+          <label>Preferred Foot</label>
+          <select [(ngModel)]="feedFilters.preferred_foot"
+                  (focus)="onSelectFocus('foot')"
+                  (keydown)="onSelectKeydown($event, 'foot')">
+            <option value="">Any</option>
+            <option *ngFor="let foot of filteredLists.preferredFoot" [value]="foot.value">
+              {{ foot.label }}
+            </option>
+          </select>
+        </div>
+
+        <!-- Region Filter -->
+        <div class="filter-group">
+          <label>Region</label>
+          <select [(ngModel)]="feedFilters.region"
+                  (focus)="onSelectFocus('region')"
+                  (keydown)="onSelectKeydown($event, 'region')">
+            <option value="">All Regions</option>
+            <option *ngFor="let region of filteredLists.regions" [value]="region">
+              {{ region }}
+            </option>
+          </select>
+        </div>
+
+        <!-- Position Filter -->
+        <div class="filter-group">
+          <label>Position</label>
+          <select [(ngModel)]="feedFilters.position"
+                  (focus)="onSelectFocus('position')"
+                  (keydown)="onSelectKeydown($event, 'position')">
+            <option value="">All Positions</option>
+            <option *ngFor="let position of filteredLists.positions" [value]="position">
+              {{ position }}
+            </option>
+          </select>
+        </div>
+
+        <!-- Transfer Status Filter -->
+        <div class="filter-group">
+          <label>Transfer Status</label>
+          <select [(ngModel)]="feedFilters.transfer_status"
+                  (focus)="onSelectFocus('status')"
+                  (keydown)="onSelectKeydown($event, 'status')">
+            <option value="">Any Status</option>
+            <option *ngFor="let status of filteredLists.transferStatus" [value]="status.value">
+              {{ status.label }}
+            </option>
+          </select>
+        </div>
+
+        <!-- Filter Actions -->
+        <div class="filter-actions">
+          <button class="apply-filters-btn" (click)="applyFeedFilters()">Apply Filters</button>
+          <button class="clear-filters-btn" (click)="clearFeedFilters()">Clear Filters</button>
+        </div>
+      </div>
+    </div>
 
     <!-- View Switcher -->
     <div *ngIf="feedData && !loading" class="view-switcher">
@@ -268,7 +379,7 @@
                 </span>
                 {{ post?.description }}
               </span>
-              <span class="post-date">{{ post?.created_at | date }}</span>
+            <span class="post-date">{{ post?.created_at | date }}</span>
             </p>
           </div>
 
@@ -471,8 +582,8 @@
             <button class="follow-btn"
                     (click)="like?.user?.following ? unfollowPlayer(like?.user?.id) : followPlayer(like?.user?.id)"
                     [class.following]="like?.user?.following">
-              {{ like?.user?.following ? 'Following' : 'Follow' }}
-            </button>
+            {{ like?.user?.following ? 'Following' : 'Follow' }}
+          </button>
           </div>
         </div>
       </div>

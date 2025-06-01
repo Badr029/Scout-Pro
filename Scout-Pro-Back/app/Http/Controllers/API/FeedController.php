@@ -52,41 +52,38 @@ class FeedController extends Controller
         ->orderBy('created_at', 'desc');
 
         // Apply filters if user is a scout
-        if ($userType === 'scout' && $position) {
-            $videosQuery->whereHas('user.player', function ($query) use ($position) {
-                $query->where('position', $position);
-            });
-        }
-
-        if ($userType === 'scout' && $secondary_position) {
-            $videosQuery->whereHas('user.player', function ($query) use ($secondary_position) {
-                $query->where('secondary_position', $secondary_position);
-            });
-        }
-
-        if ($userType === 'scout' && $region) {
-            $videosQuery->whereHas('user.player', function ($query) use ($region) {
-                $query->where('nationality', 'like', '%' . $region . '%')
-                    ->orWhere('current_city', 'like', '%' . $region . '%');
-            });
-        }
-
-        if ($userType === 'scout' && $preferred_foot) {
-            $videosQuery->whereHas('user.player', function ($query) use ($preferred_foot) {
-                $query->where('preferred_foot', $preferred_foot);
-            });
-        }
-
-        if ($userType === 'scout' && $playing_style) {
-            $videosQuery->whereHas('user.player', function ($query) use ($playing_style) {
-                $query->where('playing_style', $playing_style);
-            });
-        }
-
-        if ($userType === 'scout' && $transfer_status) {
-            $videosQuery->whereHas('user.player', function ($query) use ($transfer_status) {
-                $query->where('transfer_status', $transfer_status);
-            });
+        if ($userType === 'scout') {
+            if ($position) {
+                $videosQuery->whereHas('user.player', function ($query) use ($position) {
+                    $query->where('position', $position);
+                });
+            }
+            if ($region) {
+                $videosQuery->whereHas('user.player', function ($query) use ($region) {
+                    $query->where('current_city', $region);
+                });
+            }
+            if ($preferred_foot) {
+                $videosQuery->whereHas('user.player', function ($query) use ($preferred_foot) {
+                    $query->where('preferred_foot', $preferred_foot);
+                });
+            }
+            if ($age) {
+                $videosQuery->whereHas('user.player', function ($query) use ($age) {
+                    // Since age is stored as a negative number, we use abs() to compare
+                    $query->whereRaw('ABS(age) = ?', [abs((int)$age)]);
+                });
+            }
+            if ($transfer_status) {
+                $videosQuery->whereHas('user.player', function ($query) use ($transfer_status) {
+                    $query->where('transfer_status', $transfer_status);
+                });
+                Log::info('Applying transfer status filter:', [
+                    'transfer_status' => $transfer_status,
+                    'sql' => $videosQuery->toSql(),
+                    'bindings' => $videosQuery->getBindings()
+                ]);
+            }
         }
 
         // Get videos with pagination
@@ -127,9 +124,16 @@ class FeedController extends Controller
                 ];
             });
 
-            // Add user data with proper profile image path
+            // Add user data with proper profile image path and player info
             if ($video->user && $video->user->player) {
                 $video->user->profile_image = $video->user->player->profile_image;
+                $video->user->player_info = [
+                    'position' => $video->user->player->position,
+                    'region' => $video->user->player->current_city,
+                    'age' => abs($video->user->player->getAge()),
+                    'preferred_foot' => $video->user->player->preferred_foot,
+                    'transfer_status' => $video->user->player->transfer_status
+                ];
             }
 
             return $video;
@@ -722,7 +726,7 @@ class FeedController extends Controller
             });
 
         return $regions;
-            }
+    }
 
     /**
      * Save recent search
