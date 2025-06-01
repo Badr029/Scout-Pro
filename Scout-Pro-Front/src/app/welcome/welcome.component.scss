@@ -1,0 +1,171 @@
+// Variables
+$dark-bg: #121212;
+$primary-color: #007bff;
+$primary-hover-color: #66b3ff;
+$text-color: #e0e0e0;
+$subtitle-color: #a0a0a0;
+$button-bg: $primary-color;
+$button-hover-bg: $primary-hover-color;
+$section-bg: #1e1e1e;
+$border-radius: 8px;
+$font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+
+          
+
+:root {
+    /* Dark Theme Colors */
+    --bg-dark: #121212;
+    --surface: #1e1e1e;
+    --surface-light: #2d2d2d;
+    --primary: #3a86ff;
+    --primary-hover: #2667cc;
+    --text-primary: #ffffff;
+    --text-secondary: #b3b3b3;
+    --border: #333333;
+    --success: #4caf50;
+    --error: #f44336;
+}
+.welcome-container {
+  min-height: 100vh;
+  background-color: $dark-bg;
+  color: $text-color;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 2rem;
+
+  .content {
+    max-width: 800px;
+    width: 100%;
+    text-align: center;
+
+    .title {
+      font-size: 3rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+      letter-spacing: 2px;
+      font-family: $font-family;
+      color: $primary-color;
+      text-transform: uppercase;
+    }
+
+    .subtitle {
+      font-size: 1.25rem;
+      color: $subtitle-color;
+      margin-bottom: 2rem;
+      font-family: $font-family;
+    }
+
+    .cta-button {
+      background-color: $button-bg;
+      color: #fff;
+      border: none;
+      padding: 0.75rem 2rem;
+      font-size: 1.1rem;
+      font-weight: 600;
+      border-radius: $border-radius;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+      font-family: $font-family;
+
+      &:hover,
+      &:focus {
+        background-color: $button-hover-bg;
+        outline: none;
+      }
+    }
+
+    section {
+      background-color: $section-bg;
+      margin: 2rem 0;
+      padding: 1.5rem 2rem;
+      border-radius: $border-radius;
+      text-align: left;
+
+      h2 {
+        font-size: 1.8rem;
+        margin-bottom: 1rem;
+        color: $primary-color;
+        font-family: $font-family;
+        border-bottom: 2px solid $primary-color;
+        padding-bottom: 0.25rem;
+        text-transform: uppercase;
+        letter-spacing: 1.2px;
+      }
+
+      p,
+      ul {
+        font-size: 1rem;
+        line-height: 1.6;
+        color: $text-color;
+        font-family: $font-family;
+      }
+
+      ul {
+        padding-left: 1.2rem;
+
+        li {
+          margin-bottom: 0.75rem;
+          position: relative;
+          padding-left: 1.2rem;
+
+          &::before {
+            content: '✔';
+            position: absolute;
+            left: 0;
+            color: $primary-color;
+            font-weight: 700;
+          }
+        }
+      }
+    }
+  }
+}
+
+.statistics {
+  text-align: center;
+
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 1.5rem;
+    margin-top: 1rem;
+  }
+
+  .stat-card {
+    background: linear-gradient(135deg, #007bff, #66b3ff);
+    border-radius: $border-radius;
+    padding: 1.5rem 1.5rem 2rem 1.5rem;
+    box-shadow: 0 0 15px rgba(0, 123, 255, 0.5);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    color: white;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+
+    &:hover {
+      transform: translateY(-8px);
+      box-shadow: 0 0 25px rgba(0, 123, 255, 0.8);
+    }
+
+    .icon {
+      margin-bottom: 1rem;
+      color: #a3c1ff;
+    }
+
+    .stat-number {
+      font-size: 3rem;
+      font-weight: 700;
+      color: #cbe3ff;
+      margin-bottom: 0.4rem;
+      font-family: $font-family;
+    }
+
+    .stat-label {
+      font-size: 1.1rem;
+      color: #d4dce9;
+      font-family: $font-family;
+      text-align: center;
+    }
+  }
+}
