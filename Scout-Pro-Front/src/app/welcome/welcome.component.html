@@ -1,61 +1,128 @@
 <div class="welcome-container">
     <div class="content">
-
-        <h1 class="title">Welcome to ScoutPro</h1>
-        <p class="subtitle">Every Legend Starts Somewhere, Start with ScoutPro.</p>
-
-
-        <section class="about-us">
-            <h2>About Us</h2>
-            <p>
-                ScoutPro simplifies talent discovery by building a direct connection between aspiring players and
-                professional scouts. Through affordable and competitive tools, the platform gives players a chance to
-                showcase their potential, while helping scouts save time by bringing top talent together in one place.
-                Less noise. Less effort. More real potential and opportunities.
-            </p>
-        </section>
-
-        <section class="why-scoutpro">
-            <h2>Why ScoutPro?</h2>
-            <ul>
-                <li>Comprehensive player database and stats.</li>
-                <li>Advanced scouting tools built for professionals.</li>
-                <li>Community-driven platform for networking and discovery.</li>
-                <li>Accessible, modern, and secure platform to empower scouts worldwide.</li>
-            </ul>
-        </section>
-
-        <section class="statistics">
-            <h2>Statistics</h2>
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="icon" aria-hidden="true">
-                        <svg width="40" height="40" fill="none" stroke="currentColor" stroke-width="2"
-                            stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
-                            <circle cx="12" cy="12" r="10" />
-                            <path d="M14.31 8L9.69 16.94M9.69 8h6.62L9.69 16.94" />
-                        </svg>
-                    </div>
-                    <div class="stat-number">{{ statistics.scoutCount }}</div>
-                    <div class="stat-label">Registered Scouts</div>
-                </div>
-                <div class="stat-card">
-                    <div class="icon" aria-hidden="true">
-                        <svg width="40" height="40" fill="none" stroke="currentColor" stroke-width="2"
-                            stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
-                            <path d="M19 11c0 2.21-4 4-7 4s-7-1.79-7-4 4-4 7-4 7 1.79 7 4z" />
-                            <path d="M12 17v5M17 9v2" />
-                        </svg>
-                    </div>
-                    <div class="stat-number">{{ statistics.playerCount }}</div>
-                    <div class="stat-label">Players Profiled</div>
-                </div>
+        <div class="hero-section">
+            <h1 class="title">Welcome to ScoutPro</h1>
+            <p class="subtitle">Every Legend Starts Somewhere, Start with ScoutPro.</p>
+            <div class="hero-image">
+                <svg viewBox="0 0 500 300" aria-hidden="true">
+                    <path d="M50,150 Q150,50 250,150 T450,150" stroke="#3a86ff" stroke-width="3" fill="none"/>
+                    <circle cx="50" cy="150" r="8" fill="#3a86ff"/>
+                    <circle cx="250" cy="150" r="8" fill="#3a86ff"/>
+                    <circle cx="450" cy="150" r="8" fill="#3a86ff"/>
+                    <text x="50" y="190" text-anchor="middle" fill="#e0e0e0">Talent</text>
+                    <text x="250" y="190" text-anchor="middle" fill="#e0e0e0">ScoutPro</text>
+                    <text x="450" y="190" text-anchor="middle" fill="#e0e0e0">Success</text>
+                </svg>
             </div>
-        </section>
-        <button class="cta-button" (click)="navigateToRegister()">Get Started</button>
+        </div>
+     <div class="about-wrapper">
+  <!-- About Us Section -->
+  <section class="about-us">
+    <h2>About Us</h2>
+    <div class="about-content">
+      <div class="about-text" style="height: 300px;">
+        <p>
+          ScoutPro simplifies talent discovery by building a direct connection between aspiring players and
+          professional scouts. Through affordable and competitive tools, the platform gives players a chance to
+          showcase their potential, while helping scouts save time by bringing top talent together in one place.
+        </p>
+        <p>
+          With our innovative approach, we're reducing the noise in talent scouting, minimizing effort, and maximizing real potential and opportunities for all parties involved.
+        </p>
+      </div>
     </div>
+  </section>
+
+  <!-- Video -->
+  <div class="about-video">
+    <video autoplay muted loop playsinline preload="auto" poster="assets/images/thumbnail.jpg">
+      <source src="assets/videos/scoutpro.mp4" type="video/mp4" />
+    </video>
+  </div>
+</div>
+
+ 
+
+       
+      <section class="why-scoutpro">
+  <h2>Why Choose ScoutPro?</h2>
+  <ul class="features-list">
+    
+    <li>
+      <div class="feature-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+          <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+          <path d="M3.27 6.96L12 12.01l8.73-5.05M12 22.08V12"/>
+        </svg>
+      </div>
+      <div class="feature-content">
+        <h3>Advanced Tools</h3>
+        <p>Advanced scouting tools built for professionals</p>
+      </div>
+    </li>
+    <li>
+      <div class="feature-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+          <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+        </svg>
+      </div>
+      <div class="feature-content">
+        <h3>Global Community</h3>
+        <p>Community-driven platform for networking and discovery</p>
+      </div>
+    </li>
+    <li>
+      <div class="feature-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+          <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/>
+        </svg>
+      </div>
+      <div class="feature-content">
+        <h3>Secure & Accessible</h3>
+        <p>Accessible, modern, and secure platform to empower scouts worldwide</p>
+      </div>
+    </li>
+  </ul>
+</section>
+
+
+      <!-- Statistics Section -->
+    <section class="statistics">
+        <h2>Statistics</h2>
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="icon" aria-hidden="true">
+                    <svg width="40" height="40" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+                        <circle cx="12" cy="12" r="10" />
+                        <path d="M14.31 8L9.69 16.94M9.69 8h6.62L9.69 16.94" />
+                    </svg>
+                </div>
+                <div class="stat-number" #scoutCounter>0</div>
+<div class="stat-label">Registered Scouts</div>
+
+            </div>
+            <div class="stat-card">
+                <div class="icon" aria-hidden="true">
+                    <svg width="40" height="40" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+                        <path d="M19 11c0 2.21-4 4-7 4s-7-1.79-7-4 4-4 7-4 7 1.79 7 4z" />
+                        <path d="M12 17v5M17 9v2" />
+                    </svg>
+                </div>
+<div class="stat-number" #playerCounter>0</div>
+<div class="stat-label">Players Profiled</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="cta-section">
+ <button class="cta-button" (click)="navigateToRegister()">Get Started</button></section>
 
 </div>
+
+<!-- Script for Count-Up Animation -->
 
 <script>
     // Count-up animation for statistics numbers

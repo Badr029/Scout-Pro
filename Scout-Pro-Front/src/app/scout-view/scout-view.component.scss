@@ -1,0 +1,363 @@
+$primary: #2667cc;
+$primary-dark: #5649c0;
+$dark: #1e1e1e;
+$darker: #121212;
+$light: #ffffff;
+$gray: #ffffff;
+$danger: #d63031;
+$success: #00b894;
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+body {
+    background-color: $darker;
+    color: $light;
+    line-height: 1.6;
+}
+
+.container {
+    max-width: 800px;
+    margin: 2rem auto;
+    padding: 2rem;
+    background: $dark;
+    border-radius: 10px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+/* Loading State */
+.loading-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    .spinner {
+        width: 40px;
+        height: 40px;
+        border: 4px solid $gray;
+        border-top-color: $primary;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+
+    p {
+        margin-top: 1rem;
+        color: $gray;
+    }
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Error State */
+.error-state {
+    text-align: center;
+    padding: 2rem;
+
+    .error-message {
+        color: $danger;
+        margin-bottom: 1rem;
+    }
+}
+
+/* Profile Header */
+.page-header {
+    margin-bottom: 1.5rem;
+    text-align: center;
+
+    .btn-back {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: none;
+        border: none;
+        color: $gray;
+        font-size: 0.9rem;
+        cursor: pointer;
+        margin-bottom: 1rem;
+
+        &:hover {
+            color: $primary;
+        }
+    }
+
+    .profile-header-container {
+        display: flex;
+        flex-direction: column; /* Changed to stack vertically */
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem; /* Reduced gap for better spacing */
+        margin-bottom: 1rem;
+    }
+
+    .profile-image-wrapper {
+        display: flex;
+        align-items: center;
+    }
+
+    img {
+        width: 150px;
+        height: 150px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 3px solid $primary;
+    }
+
+    .no-image {
+        width: 150px;
+        height: 150px;
+        border-radius: 50%;
+        background: $darker;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 3px solid $primary;
+        color: $gray;
+        font-weight: 600;
+        font-size: 2rem;
+    }
+
+    .action-buttons {
+        display: flex;
+        align-items: center;
+    }
+
+    .scout-name {
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+        color: $light;
+
+        .username {
+            color: #6c757d;
+            font-size: 1.2rem;
+            font-weight: 400;
+            margin-left: 0.5rem;
+        }
+    }
+
+    .scout-title {
+        color: $primary;
+        margin-bottom: 1rem;
+        font-weight: 500;
+    }
+}
+
+.key-stats {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+    margin-bottom: 1rem;
+    justify-items: center;
+}
+
+.stat-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 0.5rem;
+}
+
+.stat-label {
+    color: #b0b0b0;
+    font-size: 0.9rem;
+    margin-bottom: 0.3rem;
+}
+
+.stat-value, .regions-list, .roles-list {
+    font-weight: 600;
+    color: $light;
+    margin-top: 0.2rem;
+}
+
+/* Ensure tags are styled appropriately */
+.region-tag, .age-group-tag {
+    background: rgba(38, 103, 204, 0.1);
+    color: $primary;
+    padding: 0.3rem 0.8rem;
+    border-radius: 15px;
+    font-size: 0.9em;
+    font-weight: 500;
+}
+
+.role-tag {
+    padding: 0.3rem 0.8rem;
+    border-radius: 15px;
+    font-size: 0.9em;
+    font-weight: 500;
+    background: rgba(0, 184, 148, 0.1);
+    color: $success;
+}
+
+/* Tabs */
+.tabs {
+    display: flex;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    margin-bottom: 2rem;
+    justify-content: center;
+}
+
+.tab {
+    padding: 0.8rem 1.5rem;
+    cursor: pointer;
+    position: relative;
+    color: $gray;
+    font-weight: 600;
+    transition: all 0.3s ease;
+
+    &:hover {
+        color: $light;
+    }
+
+    &.active {
+        color: $primary;
+
+        &::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: $primary;
+        }
+    }
+}
+
+.tab-content {
+    display: none;
+
+    &.active {
+        display: block;
+    }
+}
+
+/* Scout Details */
+.scout-details {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+}
+
+.detail-group {
+    margin-bottom: 1.5rem;
+}
+
+.detail-title {
+    color: $primary;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+}
+
+.detail-item {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 0.3rem;
+    align-items: flex-start;
+}
+
+.detail-label {
+    color: #6c757d;
+    min-width: 120px;
+    margin-bottom: 5px;
+}
+
+.detail-value {
+    font-weight: 500;
+    color: $light;
+    margin-bottom: 15px;
+
+    a {
+        color: $primary;
+        text-decoration: none;
+
+        &:hover {
+            text-decoration: underline;
+        }
+    }
+}
+
+/* Credentials */
+.credentials-container {
+    .certifications-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 1rem;
+    }
+
+    .certification-item {
+        img {
+            width: 100%;
+            height: auto;
+            border-radius: 8px;
+            border: 2px solid $darker;
+        }
+    }
+}
+
+/* Buttons */
+.btn {
+    display: inline-block;
+    padding: 0.5rem 1rem;
+    border-radius: 5px;
+    text-decoration: none;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    border: none;
+    cursor: pointer;
+    font-size: 0.85rem;
+}
+
+.btn-primary {
+    background: $primary;
+    color: $light;
+
+    &:hover {
+        background: $primary-dark;
+        transform: translateY(-2px);
+    }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .container {
+        padding: 1rem;
+    }
+
+    .page-header {
+        .profile-header-container {
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        img, .no-image {
+            width: 120px;
+            height: 120px;
+        }
+
+        .scout-name {
+            font-size: 1.5rem;
+        }
+    }
+
+    .key-stats {
+        grid-template-columns: 1fr;
+    }
+
+    .scout-details {
+        grid-template-columns: 1fr;
+    }
+
+    .tabs {
+        overflow-x: auto;
+    }
+}

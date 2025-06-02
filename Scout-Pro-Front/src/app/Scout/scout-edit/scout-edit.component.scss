@@ -1,4 +1,6 @@
-// Variables
+@use 'sass:map';
+@use 'sass:color';
+
 $colors: (
   bg-dark: #121212,
   surface: #1e1e1e,
@@ -41,34 +43,34 @@ $transition: all 0.2s ease;
 }
 
 @mixin card-surface {
-  background-color: map-get($colors, surface);
-  border-radius: map-get($border-radius, lg);
-  box-shadow: map-get($shadows, lg);
-  border: 1px solid map-get($colors, border);
+  background-color: map.get($colors, surface);
+  border-radius: map.get($border-radius, lg);
+  box-shadow: map.get($shadows, lg);
+  border: 1px solid map.get($colors, border);
 }
 
 @mixin form-input {
   width: 100%;
-  padding: map-get($spacing, sm) map-get($spacing, md);
-  background-color: map-get($colors, surface-light);
-  border: 1px solid map-get($colors, border);
-  border-radius: map-get($border-radius, md);
-  color: map-get($colors, text-primary);
+  padding: map.get($spacing, sm) map.get($spacing, md);
+  background-color: map.get($colors, surface-light);
+  border: 1px solid map.get($colors, border);
+  border-radius: map.get($border-radius, md);
+  color: map.get($colors, text-primary);
   font-size: 0.9375rem;
   transition: $transition;
 
   &:focus {
     outline: none;
-    border-color: map-get($colors, primary);
-    box-shadow: 0 0 0 3px rgba(map-get($colors, primary), 0.2);
+    border-color: map.get($colors, primary);
+    box-shadow: 0 0 0 3px rgba(map.get($colors, primary), 0.2);
   }
 }
 
 // Base Styles
 body {
   font-family: 'Inter', sans-serif;
-  background-color: map-get($colors, bg-dark);
-  color: map-get($colors, text-primary);
+  background-color: map.get($colors, bg-dark);
+  color: map.get($colors, text-primary);
   margin: 0;
   padding: 0;
   min-height: 100vh;
@@ -77,81 +79,78 @@ body {
 
 .profile-container {
   @include card-surface;
-  padding: map-get($spacing, xl);
+  padding: map.get($spacing, xl);
   width: 100%;
   max-width: 700px;
-  margin: 0 auto; // centers horizontally
+  margin: 0 auto;
 }
 
-// Profile Header
 .profile-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: map-get($spacing, xl);
-  padding-bottom: map-get($spacing, md);
-  border-bottom: 1px solid map-get($colors, border);
+  margin-bottom: map.get($spacing, xl);
+  padding-bottom: map.get($spacing, md);
+  border-bottom: 1px solid map.get($colors, border);
 
   h1 {
     margin: 0;
     font-size: 1.75rem;
     font-weight: 600;
-    background: linear-gradient(90deg, map-get($colors, primary), #00b4d8);
+    background: linear-gradient(90deg, map.get($colors, primary), #00b4d8);
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
   }
 }
 
-// Profile Picture
 .profile-picture {
   display: flex;
   flex-direction: column;
   align-items: center;
-  margin-bottom: map-get($spacing, xl);
+  margin-bottom: map.get($spacing, xl);
 
   img {
     width: 120px;
     height: 120px;
     border-radius: 50%;
     object-fit: cover;
-    border: 3px solid map-get($colors, primary);
-    margin-bottom: map-get($spacing, md);
+    border: 3px solid map.get($colors, primary);
+    margin-bottom: map.get($spacing, md);
   }
 
   .change-photo-btn {
-    background-color: map-get($colors, surface-light);
-    color: map-get($colors, text-primary);
+    background-color: map.get($colors, surface-light);
+    color: map.get($colors, text-primary);
     border: none;
-    padding: map-get($spacing, sm) map-get($spacing, md);
-    border-radius: map-get($border-radius, md);
+    padding: map.get($spacing, sm) map.get($spacing, md);
+    border-radius: map.get($border-radius, md);
     cursor: pointer;
     font-size: 0.875rem;
     transition: $transition;
 
     &:hover {
-      background-color: map-get($colors, primary);
+      background-color: map.get($colors, primary);
     }
   }
 }
 
-// Form Styles
 .form-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: map-get($spacing, lg);
-  margin-bottom: map-get($spacing, lg);
+  gap: map.get($spacing, lg);
+  margin-bottom: map.get($spacing, lg);
 }
 
 .form-group {
-  margin-bottom: map-get($spacing, lg);
+  margin-bottom: map.get($spacing, lg);
 
   label {
     display: block;
-    margin-bottom: map-get($spacing, sm);
+    margin-bottom: map.get($spacing, sm);
     font-size: 0.875rem;
     font-weight: 500;
-    color: map-get($colors, text-secondary);
+    color: map.get($colors, text-secondary);
   }
 
   input,
@@ -168,7 +167,7 @@ body {
 
   &.full-width {
     grid-column: span 2;
-    
+
     input,
     textarea {
       width: 100%;
@@ -176,17 +175,16 @@ body {
   }
 }
 
-// Skill Tags
 .skill-tags {
   display: flex;
   flex-wrap: wrap;
-  gap: map-get($spacing, sm);
-  margin-top: map-get($spacing, sm);
+  gap: map.get($spacing, sm);
+  margin-top: map.get($spacing, sm);
 
   .skill-tag {
-    background-color: rgba(map-get($colors, primary), 0.1);
-    border: 1px solid map-get($colors, primary);
-    color: map-get($colors, primary);
+    background-color: rgba(map.get($colors, primary), 0.1);
+    border: 1px solid map.get($colors, primary);
+    color: map.get($colors, primary);
     padding: 0.375rem 0.75rem;
     border-radius: 20px;
     font-size: 0.75rem;
@@ -205,23 +203,21 @@ body {
   }
 }
 
-// Add Skill Section
 #new-skill {
   flex-grow: 1;
-  margin-right: map-get($spacing, sm);
+  margin-right: map.get($spacing, sm);
 }
 
-// Form Actions
 .form-actions {
   display: flex;
   justify-content: flex-end;
-  gap: map-get($spacing, md);
-  margin-top: map-get($spacing, lg);
+  gap: map.get($spacing, md);
+  margin-top: map.get($spacing, lg);
 }
 
 .btn {
-  padding: map-get($spacing, sm) map-get($spacing, lg);
-  border-radius: map-get($border-radius, md);
+  padding: map.get($spacing, sm) map.get($spacing, lg);
+  border-radius: map.get($border-radius, md);
   font-size: 0.9375rem;
   font-weight: 500;
   cursor: pointer;
@@ -229,26 +225,25 @@ body {
   border: none;
 
   &-primary {
-    background-color: map-get($colors, primary);
+    background-color: map.get($colors, primary);
     color: white;
 
     &:hover {
-      background-color: map-get($colors, primary-hover);
+      background-color: map.get($colors, primary-hover);
       transform: translateY(-1px);
     }
   }
 
   &-secondary {
-    background-color: map-get($colors, surface-light);
-    color: map-get($colors, text-primary);
+    background-color: map.get($colors, surface-light);
+    color: map.get($colors, text-primary);
 
     &:hover {
-      background-color: darken(map-get($colors, surface-light), 5%);
+      background-color: color.adjust(map.get($colors, surface-light), $lightness: -5%);
     }
   }
 }
 
-// Responsive Design
 @media (max-width: 768px) {
   .form-grid {
     grid-template-columns: 1fr;
@@ -261,15 +256,14 @@ body {
   }
 }
 
-// Additional Utility Classes
 .field-error {
-  color: map-get($colors, error);
+  color: map.get($colors, error);
   font-size: 12px;
   margin-top: 4px;
   display: block;
 }
 
 .required {
-  color: map-get($colors, error);
+  color: map.get($colors, error);
   margin-left: 2px;
 }

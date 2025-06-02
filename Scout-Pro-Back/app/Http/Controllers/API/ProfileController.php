@@ -186,11 +186,11 @@ class ProfileController extends Controller
         }
 
     }
-  public function playerviewprofile($user_id) {
+public function playerviewprofile($user_id) {
     $playerprofiledata = Player::with('user')->where('user_id', $user_id)->first();
     if (!$playerprofiledata) {
         return response()->json([
-            'message' => 'No profile found'
+            'message' => 'No player profile found for this user'
         ], 404);
     }
     return response()->json([
@@ -202,14 +202,13 @@ public function scoutviewprofile($user_id) {
     $scoutprofiledata = Scout::with('user')->where('user_id', $user_id)->first();
     if (!$scoutprofiledata) {
         return response()->json([
-            'message' => 'No profile found'
+            'message' => 'No scout profile found for this user'
         ], 404);
     }
     return response()->json([
         'data' => $scoutprofiledata
     ]);
 }
-
 
 
 }

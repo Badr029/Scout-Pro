@@ -38,4 +38,8 @@ class Scout extends Model
         'preferred_roles' => 'array',
         'certifications' => 'array',
     ];
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
 }

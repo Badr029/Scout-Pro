@@ -47,8 +47,8 @@ Route::post('/reset-password', [ResetPasswordController::class, 'reset']);
 
 Route::get('/scout-count', [HomeController::class, 'scoutCount']);
 Route::get('/player-count', [HomeController::class, 'playerCount']);
-Route::get('/player/{id}', [ProfileController::class, 'playerviewprofile']);
-Route::get('/scout/{id}', [ProfileController::class, 'scoutviewprofile']);
+Route::get('/player/{user_id}', [ProfileController::class, 'playerviewprofile']);
+Route::get('/scout/{user_id}', [ProfileController::class, 'scoutviewprofile']);
 
 
 
