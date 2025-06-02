@@ -17,7 +17,7 @@ interface ScoutProfile {
   scouting_regions?: string;
   preferred_roles?: string;
   linkedin_url?: string;
-  age_groups?: string[];
+  age_groups?: string[];  
   clubs_worked_with?: string;
   certifications?: string[];
 }
@@ -49,7 +49,7 @@ export class ScoutViewComponent implements OnInit {
   fetchScoutProfile(): void {
     this.loading = true;
     this.error = null;
-    
+
     const token = localStorage.getItem('auth_token');
     if (!token) {
       this.router.navigate(['/login']);
@@ -61,13 +61,24 @@ export class ScoutViewComponent implements OnInit {
     });
 
     const scoutId = this.route.snapshot.paramMap.get('id');
-    const apiUrl = scoutId 
+    const apiUrl = scoutId
       ? `http://localhost:8000/api/scout/${scoutId}`
       : 'http://localhost:8000/api/scout/profile';
 
-    this.http.get<{data: ScoutProfile}>(apiUrl, { headers }).subscribe({
+    this.http.get<{ data: ScoutProfile }>(apiUrl, { headers }).subscribe({
       next: (response) => {
         this.scoutData = response.data || null;
+
+        if (this.scoutData && typeof this.scoutData.age_groups === 'string') {
+  try {
+    this.scoutData.age_groups = JSON.parse(this.scoutData.age_groups);
+  } catch {
+    this.scoutData.age_groups = (this.scoutData.age_groups as unknown as string)
+      .split(',')
+      .map((item: string) => item.trim());
+  }
+}
+
         this.loading = false;
       },
       error: (error) => {
@@ -76,16 +87,15 @@ export class ScoutViewComponent implements OnInit {
       }
     });
   }
-
   getArrayFromString(value: string | null | undefined): string[] {
-    if (!value) return [];
-    try {
-      const parsed = JSON.parse(value);
-      return Array.isArray(parsed) ? parsed : [parsed];
-    } catch {
-      return value.split(',').map(item => item.trim()).filter(item => item.length > 0);
-    }
+  if (!value) return [];
+  try {
+    const parsed = JSON.parse(value);
+    return Array.isArray(parsed) ? parsed : [parsed];
+  } catch {
+    return value.split(',').map(item => item.trim());
   }
+}
 
   switchTab(tab: string): void {
     this.activeTab = tab;
@@ -94,6 +104,4 @@ export class ScoutViewComponent implements OnInit {
   goToHome(): void {
     this.router.navigate(['/home-feed']);
   }
- 
-
 }
