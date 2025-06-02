@@ -99,9 +99,9 @@ export class AuthService {
       tap((response) => {
         if (!response.needs_registration) {
           // Store the token and user type first
-          this.setToken(response.access_token);
-          this.setUserType(response.user_type);
-          this.setSetupCompleted(response.setup_completed);
+        this.setToken(response.access_token);
+        this.setUserType(response.user_type);
+        this.setSetupCompleted(response.setup_completed);
 
           // Store additional user data if available
           if (response.user_data) {
@@ -109,7 +109,7 @@ export class AuthService {
           }
 
           // Handle redirection after successful login
-          this.handleLoginRedirect(response.user_type, response.setup_completed);
+        this.handleLoginRedirect(response.user_type, response.setup_completed);
         }
       }),
       catchError(error => {
