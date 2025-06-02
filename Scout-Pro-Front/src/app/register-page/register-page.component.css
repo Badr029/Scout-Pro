@@ -398,7 +398,6 @@ select {
     margin: 2rem auto;
     padding: 2rem;
     text-align: center;
-    background: rgba(255, 255, 255, 0.1);
     backdrop-filter: blur(10px);
     border-radius: 12px;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
@@ -510,10 +509,8 @@ select {
 /* Registration Container */
 .registration-container {
     max-width: 800px;
-    width: 90%;
     margin: 2rem auto;
     padding: 2rem;
-    background: rgba(255, 255, 255, 0.1);
     backdrop-filter: blur(10px);
     border-radius: 12px;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);

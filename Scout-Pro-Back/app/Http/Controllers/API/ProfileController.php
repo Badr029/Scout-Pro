@@ -126,115 +126,104 @@ class ProfileController extends Controller
         }
         elseif ($user->user_type === 'scout') {
             $scout = $user->scout;
-            $validated = $request->validate([
+            $validatedData = $request->validate([
                 'first_name' => 'required|string|max:255',
                 'last_name' => 'required|string|max:255',
-                'profile_image'      => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+                'profile_image' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
                 'city' => 'required|string|max:255',
                 'country' => 'required|string|max:255',
                 'contact_email' => 'required|email|max:255',
                 'contact_phone' => 'required|string|max:20',
-
-                // Organization and Role Information
                 'organization' => 'required|string|max:255',
                 'position_title' => 'required|string|max:255',
-                // 'scouting_regions' => 'required|array|min:1',
-                'scouting_regions' => 'required|string|max:255',
-                'age_groups' => 'required|array|min:1',
-                'age_groups.*' => 'required|string|max:50',
-                // 'preferred_roles' => 'required|array|min:1',
-                'preferred_roles' => 'required|string|max:255',
+                'scouting_regions' => 'required|json',
+                'age_groups' => 'required|json',
+                'preferred_roles' => 'required|json',
                 'clubs_worked_with' => 'required|string|max:1000',
-
-                // Professional Information
                 'linkedin_url' => 'nullable|url|max:255',
-                'id_proof' => 'required|file|mimes:pdf,jpeg,png,jpg|max:5120',
-                'certifications' => 'required|array|min:1',
-                'certifications.*' => 'required|file|mimes:pdf,jpeg,png,jpg|max:5120',
             ]);
-
-            // Handle uploads
-            if ($request->hasFile('profile_image')) {
-                $validatedData['profile_image'] = $request->file('profile_image')->store('profile_images', 'public');
-            }
-
-            if ($request->hasFile('scouting_reports')) {
-                $validatedData['scouting_reports'] = $request->file('scouting_reports')->store('scouting_reports', 'public');
-            }
-
-            if ($request->hasFile('video_highlights')) {
-                $validatedData['video_highlights'] = $request->file('video_highlights')->store('video_highlights', 'public');
-            }
 
             // Update user model
             User::where('id', $user->id)->update([
-                'first_name' => $validated['first_name'],
-                'last_name' => $validated['last_name']
+                'first_name' => $validatedData['first_name'],
+                'last_name' => $validatedData['last_name']
             ]);
 
-            foreach ($validated as $key => $value) {
+            // Handle profile image upload
+            if ($request->hasFile('profile_image')) {
+                if ($scout->profile_image) {
+                    Storage::disk('public')->delete($scout->profile_image);
+                }
+                $validatedData['profile_image'] = $request->file('profile_image')->store('scouts/profile_image', 'public');
+            }
+
+            // Decode JSON fields
+            $validatedData['scouting_regions'] = json_decode($validatedData['scouting_regions'], true);
+            $validatedData['age_groups'] = json_decode($validatedData['age_groups'], true);
+            $validatedData['preferred_roles'] = json_decode($validatedData['preferred_roles'], true);
+
+            // Update scout model
+            foreach ($validatedData as $key => $value) {
                 $scout->$key = $value;
             }
             $scout->save();
 
             return response()->json([
                 'message' => 'Scout profile updated successfully.',
-                'data' => $scout,
-            ]);
+                'data' => [
+                    'scout' => $scout,
+                ]
+            ], 200);
         } else {
             return response()->json(['message' => 'Invalid user type.'], 400);
         }
-
     }
-public function playerviewprofile($user_id) {
-    $playerprofiledata = Player::with('user')->where('user_id', $user_id)->first();
-    if (!$playerprofiledata) {
+
+    public function playerviewprofile($user_id) {
+        $playerprofiledata = Player::with('user')->where('user_id', $user_id)->first();
+        if (!$playerprofiledata) {
+            return response()->json([
+                'message' => 'No player profile found for this user'
+            ], 404);
+        }
         return response()->json([
-            'message' => 'No player profile found for this user'
-        ], 404);
+            'data' => $playerprofiledata
+        ]);
     }
-    return response()->json([
-        'data' => $playerprofiledata
-    ]);
-}
 
-public function scoutviewprofile($user_id) {
-    $scoutprofiledata = Scout::with('user')->where('user_id', $user_id)->first();
-    if (!$scoutprofiledata) {
+    public function scoutviewprofile($user_id) {
+        $scoutprofiledata = Scout::with('user')->where('user_id', $user_id)->first();
+        if (!$scoutprofiledata) {
+            return response()->json([
+                'message' => 'No scout profile found for this user'
+            ], 404);
+        }
         return response()->json([
-            'message' => 'No scout profile found for this user'
-        ], 404);
+            'data' => $scoutprofiledata
+        ]);
     }
-    return response()->json([
-        'data' => $scoutprofiledata
-    ]);
+
+    //     public function delete(Request $request) {
+    //         $user = auth()->user();
+
+    //         $request->validate([
+    //             'password' => 'required|string',
+    //         ]);
+
+    //         if (!Hash::check($request->password, $user->password)) {
+    //             return response()->json(['message' => 'Incorrect password'], 403);
+    //         }
+    //         if ($user->user_type=='player') {
+    //             $user->player()->delete();
+    //             $user->delete();
+    //             return response()->json(['message' => 'Player account deactivated permanently'],200);
+    //         }
+
+    //         if ($user->user_type=='scout') {
+    //             $user->scout()->delete();
+    //             $user->delete();
+    //             return response()->json(['message' => 'Scout account deactivated permanently'],200);
+    //         }
+    //     }
 }
-
-
-}
-
-
-
-//     public function delete(Request $request) {
-//         $user = auth()->user();
-
-//         $request->validate([
-//             'password' => 'required|string',
-//         ]);
-
-//         if (!Hash::check($request->password, $user->password)) {
-//             return response()->json(['message' => 'Incorrect password'], 403);
-//         }
-//         if ($user->user_type=='player') {
-//             $user->player()->delete();
-//             $user->delete();
-//             return response()->json(['message' => 'Player account deactivated permanently'],200);
-//         }
-
-//         if ($user->user_type=='scout') {
-//             $user->scout()->delete();
-//             $user->delete();
-//             return response()->json(['message' => 'Scout account deactivated permanently'],200);
-//         }
-//     }
 

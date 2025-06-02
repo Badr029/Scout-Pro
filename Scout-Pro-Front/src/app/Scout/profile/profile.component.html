@@ -63,13 +63,13 @@
           <div class="stat-item">
             <span class="stat-label">Scouting Regions:</span>
             <div class="regions-list">
-              <span *ngFor="let region of getArrayFromString(scoutData.scouting_regions)" class="region-tag">{{ region }}</span>
+              <span *ngFor="let region of getArrayFromString(scoutData?.scouting_regions)" class="region-tag">{{ region }}</span>
             </div>
           </div>
           <div class="stat-item">
             <span class="stat-label">Looking For:</span>
             <div class="roles-list">
-              <span *ngFor="let role of getArrayFromString(scoutData.preferred_roles)" class="role-tag">{{ role }}</span>
+              <span *ngFor="let role of getArrayFromString(scoutData?.preferred_roles)" class="role-tag">{{ role }}</span>
             </div>
           </div>
         </div>
@@ -119,19 +119,19 @@
           <div class="detail-item">
             <span class="detail-label">Scouting Regions:</span>
             <div class="regions-list">
-              <span *ngFor="let region of getArrayFromString(scoutData.scouting_regions)" class="region-tag">{{ region }}</span>
+              <span *ngFor="let region of getArrayFromString(scoutData?.scouting_regions)" class="region-tag">{{ region }}</span>
             </div>
           </div>
           <div class="detail-item">
             <span class="detail-label">Looking For:</span>
             <div class="roles-list">
-              <span *ngFor="let role of getArrayFromString(scoutData.preferred_roles)" class="role-tag">{{ role }}</span>
+              <span *ngFor="let role of getArrayFromString(scoutData?.preferred_roles)" class="role-tag">{{ role }}</span>
             </div>
           </div>
           <div class="detail-item">
             <span class="detail-label">Age Groups:</span>
             <div class="age-groups-list">
-              <span *ngFor="let group of scoutData?.age_groups || []" class="age-group-tag">{{ group }}</span>
+              <span *ngFor="let group of getArrayFromString(scoutData?.age_groups)" class="age-group-tag">{{ group }}</span>
             </div>
           </div>
           <div class="detail-item">
@@ -178,7 +178,7 @@
         <div class="detail-group">
           <h3 class="detail-title">Certifications</h3>
           <div class="certifications-grid">
-            <div *ngFor="let cert of scoutData?.certifications || []" class="certification-item">
+            <div *ngFor="let cert of getArrayFromString(scoutData?.certifications)" class="certification-item">
               <img [src]="'http://localhost:8000/storage/' + cert" alt="Certification">
             </div>
           </div>

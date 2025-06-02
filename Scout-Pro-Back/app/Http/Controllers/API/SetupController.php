@@ -101,12 +101,9 @@ class SetupController extends Controller
             // Organization and Role Information
             'organization' => 'required|string|max:255',
             'position_title' => 'required|string|max:255',
-            // 'scouting_regions' => 'required|array|min:1',
-            'scouting_regions' => 'required|string|max:255',
-            // 'age_groups' => 'required|array|min:1',
-            'age_groups' => 'required|string|max:50',
-            // 'preferred_roles' => 'required|array|min:1',
-            'preferred_roles' => 'required|string|max:255',
+            'scouting_regions' => 'required|json',
+            'age_groups' => 'required|json',
+            'preferred_roles' => 'required|json',
             'clubs_worked_with' => 'required|string|max:1000',
 
             // Professional Information
@@ -120,10 +117,12 @@ class SetupController extends Controller
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
+        // Handle profile image upload
         $profilePhotoPath = $request->hasFile('profile_image')
             ? $request->file('profile_image')->store('scouts/profile_image', 'public')
             : null;
 
+        // Handle ID proof upload
         $idProofPath = $request->hasFile('id_proof')
             ? $request->file('id_proof')->store('scouts/id_proofs', 'public')
             : null;
@@ -135,6 +134,11 @@ class SetupController extends Controller
                 $certificationPaths[] = $certification->store('scouts/certifications', 'public');
             }
         }
+
+        // Decode JSON fields
+        $scoutingRegions = json_decode($request->scouting_regions, true);
+        $ageGroups = json_decode($request->age_groups, true);
+        $preferredRoles = json_decode($request->preferred_roles, true);
 
         $scout = Scout::create([
             'user_id' => Auth::id(),
@@ -150,9 +154,9 @@ class SetupController extends Controller
             // Organization and Role Information
             'organization' => $request->organization,
             'position_title' => $request->position_title,
-            'scouting_regions' => $request->scouting_regions,
-            'age_groups' => $request->age_groups,
-            'preferred_roles' => $request->preferred_roles,
+            'scouting_regions' => $scoutingRegions,
+            'age_groups' => $ageGroups,
+            'preferred_roles' => $preferredRoles,
             'clubs_worked_with' => $request->clubs_worked_with,
 
             // Professional Information

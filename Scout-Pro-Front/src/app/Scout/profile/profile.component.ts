@@ -16,13 +16,13 @@ interface ScoutProfile {
   contact_phone: string;
   organization: string;
   position_title: string;
-  scouting_regions: string;
-  age_groups: string[];
-  preferred_roles: string;
+  scouting_regions: string[] | string;
+  age_groups: string[] | string;
+  preferred_roles: string[] | string;
   clubs_worked_with: string;
   linkedin_url?: string;
   id_proof: string;
-  certifications: string[];
+  certifications: string[] | string;
   registration_type?: string; // 'email' or 'google'
 }
 
@@ -154,7 +154,7 @@ export class ScoutProfileComponent implements OnInit, OnDestroy {
   }
 
   goToEditProfile() {
-    this.router.navigate(['/scout/edit-profile']);
+    this.router.navigate(['/scout/profile/edit']);
   }
 
   async logout() {
@@ -230,37 +230,61 @@ export class ScoutProfileComponent implements OnInit, OnDestroy {
 
   normalizeProfileData() {
     if (this.scoutData) {
+      // Handle scouting_regions
+      if (typeof this.scoutData.scouting_regions === 'string') {
+        try {
+          const parsedRegions = JSON.parse(this.scoutData.scouting_regions);
+          this.scoutData.scouting_regions = Array.isArray(parsedRegions) ? parsedRegions : [parsedRegions];
+        } catch {
+          this.scoutData.scouting_regions = (this.scoutData.scouting_regions as string).split(',').map(region => region.trim());
+        }
+      }
+
       // Handle age_groups
-      const rawAgeGroups = this.scoutData.age_groups as unknown;
-      if (!Array.isArray(rawAgeGroups)) {
-        if (typeof rawAgeGroups === 'string') {
-          try {
-            const parsedGroups = JSON.parse(rawAgeGroups);
-            this.scoutData.age_groups = Array.isArray(parsedGroups) ? parsedGroups : [parsedGroups];
-          } catch {
-            // If JSON parsing fails, split by comma
-            this.scoutData.age_groups = rawAgeGroups.split(',').map((group: string): string => group.trim());
-          }
-        } else {
-          this.scoutData.age_groups = [];
+      if (typeof this.scoutData.age_groups === 'string') {
+        try {
+          const parsedGroups = JSON.parse(this.scoutData.age_groups);
+          this.scoutData.age_groups = Array.isArray(parsedGroups) ? parsedGroups : [parsedGroups];
+        } catch {
+          this.scoutData.age_groups = (this.scoutData.age_groups as string).split(',').map(group => group.trim());
+        }
+      }
+
+      // Handle preferred_roles
+      if (typeof this.scoutData.preferred_roles === 'string') {
+        try {
+          const parsedRoles = JSON.parse(this.scoutData.preferred_roles);
+          this.scoutData.preferred_roles = Array.isArray(parsedRoles) ? parsedRoles : [parsedRoles];
+        } catch {
+          this.scoutData.preferred_roles = (this.scoutData.preferred_roles as string).split(',').map(role => role.trim());
         }
       }
 
       // Handle certifications
-      const rawCertifications = this.scoutData.certifications as unknown;
-      if (!Array.isArray(rawCertifications)) {
-        if (typeof rawCertifications === 'string') {
-          try {
-            const parsedCerts = JSON.parse(rawCertifications);
-            this.scoutData.certifications = Array.isArray(parsedCerts) ? parsedCerts : [parsedCerts];
-          } catch {
-            // If JSON parsing fails, split by comma
-            this.scoutData.certifications = rawCertifications.split(',').map((cert: string): string => cert.trim());
-          }
-        } else {
+      if (typeof this.scoutData.certifications === 'string') {
+        try {
+          const parsedCerts = JSON.parse(this.scoutData.certifications);
+          this.scoutData.certifications = Array.isArray(parsedCerts) ? parsedCerts : [parsedCerts];
+        } catch {
           this.scoutData.certifications = [];
         }
       }
+
+      // Ensure all array fields are initialized
+      if (!Array.isArray(this.scoutData.scouting_regions)) {
+        this.scoutData.scouting_regions = [];
+      }
+      if (!Array.isArray(this.scoutData.age_groups)) {
+        this.scoutData.age_groups = [];
+      }
+      if (!Array.isArray(this.scoutData.preferred_roles)) {
+        this.scoutData.preferred_roles = [];
+      }
+      if (!Array.isArray(this.scoutData.certifications)) {
+        this.scoutData.certifications = [];
+      }
+
+      console.log('Normalized scout data:', this.scoutData);
     }
   }
 
@@ -285,16 +309,18 @@ export class ScoutProfileComponent implements OnInit, OnDestroy {
     document.removeEventListener('click', this.handleClickOutside);
   }
 
-  getArrayFromString(value: string | null | undefined): string[] {
+  getArrayFromString(value: string | string[] | null | undefined): string[] {
     if (!value) return [];
-    try {
-      // Try parsing as JSON first
-      const parsed = JSON.parse(value);
-      return Array.isArray(parsed) ? parsed : [parsed];
-    } catch {
-      // If not JSON, split by comma and clean up
-      return value.split(',').map(item => item.trim()).filter(item => item.length > 0);
+    if (Array.isArray(value)) return value;
+    if (typeof value === 'string') {
+      try {
+        const parsed = JSON.parse(value);
+        return Array.isArray(parsed) ? parsed : [parsed];
+      } catch {
+        return value.split(',').map(item => item.trim());
+      }
     }
+    return [];
   }
 
   goToHome() {

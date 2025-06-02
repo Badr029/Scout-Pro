@@ -68,45 +68,83 @@
 
                 <div class="form-group">
                     <label for="scouting_regions">Scouting Regions <span class="required">*</span></label>
-                    <input type="text" id="scouting_regions" name="scouting_regions" [(ngModel)]="scoutData.scouting_regions" required>
+                    <div class="multi-select">
+                        <select [(ngModel)]="newRegion" name="newRegion">
+                            <option value="">Select a region</option>
+                            <option *ngFor="let region of regionsList" [value]="region">{{region}}</option>
+                        </select>
+                        <button type="button" (click)="addItem(newRegion, 'scouting_regions')" [disabled]="!newRegion">Add</button>
+                    </div>
+                    <div class="tags">
+                        <span *ngFor="let region of scoutData.scouting_regions" class="tag">
+                            {{region}}
+                            <button type="button" (click)="removeItem(region, 'scouting_regions')">&times;</button>
+                        </span>
+                    </div>
+                    <div class="error" *ngIf="scoutData.scouting_regions?.length === 0">
+                        At least one scouting region is required
+                    </div>
                 </div>
 
                 <div class="form-group">
                     <label for="age_groups">Age Groups <span class="required">*</span></label>
-                    <input type="text" id="age_groups" name="age_groups" [(ngModel)]="scoutData.age_groups" required placeholder="e.g. U15, U17">
+                    <div class="multi-select">
+                        <select [(ngModel)]="newAgeGroup" name="newAgeGroup">
+                            <option value="">Select an age group</option>
+                            <option *ngFor="let age of ageGroupsList" [value]="age">{{age}}</option>
+                        </select>
+                        <button type="button" (click)="addItem(newAgeGroup, 'age_groups')" [disabled]="!newAgeGroup">Add</button>
+                    </div>
+                    <div class="tags">
+                        <span *ngFor="let age of scoutData.age_groups" class="tag">
+                            {{age}}
+                            <button type="button" (click)="removeItem(age, 'age_groups')">&times;</button>
+                        </span>
+                    </div>
+                    <div class="error" *ngIf="scoutData.age_groups?.length === 0">
+                        At least one age group is required
+                    </div>
                 </div>
 
                 <div class="form-group">
-                    <label for="preferred_roles">Preferred Roles <span class="required">*</span></label>
-                    <input type="text" id="preferred_roles" name="preferred_roles" [(ngModel)]="scoutData.preferred_roles" required>
+                    <label for="preferred_roles">Player Roles Preferred <span class="required">*</span></label>
+                    <div class="multi-select">
+                        <select [(ngModel)]="newRole" name="newRole">
+                            <option value="">Select a role</option>
+                            <option *ngFor="let role of playerRolesList" [value]="role">{{role}}</option>
+                        </select>
+                        <button type="button" (click)="addItem(newRole, 'preferred_roles')" [disabled]="!newRole">Add</button>
+                    </div>
+                    <div class="tags">
+                        <span *ngFor="let role of scoutData.preferred_roles" class="tag">
+                            {{role}}
+                            <button type="button" (click)="removeItem(role, 'preferred_roles')">&times;</button>
+                        </span>
+                    </div>
+                    <div class="error" *ngIf="scoutData.preferred_roles?.length === 0">
+                        At least one preferred role is required
+                    </div>
                 </div>
 
                 <div class="form-group">
                     <label for="clubs_worked_with">Clubs Worked With <span class="required">*</span></label>
-                    <textarea id="clubs_worked_with" name="clubs_worked_with" [(ngModel)]="scoutData.clubs_worked_with" required></textarea>
+                    <textarea id="clubs_worked_with" name="clubs_worked_with" [(ngModel)]="scoutData.clubs_worked_with" required
+                            placeholder="Enter the clubs you have worked with"></textarea>
                 </div>
 
                 <div class="form-group">
                     <label for="linkedin_url">LinkedIn URL</label>
-                    <input type="url" id="linkedin_url" name="linkedin_url" [(ngModel)]="scoutData.linkedin_url">
-                </div>
-
-                <!-- File Uploads -->
-                <div class="form-group">
-                    <label for="id_proof">ID Proof (PDF/JPG/PNG, max 5MB) <span class="required">*</span></label>
-                    <input type="file" id="id_proof" name="id_proof" (change)="onIDProofUpload($event)" accept=".pdf,image/jpeg,image/png" required>
-                </div>
-
-                <div class="form-group">
-                    <label for="certifications">Certifications (Multiple files allowed) <span class="required">*</span></label>
-                    <input type="file" id="certifications" name="certifications" multiple (change)="onCertificationsUpload($event)" accept=".pdf,image/jpeg,image/png" required>
+                    <input type="url" id="linkedin_url" name="linkedin_url" [(ngModel)]="scoutData.linkedin_url"
+                           placeholder="https://www.linkedin.com/in/your-profile">
                 </div>
 
             </div>
 
             <div class="form-actions">
                 <button type="button" class="btn btn-secondary" (click)="goToProfile()">Cancel</button>
-                <button type="submit" class="btn btn-primary" [disabled]="scoutForm.invalid">Save Changes</button>
+                <button type="submit" class="btn btn-primary" [disabled]="scoutForm.invalid || loading">
+                    {{ loading ? 'Saving...' : 'Save Changes' }}
+                </button>
             </div>
         </form>
     </div>
