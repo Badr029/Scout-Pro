@@ -15,6 +15,7 @@ import { AuthGuard } from './auth.guard';
 import { ScoutProfileComponent } from './Scout/profile/profile.component';
 import { WelcomeComponent } from './welcome/welcome.component';
 import { ScoutEditComponent } from './Scout/scout-edit/scout-edit.component';
+import { ScoutViewComponent } from './scout-view/scout-view.component';
 
 export const routes: Routes = [
     {
@@ -110,6 +111,12 @@ export const routes: Routes = [
         component: ScoutEditComponent,
         canActivate: [AuthGuard]
     },
+    {
+        path: 'scout/:id',
+        component: ScoutViewComponent,
+        canActivate: [AuthGuard]
+    },
+
 
 
 

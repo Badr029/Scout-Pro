@@ -1,4 +1,11 @@
-import { Component, OnInit, ViewEncapsulation } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  ViewEncapsulation,
+  ElementRef,
+  ViewChild,
+  AfterViewInit
+} from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 
@@ -12,6 +19,8 @@ import { Router } from '@angular/router';
   encapsulation: ViewEncapsulation.None,
 })
 export class WelcomeComponent implements OnInit {
+  @ViewChild('scoutCounter', { static: false }) scoutCounter!: ElementRef;
+  @ViewChild('playerCounter', { static: false }) playerCounter!: ElementRef;
 
   statistics = {
     scoutCount: 0,
@@ -25,25 +34,42 @@ export class WelcomeComponent implements OnInit {
   }
 
   loadStatistics(): void {
-    // Fetch scout count
     this.http.get<{ scout_no: number }>('http://localhost:8000/api/scout-count').subscribe({
       next: (res) => {
         this.statistics.scoutCount = res.scout_no;
+        this.animateCount(this.scoutCounter.nativeElement, res.scout_no);
       },
       error: (err) => {
         console.error('Failed to load scout count', err);
       }
     });
 
-    // Fetch player count
     this.http.get<{ player_no: number }>('http://localhost:8000/api/player-count').subscribe({
       next: (res) => {
         this.statistics.playerCount = res.player_no;
+        this.animateCount(this.playerCounter.nativeElement, res.player_no);
       },
       error: (err) => {
         console.error('Failed to load player count', err);
       }
     });
+  }
+
+  animateCount(element: HTMLElement, target: number) {
+    let count = 0;
+    const increment = Math.ceil(target / 100);
+
+    const update = () => {
+      count += increment;
+      if (count < target) {
+        element.innerText = count.toString();
+        requestAnimationFrame(update);
+      } else {
+        element.innerText = target.toLocaleString();
+      }
+    };
+
+    update();
   }
 
   navigateToRegister(): void {
