@@ -664,13 +664,13 @@ export class HomeFeedComponent implements OnInit {
     }
 
     const file = this.uploadData.file;
-    const formData = new FormData();
-    if (this.uploadData.title) {
-      formData.append('title', this.uploadData.title);
-    }
-    if (this.uploadData.description) {
-      formData.append('description', this.uploadData.description);
-    }
+        const formData = new FormData();
+        if (this.uploadData.title) {
+        formData.append('title', this.uploadData.title);
+        }
+        if (this.uploadData.description) {
+        formData.append('description', this.uploadData.description);
+        }
     formData.append('video', file);
 
     const headers = new HttpHeaders({
@@ -691,17 +691,17 @@ export class HomeFeedComponent implements OnInit {
             if (event.body.status === 'success') {
               // Update the user profile to get new video count
               this.getUserProfile();
-              this.closeUploadModal();
+          this.closeUploadModal();
               // Reload feed to show new video
               this.loadFeedData();
-              this.showNotification('Video uploaded successfully');
+          this.showNotification('Video uploaded successfully');
             }
           }
         },
         error: (error) => {
           this.uploadError = error.error?.message || 'Failed to upload video';
           console.error('Upload error:', error);
-        }
+      }
       });
     } catch (error) {
       this.uploadError = 'Upload failed. Please try again.';
