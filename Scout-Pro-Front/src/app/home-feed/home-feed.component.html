@@ -78,7 +78,6 @@
             [class.active]="i === selectedSuggestionIndex"
             (click)="selectPosition(position)"
             (mouseenter)="selectedSuggestionIndex = i">
-            <i class="bi bi-tag"></i>
             {{ position }}
           </div>
         </div>
@@ -173,19 +172,22 @@
     </div>
 
     <!-- Loading State -->
-    <div class="loading-spinner" *ngIf="loading">
-      <i class="fas fa-spinner fa-spin"></i>
+    <div *ngIf="loading" class="loading-state">
+      <div class="spinner"></div>
+      <p>Searching...</p>
     </div>
 
     <!-- Search Results -->
-    <div class="search-results" *ngIf="searchResults.length > 0">
+    <div class="search-results" *ngIf="!loading && searchResults.length > 0">
       <div *ngFor="let result of searchResults" class="player-card" [ngClass]="{'scout-card': result.type === 'scout'}">
         <img [src]="result.profile_image || getAvatarUrl(result.first_name, result.last_name)"
-             [alt]="result.full_name"
+             [alt]="result.first_name + ' ' + result.last_name"
              class="player-avatar"
              (error)="handleImageError($event, result.first_name, result.last_name)">
         <div class="player-info">
-          <h3>{{ result.full_name }}</h3>
+          <h3 class="clickable" (click)="result.type === 'scout' ? goToScoutProfile(result.scout_id || result.id) : goToPlayerProfile(result.id)">
+            {{ result.first_name }} {{ result.last_name }}
+          </h3>
           <div class="type-badge" [ngClass]="result.type">{{ result.type | titlecase }}</div>
 
           <!-- Player-specific info -->
@@ -201,7 +203,7 @@
             <div class="meta">{{ result.city }}, {{ result.country }}</div>
           </ng-container>
         </div>
-        <button class="view-profile-btn" (click)="result.type === 'player' ? goToPlayerProfile(result.id) : goToScoutProfile(result.id)">
+        <button class="view-profile-btn" (click)="result.type === 'scout' ? goToScoutProfile(result.scout_id || result.id) : goToPlayerProfile(result.id)">
           View Profile
         </button>
       </div>
@@ -360,17 +362,33 @@
           <div class="reel-actions">
             <button (click)="likePost(post?.id)" class="action-btn like-btn" [ngClass]="{'active': post?.has_liked}">
               <i class="bi" [ngClass]="{'bi-heart-fill': post?.has_liked, 'bi-heart': !post?.has_liked}"></i>
-              <span class="action-count" (click)="showLikesList(post?.id, $event)">{{ post?.likes_count || 0 }}</span>
+              <span class="action-count" *ngIf="userProfile?.membership === 'premium'" (click)="showLikesList(post?.id, $event)">{{ post?.likes_count || 0 }}</span>
             </button>
             <button (click)="toggleCommentBox(post?.id)" class="action-btn">
               <i class="bi bi-chat"></i>
-              <span class="action-count">{{ post?.comments_count || 0 }}</span>
+              <span class="action-count" *ngIf="userProfile?.membership === 'premium'">{{ post?.comments_count || 0 }}</span>
             </button>
             <button class="action-btn" (click)="post?.user?.isCurrentUser ? goToProfile() : goToPlayerProfile(post?.user?.player_id)">
               <i class="bi bi-person"></i>
             </button>
-            <div class="views-count">
-              <i class="bi bi-eye"></i> {{ post?.views || 0 }}
+            <div class="video-stats" *ngIf="userProfile?.membership === 'premium'">
+              <div class="stat-item">
+                <i class="fas fa-eye"></i>
+                <span>{{ post?.views || 0 }}</span>
+              </div>
+              <div class="stat-item" (click)="showLikesList(post?.id, $event)">
+                <i class="fas" [class.fa-heart]="post?.has_liked" [class.fa-heart-o]="!post?.has_liked"></i>
+                <span>{{ post?.likes_count || 0 }}</span>
+              </div>
+              <div class="stat-item" (click)="toggleCommentBox(post?.id)">
+                <i class="fas fa-comment"></i>
+                <span>{{ post?.comments_count || 0 }}</span>
+              </div>
+            </div>
+            <div class="upgrade-prompt" *ngIf="userProfile?.membership === 'free'">
+              <button class="btn btn-upgrade" (click)="goToSubscription()">
+                Upgrade to Premium to view analytics
+              </button>
             </div>
           </div>
 
@@ -431,23 +449,41 @@
 
       <!-- Events View -->
       <div *ngIf="activeView === 'events'" class="events-container">
-        <div *ngIf="!feedData.upcoming_events?.length" class="empty-feed">
-          No upcoming events. Check back later for new opportunities!
-        </div>
+        <!-- Premium Users Content -->
+        <div *ngIf="currentUser?.membership === 'premium'">
+          <div *ngIf="!feedData.upcoming_events?.length" class="empty-feed">
+            No upcoming events. Check back later for new opportunities!
+          </div>
 
-        <div class="events-grid">
-          <div *ngFor="let event of feedData.upcoming_events" class="event-card" (click)="goToEvent(event.id)">
-            <div class="event-image">
-              <img [src]="event.image || 'assets/default-event.jpg'" alt="{{ event.title }}">
-              <div class="event-date-badge">
-                {{ event.date | date:'MMM dd' }}
+          <div class="events-grid">
+            <div *ngFor="let event of feedData.upcoming_events" class="event-card" (click)="goToEvent(event.id)">
+              <div class="event-image">
+                <img [src]="event.image || 'assets/default-event.jpg'" alt="{{ event.title }}">
+                <div class="event-date-badge">
+                  {{ event.date | date:'MMM dd' }}
+                </div>
+              </div>
+              <div class="event-details">
+                <h3>{{ event.title }}</h3>
+                <p class="event-location"><i class="bi bi-geo-alt"></i> {{ event.location }}</p>
+                <p class="event-description">{{ event.desc }}</p>
               </div>
             </div>
-            <div class="event-details">
-              <h3>{{ event.title }}</h3>
-              <p class="event-location"><i class="bi bi-geo-alt"></i> {{ event.location }}</p>
-              <p class="event-description">{{ event.desc }}</p>
-            </div>
+          </div>
+        </div>
+
+        <!-- Free Users Content -->
+        <div *ngIf="currentUser?.membership !== 'premium'" class="premium-upgrade-message">
+          <div class="upgrade-card">
+            <h3>Upgrade to Premium</h3>
+            <p>Get access to exclusive features:</p>
+            <ul>
+              <li>View and enroll in upcoming events</li>
+              <li>Connect with top scouts and players</li>
+              <li>Access advanced analytics</li>
+              <li>And much more!</li>
+            </ul>
+            <button class="upgrade-btn" (click)="goToSubscription()">Upgrade Now</button>
           </div>
         </div>
       </div>
@@ -490,7 +526,8 @@
         </div>
       </div>
 
-      <div class="events">
+      <!-- Events Section for Premium Users -->
+      <div class="events" *ngIf="currentUser?.membership === 'premium'">
         <div class="section-header">
           <h4>Upcoming Events</h4>
           <a href="#" (click)="switchView('events'); $event.preventDefault()" class="see-all">See all</a>
@@ -507,7 +544,25 @@
         </div>
       </div>
 
-      <div class="recommendations">
+      <!-- Premium Upgrade Message for Free Users -->
+      <div class="events" *ngIf="currentUser?.membership !== 'premium'">
+        <div class="premium-upgrade-message">
+          <div class="upgrade-card">
+            <h3>Upgrade to Premium</h3>
+            <p>Get access to exclusive features:</p>
+            <ul>
+              <li>View and enroll in upcoming events</li>
+              <li>Connect with top scouts and players</li>
+              <li>Access advanced analytics</li>
+              <li>And much more!</li>
+            </ul>
+            <button class="upgrade-btn" (click)="goToSubscription()">Upgrade Now</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recommendations (Only for Scouts) -->
+      <div class="recommendations" *ngIf="isScout">
         <h4>You May Also Like</h4>
         <div class="recommendation-list">
           <div *ngFor="let rec of feedData?.recommendations" class="recommendation-item" (click)="goToPlayerProfile(rec?.id)">
@@ -532,33 +587,67 @@
   <div class="modal-content">
     <div class="modal-header">
       <h2>Upload New Video</h2>
-      <span class="close" (click)="closeUploadModal()">&times;</span>
+      <button class="close" (click)="closeUploadModal()">&times;</button>
     </div>
     <div class="modal-body">
-      <div class="form-group">
-        <label for="title">Title:</label>
-        <input type="text" id="title" [(ngModel)]="uploadData.title" class="form-control" placeholder="Video title">
+      <!-- Upload Form -->
+      <div class="upload-form">
+        <div class="form-group">
+          <label for="title">Title (optional)</label>
+          <input type="text"
+                 id="title"
+                 [(ngModel)]="uploadData.title"
+                 class="form-control"
+                 placeholder="Video title">
+        </div>
+
+        <div class="form-group">
+          <label for="description">Description (optional)</label>
+          <textarea id="description"
+                    [(ngModel)]="uploadData.description"
+                    class="form-control"
+                    rows="3"
+                    placeholder="Video description"></textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="video">Video File</label>
+          <input type="file"
+                 id="video"
+                 (change)="onFileSelected($event)"
+                 class="form-control"
+                 accept="video/*">
+
+        </div>
+
+        <!-- Upload Progress -->
+        <div *ngIf="uploadProgress > 0" class="upload-progress">
+          <div class="progress-bar" [style.width.%]="uploadProgress"></div>
+          <span>{{ uploadProgress }}%</span>
+        </div>
+
+        <!-- Error Message -->
+        <p *ngIf="uploadError" class="error-message">{{ uploadError }}</p>
+
+        <!-- Upload Limit Info -->
+        <div *ngIf="userProfile?.membership === 'free'" class="upload-limit-info" [class.limit-reached]="userProfile?.monthly_video_count >= 2">
+          <p class="info-text">Free Account Limits:</p>
+          <p>You have {{ 2 - (userProfile?.monthly_video_count || 0) }}/2 video uploads available this month.</p>
+          <p *ngIf="userProfile?.monthly_video_count >= 2" class="warning-text">
+            You have reached your monthly upload limit.
+            <a (click)="goToSubscription()" class="upgrade-link">Upgrade to Premium</a> for unlimited uploads.
+          </p>
+        </div>
       </div>
-      <div class="form-group">
-        <label for="description">Description:</label>
-        <textarea id="description" [(ngModel)]="uploadData.description" class="form-control" rows="3" placeholder="Video description"></textarea>
-      </div>
-      <div class="form-group">
-        <label for="video">Video File:</label>
-        <input type="file" id="video" (change)="onFileSelected($event)" class="form-control" accept="video/*">
-      </div>
-      <div *ngIf="uploadProgress > 0" class="upload-progress">
-        <div class="progress-bar" [style.width.%]="uploadProgress"></div>
-        <span>{{ uploadProgress }}%</span>
-      </div>
-      <p *ngIf="uploadError" class="error-message">{{ uploadError }}</p>
-      <p *ngIf="userProfile?.subscription_plan === 'Free' && (userProfile?.remaining_uploads ?? 0) > 0" class="upload-limit-info">
-        You have {{ userProfile?.remaining_uploads ?? 0 }}/3 uploads remaining this month.
-      </p>
     </div>
+
     <div class="modal-footer">
       <button class="btn btn-outline" (click)="closeUploadModal()">Cancel</button>
-      <button class="btn btn-primary" (click)="uploadVideo()">Upload</button>
+      <button class="btn btn-primary"
+              (click)="uploadVideo()"
+              [disabled]="!uploadData.file || (userProfile?.membership === 'free' && userProfile?.monthly_video_count >= 2)">
+        Upload
+      </button>
     </div>
   </div>
 </div>
@@ -573,7 +662,7 @@
     <div class="modal-body">
       <div class="likes-list">
         <div *ngFor="let like of selectedPostLikes" class="like-item">
-          <div class="like-user" (click)="like?.user?.id === currentUser?.id ? goToProfile() : goToPlayerProfile(like?.user?.id)">
+          <div class="like-user" (click)="like?.user?.id === currentUser?.id ? goToProfile() : (like?.user?.user_type === 'scout' ? goToScoutProfile(like?.user?.id) : goToPlayerProfile(like?.user?.id))">
             <img [src]="like?.user?.profile_image || getAvatarUrl(like?.user?.first_name, like?.user?.last_name)"
                  class="avatar-sm"
                  [alt]="like?.user?.full_name"

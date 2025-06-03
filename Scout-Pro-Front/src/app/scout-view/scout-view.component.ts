@@ -6,6 +6,7 @@ import { CommonModule } from '@angular/common';
 
 interface ScoutProfile {
   id?: string;
+  user_id?: number;
   first_name?: string;
   last_name?: string;
   username?: string;
@@ -14,12 +15,15 @@ interface ScoutProfile {
   organization?: string;
   city?: string;
   country?: string;
-  scouting_regions?: string;
-  preferred_roles?: string;
+  contact_email?: string;
+  contact_phone?: string;
+  scouting_regions?: string[];
+  preferred_roles?: string[];
   linkedin_url?: string;
-  age_groups?: string[];  
+  age_groups?: string[];
   clubs_worked_with?: string;
   certifications?: string[];
+  id_proof_path?: string;
 }
 
 @Component({
@@ -65,20 +69,18 @@ export class ScoutViewComponent implements OnInit {
       ? `http://localhost:8000/api/scout/${scoutId}`
       : 'http://localhost:8000/api/scout/profile';
 
-    this.http.get<{ data: ScoutProfile }>(apiUrl, { headers }).subscribe({
+    this.http.get<{ data: any }>(apiUrl, { headers }).subscribe({
       next: (response) => {
-        this.scoutData = response.data || null;
-
-        if (this.scoutData && typeof this.scoutData.age_groups === 'string') {
-  try {
-    this.scoutData.age_groups = JSON.parse(this.scoutData.age_groups);
-  } catch {
-    this.scoutData.age_groups = (this.scoutData.age_groups as unknown as string)
-      .split(',')
-      .map((item: string) => item.trim());
-  }
-}
-
+        if (response.data) {
+          this.scoutData = {
+            ...response.data,
+            // Process arrays that might come as strings
+            scouting_regions: this.getArrayFromString(response.data.scouting_regions),
+            preferred_roles: this.getArrayFromString(response.data.preferred_roles),
+            age_groups: this.getArrayFromString(response.data.age_groups),
+            certifications: Array.isArray(response.data.certifications) ? response.data.certifications : []
+          };
+        }
         this.loading = false;
       },
       error: (error) => {
@@ -87,8 +89,10 @@ export class ScoutViewComponent implements OnInit {
       }
     });
   }
-  getArrayFromString(value: string | null | undefined): string[] {
+
+  getArrayFromString(value: string | string[] | null | undefined): string[] {
   if (!value) return [];
+    if (Array.isArray(value)) return value;
   try {
     const parsed = JSON.parse(value);
     return Array.isArray(parsed) ? parsed : [parsed];
@@ -96,6 +100,23 @@ export class ScoutViewComponent implements OnInit {
     return value.split(',').map(item => item.trim());
   }
 }
+
+  // Helper methods to ensure arrays are always returned
+  getScoutingRegions(): string[] {
+    return this.scoutData?.scouting_regions || [];
+  }
+
+  getAgeGroups(): string[] {
+    return this.scoutData?.age_groups || [];
+  }
+
+  getPreferredRoles(): string[] {
+    return this.scoutData?.preferred_roles || [];
+  }
+
+  getCertifications(): string[] {
+    return this.scoutData?.certifications || [];
+  }
 
   switchTab(tab: string): void {
     this.activeTab = tab;

@@ -113,6 +113,7 @@ export class ScoutRegisterComponent {
 
   onFileSelected(event: any, field: 'profile_image' | 'id_proof' | 'certifications') {
     const files = event.target.files;
+    console.log(`File selected for ${field}:`, files);
     if (!files) return;
 
     if (field === 'profile_image') {
@@ -127,9 +128,11 @@ export class ScoutRegisterComponent {
       }
     } else if (field === 'certifications') {
       this.formData.certifications = Array.from(files);
-    } else {
-      this.formData[field] = files[0];
+    } else if (field === 'id_proof') {
+      console.log('Setting id_proof file:', files[0]);
+      this.formData.id_proof = files[0];
     }
+    console.log('Updated formData:', this.formData);
   }
 
   addItem(item: string, list: keyof ScoutFormData) {
@@ -173,32 +176,44 @@ export class ScoutRegisterComponent {
     this.errorMessage = '';
     this.successMessage = '';
 
+    // Create FormData and append all fields
     const formData = new FormData();
 
-    // Append all form fields to FormData
-    Object.keys(this.formData).forEach(key => {
-      const value = this.formData[key];
-      if (key === 'profile_image' && value) {
-        formData.append(key, value as File);
-      } else if (key === 'id_proof' && value) {
-        formData.append(key, value as File);
-      } else if (key === 'certifications' && value.length) {
-        // Append each certification file
-        value.forEach((file: File) => {
-          formData.append('certifications[]', file);
-        });
-      } else if (Array.isArray(value)) {
-        // Handle arrays (scouting_regions, age_groups, preferred_roles)
-        formData.append(key, JSON.stringify(value));
-      } else {
-        formData.append(key, value?.toString() || '');
-      }
-    });
+    // Append profile image if exists
+    if (this.formData.profile_image) {
+      formData.append('profile_image', this.formData.profile_image);
+    }
+
+    // Append ID proof if exists
+    if (this.formData.id_proof) {
+      formData.append('id_proof', this.formData.id_proof);
+    }
+
+    // Append certifications if any
+    if (this.formData.certifications.length > 0) {
+      this.formData.certifications.forEach((file: File) => {
+        formData.append('certifications[]', file);
+      });
+    }
+
+    // Append all other fields
+    formData.append('city', this.formData.city);
+    formData.append('country', this.formData.country);
+    formData.append('contact_email', this.formData.contact_email);
+    formData.append('contact_phone', this.formData.contact_phone);
+    formData.append('organization', this.formData.organization);
+    formData.append('position_title', this.formData.position_title);
+    formData.append('scouting_regions', JSON.stringify(this.formData.scouting_regions || []));
+    formData.append('age_groups', JSON.stringify(this.formData.age_groups || []));
+    formData.append('preferred_roles', JSON.stringify(this.formData.preferred_roles || []));
+    formData.append('clubs_worked_with', this.formData.clubs_worked_with);
+    formData.append('linkedin_url', this.formData.linkedin_url || '');
 
     const headers = new HttpHeaders({
       'Authorization': `Bearer ${this.authService.getToken()}`
     });
 
+    // Send all data in one request
     this.http.post('http://localhost:8000/api/scout/setup', formData, { headers })
       .subscribe({
         next: (response: any) => {
@@ -226,18 +241,21 @@ export class ScoutRegisterComponent {
               });
           }, 1500);
         },
-        error: (error) => {
-          this.loading = false;
-          if (error.error?.errors) {
-            // Handle validation errors
-            const errors = Object.values(error.error.errors).flat();
-            this.errorMessage = errors.join('\n');
-          } else if (error.error?.message) {
-            this.errorMessage = error.error.message;
-          } else {
-            this.errorMessage = 'Failed to setup profile. Please try again.';
-          }
-        }
+        error: (error: any) => this.handleError(error)
       });
+  }
+
+  private handleError(error: any) {
+    this.loading = false;
+    if (error.error?.errors) {
+      // Handle validation errors
+      const errors = Object.values(error.error.errors).flat();
+      this.errorMessage = errors.join('\n');
+    } else if (error.error?.message) {
+      this.errorMessage = error.error.message;
+    } else {
+      this.errorMessage = 'Failed to setup profile. Please try again.';
+    }
+    console.error('Setup error:', error);
   }
 }

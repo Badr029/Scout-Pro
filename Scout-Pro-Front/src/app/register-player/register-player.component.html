@@ -132,6 +132,72 @@
                     </div>
                 </div>
             </div>
+ <!-- Playing Information -->
+ <div class="section">
+  <h3>Playing Information</h3>
+
+  <div class="input-field">
+      <label for="preferred_foot">Preferred Foot *</label>
+      <select
+          id="preferred_foot"
+          name="preferred_foot"
+          [(ngModel)]="formData.preferred_foot"
+          #foot="ngModel"
+          required>
+          <option value="" selected disabled>Select Your Preferred Foot</option>
+          <option value="Left">Left</option>
+          <option value="Right">Right</option>
+          <option value="Both">Both</option>
+      </select>
+      <div class="error" *ngIf="foot.invalid && (foot.dirty || foot.touched)">
+          Preferred foot is required
+      </div>
+  </div>
+
+  <div class="input-field">
+      <label for="position">Primary Position *</label>
+      <select
+          id="position"
+          name="position"
+          [(ngModel)]="formData.position"
+          #position="ngModel"
+          required>
+          <option value="" selected disabled>Select Your Primary Position</option>
+          <option *ngFor="let pos of footballPositions" [value]="pos">{{pos}}</option>
+      </select>
+      <div class="error" *ngIf="position.invalid && (position.dirty || position.touched)">
+          Primary position is required
+      </div>
+  </div>
+
+  <div class="input-field">
+      <label>Secondary Positions</label>
+      <div class="multi-select">
+          <select [(ngModel)]="newSecondaryPosition" name="new_secondary_position">
+              <option value="">Select a secondary position</option>
+              <option *ngFor="let pos of availableSecondaryPositions" [value]="pos">{{pos}}</option>
+          </select>
+          <button type="button" (click)="addSecondaryPosition()" [disabled]="!newSecondaryPosition">Add</button>
+      </div>
+      <div class="tags">
+          <span *ngFor="let pos of formData.secondary_position" class="tag">
+              {{pos}}
+              <button type="button" (click)="removeSecondaryPosition(pos)">&times;</button>
+          </span>
+      </div>
+  </div>
+
+  <div class="input-field">
+      <label for="playing_style">Playing Style</label>
+      <textarea
+          id="playing_style"
+          name="playing_style"
+          [(ngModel)]="formData.playing_style"
+          #style="ngModel"
+          placeholder="Describe your playing style..."
+          rows="4"></textarea>
+  </div>
+</div>
 
             <!-- Physical Attributes -->
             <div class="section">
@@ -174,72 +240,6 @@
                 </div>
             </div>
 
-            <!-- Playing Information -->
-            <div class="section">
-                <h3>Playing Information</h3>
-
-                <div class="input-field">
-                    <label for="preferred_foot">Preferred Foot *</label>
-                    <select
-                        id="preferred_foot"
-                        name="preferred_foot"
-                        [(ngModel)]="formData.preferred_foot"
-                        #foot="ngModel"
-                        required>
-                        <option value="" selected disabled>Select Your Preferred Foot</option>
-                        <option value="Left">Left</option>
-                        <option value="Right">Right</option>
-                        <option value="Both">Both</option>
-                    </select>
-                    <div class="error" *ngIf="foot.invalid && (foot.dirty || foot.touched)">
-                        Preferred foot is required
-                    </div>
-                </div>
-
-                <div class="input-field">
-                    <label for="position">Primary Position *</label>
-                    <select
-                        id="position"
-                        name="position"
-                        [(ngModel)]="formData.position"
-                        #position="ngModel"
-                        required>
-                        <option value="" selected disabled>Select Your Primary Position</option>
-                        <option *ngFor="let pos of footballPositions" [value]="pos">{{pos}}</option>
-                    </select>
-                    <div class="error" *ngIf="position.invalid && (position.dirty || position.touched)">
-                        Primary position is required
-                    </div>
-                </div>
-
-                <div class="input-field">
-                    <label>Secondary Positions</label>
-                    <div class="multi-select">
-                        <select [(ngModel)]="newSecondaryPosition" name="new_secondary_position">
-                            <option value="">Select a secondary position</option>
-                            <option *ngFor="let pos of availableSecondaryPositions" [value]="pos">{{pos}}</option>
-                        </select>
-                        <button type="button" (click)="addSecondaryPosition()" [disabled]="!newSecondaryPosition">Add</button>
-                    </div>
-                    <div class="tags">
-                        <span *ngFor="let pos of formData.secondary_position" class="tag">
-                            {{pos}}
-                            <button type="button" (click)="removeSecondaryPosition(pos)">&times;</button>
-                        </span>
-                    </div>
-                </div>
-
-                <div class="input-field">
-                    <label for="playing_style">Playing Style</label>
-                    <textarea
-                        id="playing_style"
-                        name="playing_style"
-                        [(ngModel)]="formData.playing_style"
-                        #style="ngModel"
-                        placeholder="Describe your playing style..."
-                        rows="4"></textarea>
-                </div>
-            </div>
 
             <!-- Club Information -->
             <div class="section">
@@ -337,90 +337,3 @@
     </div>
 </body>
 
-<!-- <script>
-        function showDatePicker() {
-            document.getElementById('datePickerModal').style.display = 'flex';
-        }
-
-        function closeDatePicker() {
-            document.getElementById('datePickerModal').style.display = 'none';
-        }
-
-        function selectDate() {
-            const dateInput = document.getElementById('dateInput');
-            const dobInput = document.getElementById('dob');
-
-            if (dateInput.value) {
-                const date = new Date(dateInput.value);
-                const formattedDate = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`;
-                dobInput.value = formattedDate;
-            }
-
-            closeDatePicker();
-        }
-
-        function submitForm() {
-            // Reset error messages
-            document.querySelectorAll('.error-message').forEach(el => el.textContent = '');
-
-            // Get form values
-            const formData = {
-                dob: document.getElementById('dob').value,
-                phone: document.getElementById('phone').value,
-                height: document.getElementById('height').value,
-                weight: document.getElementById('weight').value,
-                position: document.getElementById('position').value,
-                marketValue: document.getElementById('marketValue').value,
-                gender: document.getElementById('gender').value,
-                nationality: document.getElementById('nationality').value,
-                city: document.getElementById('city').value,
-                club: document.getElementById('club').value,
-                experience: document.getElementById('experience').value,
-                bio: document.getElementById('bio').value,
-                endurance: document.getElementById('endurance').value,
-                yellowCards: document.getElementById('yellowCards').value,
-                redCards: document.getElementById('redCards').value
-            };
-
-            // Simple validation
-            let isValid = true;
-
-            if (!formData.dob) {
-                document.getElementById('dobError').textContent = 'Please select Date of Birth';
-                isValid = false;
-            }
-
-            if (!formData.phone) {
-                document.getElementById('phoneError').textContent = 'Please enter Phone Number';
-                isValid = false;
-            }
-
-            if (!formData.height) {
-                document.getElementById('heightError').textContent = 'Please enter Height';
-                isValid = false;
-            }
-
-            // Add similar validation for other required fields...
-
-            if (isValid) {
-                console.log("Player Registration Submitted");
-                console.log("DOB:", formData.dob);
-                console.log("Phone:", formData.phone);
-                console.log("Height:", formData.height);
-                console.log("Weight:", formData.weight);
-                console.log("Position:", formData.position);
-                console.log("Market Value:", formData.marketValue);
-                console.log("Gender:", formData.gender);
-                console.log("Nationality:", formData.nationality);
-                console.log("Current City:", formData.city);
-                console.log("Current Club:", formData.club);
-                console.log("Experience:", formData.experience);
-                console.log("Bio:", formData.bio);
-                console.log("Endurance:", formData.endurance);
-                console.log("Yellow Cards:", formData.yellowCards);
-                console.log("Red Cards:", formData.redCards);
-
-                alert("Player registration submitted successfully!");
-            }
-        }
-    </script>  -->

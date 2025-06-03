@@ -393,10 +393,14 @@ select {
 
 /* User Type Selection Styles */
 .user-type-slider {
-    max-width: 600px;
-    width: 100%;
+    max-width: 800px;
+    width: 90%;
+    margin: 2rem auto;
+    padding: 2rem;
     text-align: center;
-    transition: all 0.5s ease;
+    backdrop-filter: blur(10px);
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
 .user-type-slider:not(.selected) {
@@ -504,12 +508,12 @@ select {
 
 /* Registration Container */
 .registration-container {
-    width: 100%;
-    max-width: 500px;
-    margin: 0 auto;
-    opacity: 0;
-    transform: translateY(20px);
-    animation: fadeInUp 0.5s ease forwards;
+    max-width: 800px;
+    margin: 2rem auto;
+    padding: 2rem;
+    backdrop-filter: blur(10px);
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
 @keyframes fadeInUp {
@@ -520,30 +524,26 @@ select {
 }
 
 /* Responsive Adjustments */
-@media (max-width: 600px) {
-    .user-type-slider h2 {
-        font-size: 28px;
+@media (max-width: 768px) {
+    .registration-container,
+    .user-type-slider {
+        width: 95%;
+        padding: 1.5rem;
+        margin: 1rem auto;
+    }
+}
+
+@media (max-width: 480px) {
+    .registration-container,
+    .user-type-slider {
+        width: 100%;
+        padding: 1rem;
+        margin: 0.5rem auto;
+        border-radius: 8px;
     }
 
-    .user-type-slider.selected h2 {
-        font-size: 20px;
-    }
-
-    .filter-switch {
-        width: 300px;
-        height: 45px;
-    }
-
-    .filter-switch label {
-        font-size: 16px;
-    }
-
-    .filter-switch .background {
-        height: 33px;
-    }
-
-    .filter-switch i {
-        font-size: 16px;
+    h2 {
+        font-size: 22px;
     }
 }
 

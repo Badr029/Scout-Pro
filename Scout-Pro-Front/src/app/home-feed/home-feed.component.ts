@@ -4,7 +4,7 @@ import { Router, RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../api.service';
 import { NgForm } from '@angular/forms';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient, HttpHeaders, HttpEventType } from '@angular/common/http';
 import { AuthService } from '../auth.service';
 
 const API_URL = 'http://localhost:8000';
@@ -432,10 +432,11 @@ export class HomeFeedComponent implements OnInit {
   goToScoutProfile(scoutId: number) {
     if (!scoutId) return;
 
-    if (scoutId === this.currentUser?.id) {
-      this.goToProfile(); // Use the existing goToProfile method for current user
+    // Check if the scout ID matches the current user's ID
+    if (this.currentUser?.user_type === 'scout' && scoutId === this.currentUser?.id) {
+      this.router.navigate(['/scout/profile']); // Navigate to own profile
         } else {
-      this.router.navigate(['/scout/profile', scoutId]);
+      this.router.navigate(['/scout', scoutId]); // Navigate to scout view page
     }
   }
 
@@ -650,6 +651,12 @@ export class HomeFeedComponent implements OnInit {
       return;
     }
 
+    // Check if user has reached upload limit
+    if (this.userProfile?.membership === 'free' && this.userProfile?.monthly_video_count >= 2) {
+      this.uploadError = 'You have reached your monthly upload limit. Please upgrade to Premium for unlimited uploads.';
+      return;
+    }
+
     const token = localStorage.getItem('auth_token');
     if (!token) {
       this.router.navigate(['/login']);
@@ -657,63 +664,48 @@ export class HomeFeedComponent implements OnInit {
     }
 
     const file = this.uploadData.file;
-    const totalChunks = Math.ceil(file.size / this.CHUNK_SIZE);
-    this.uploadProgress = 0;
+    const formData = new FormData();
+    if (this.uploadData.title) {
+      formData.append('title', this.uploadData.title);
+    }
+    if (this.uploadData.description) {
+      formData.append('description', this.uploadData.description);
+    }
+    formData.append('video', file);
+
+    const headers = new HttpHeaders({
+      'Authorization': `Bearer ${token}`
+    });
 
     try {
-      for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++) {
-        const start = chunkIndex * this.CHUNK_SIZE;
-        const end = Math.min(start + this.CHUNK_SIZE, file.size);
-        const chunk = file.slice(start, end);
-
-        const formData = new FormData();
-        if (this.uploadData.title) {
-        formData.append('title', this.uploadData.title);
-        }
-        if (this.uploadData.description) {
-        formData.append('description', this.uploadData.description);
-        }
-        formData.append('video', chunk);
-        formData.append('chunkIndex', chunkIndex.toString());
-        formData.append('totalChunks', totalChunks.toString());
-        formData.append('fileName', file.name);
-
-        await new Promise<void>((resolve, reject) => {
-          this.apiService.uploadVideoChunk(formData).subscribe({
-            next: () => {
-              this.uploadProgress = Math.round((chunkIndex + 1) * 100 / totalChunks);
-              resolve();
-            },
-            error: (error) => {
-              this.uploadError = error.error?.message || 'Failed to upload video chunk';
-              reject(error);
+      // Single request upload
+      this.http.post<any>('http://localhost:8000/api/videos/upload', formData, {
+        headers,
+        reportProgress: true,
+        observe: 'events'
+      }).subscribe({
+        next: (event: any) => {
+          if (event.type === HttpEventType.UploadProgress) {
+            this.uploadProgress = Math.round(100 * event.loaded / event.total);
+          } else if (event.type === HttpEventType.Response) {
+            if (event.body.status === 'success') {
+              // Update the user profile to get new video count
+              this.getUserProfile();
+              this.closeUploadModal();
+              // Reload feed to show new video
+              this.loadFeedData();
+              this.showNotification('Video uploaded successfully');
             }
-          });
-        });
-      }
-
-      // Final step - tell server to combine chunks
-      const finalizeData = {
-        fileName: file.name,
-        totalChunks: totalChunks,
-        title: this.uploadData.title || '',
-        description: this.uploadData.description || ''
-      };
-
-      this.apiService.finalizeVideoUpload(finalizeData).subscribe({
-        next: () => {
-          this.closeUploadModal();
-          this.loadFeedData(); // Reload feed to show new video
-          this.showNotification('Video uploaded successfully');
+          }
         },
         error: (error) => {
-          this.uploadError = error.error?.message || 'Failed to finalize video upload';
-      }
+          this.uploadError = error.error?.message || 'Failed to upload video';
+          console.error('Upload error:', error);
+        }
       });
-
     } catch (error) {
-      console.error('Upload error:', error);
       this.uploadError = 'Upload failed. Please try again.';
+      console.error('Upload error:', error);
     }
   }
 
@@ -721,6 +713,18 @@ export class HomeFeedComponent implements OnInit {
     const token = localStorage.getItem('auth_token');
     if (!token) {
       this.router.navigate(['/login']);
+      return;
+    }
+
+    // Check if user is a player
+    if (!this.isPlayer) {
+      this.showNotification('Only players can upload videos');
+      return;
+    }
+
+    // Check upload limits for free users
+    if (this.userProfile?.membership === 'free' && this.userProfile?.monthly_video_count >= 2) {
+      this.showNotification('You have reached your monthly upload limit. Please upgrade to Premium for unlimited uploads.');
       return;
     }
 
@@ -915,29 +919,11 @@ export class HomeFeedComponent implements OnInit {
   }
 
   get isPlayer(): boolean {
-    const isPlayerType = this.currentUser?.user_type === 'player';
-    const isPlayerID = this.currentUser?.player_id && this.currentUser.player_id >= 1000000 && this.currentUser.player_id < 2000000;
-    console.log('isPlayer check:', {
-      userType: this.currentUser?.user_type,
-      userId: this.currentUser?.id,
-      playerId: this.currentUser?.player_id,
-      isPlayerType,
-      isPlayerID
-    });
-    return isPlayerType || isPlayerID;
+    return this.currentUser?.user_type === 'player';
   }
 
   get isScout(): boolean {
-    const isScoutType = this.currentUser?.user_type === 'scout';
-    const isScoutID = this.currentUser?.scout_id && this.currentUser.scout_id >= 2000000;
-    console.log('isScout check:', {
-      userType: this.currentUser?.user_type,
-      userId: this.currentUser?.id,
-      scoutId: this.currentUser?.scout_id,
-      isScoutType,
-      isScoutID
-    });
-    return isScoutType || isScoutID;
+    return this.currentUser?.user_type === 'scout';
   }
 
   onFilterChange(key: string, value: string) {
@@ -1406,5 +1392,9 @@ export class HomeFeedComponent implements OnInit {
 
   closeRightPanel() {
     this.showRightPanel = false;
+  }
+
+  goToSubscription() {
+    this.router.navigate(['/subscription']);
   }
 }

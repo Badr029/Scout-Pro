@@ -13,7 +13,7 @@
         <button class="btn btn-primary" (click)="fetchScoutProfile()">Try Again</button>
     </div>
 
-    
+
     <!-- Profile Content -->
     <div *ngIf="!loading && !error && scoutData" class="profile-content">
         <!-- Page Header -->
@@ -25,7 +25,7 @@
 
             <div class="profile-header-container">
                 <div class="profile-image-wrapper">
-                    <img *ngIf="scoutData.profile_image" 
+                    <img *ngIf="scoutData.profile_image"
                          [src]="'http://localhost:8000/storage/' + scoutData.profile_image"
                          [alt]="scoutData.first_name || ''">
 
@@ -79,6 +79,14 @@
                         <span class="detail-value">{{ scoutData.first_name || '' }} {{ scoutData.last_name || '' }}</span>
                     </div>
                     <div class="detail-item">
+                        <span class="detail-label">Contact Email</span>
+                        <span class="detail-value">{{ scoutData.contact_email || '' }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Contact Phone</span>
+                        <span class="detail-value">{{ scoutData.contact_phone || '' }}</span>
+                    </div>
+                    <div class="detail-item">
                         <span class="detail-label">Country</span>
                         <span class="detail-value">{{ scoutData.city || '' }}, {{ scoutData.country || '' }}</span>
                     </div>
@@ -102,15 +110,30 @@
                         <span class="detail-label">Position</span>
                         <span class="detail-value">{{ scoutData.position_title || '' }}</span>
                     </div>
-                    
-                    <div class="detail-item" *ngIf="scoutData.age_groups && scoutData.age_groups.length">
-                        <span class="detail-label">Age Groups</span>
-                        <div class="age-groups-list">
-                            <span *ngFor="let group of scoutData.age_groups" class="age-group-tag">{{ group }}</span>
+
+                    <div class="detail-item">
+                        <span class="detail-label">Scouting Regions</span>
+                        <div class="regions-list">
+                            <span *ngFor="let region of getScoutingRegions()" class="region-tag">{{ region }}</span>
                         </div>
                     </div>
+
                     <div class="detail-item">
-                        <span class="detail-label">Clubs Worked With </span>
+                        <span class="detail-label">Age Groups</span>
+                        <div class="age-groups-list">
+                            <span *ngFor="let group of getAgeGroups()" class="age-group-tag">{{ group }}</span>
+                        </div>
+                    </div>
+
+                    <div class="detail-item">
+                        <span class="detail-label">Preferred Roles</span>
+                        <div class="roles-list">
+                            <span *ngFor="let role of getPreferredRoles()" class="role-tag">{{ role }}</span>
+                        </div>
+                    </div>
+
+                    <div class="detail-item">
+                        <span class="detail-label">Clubs Worked With</span>
                         <span class="detail-value">{{ scoutData.clubs_worked_with || '' }}</span>
                     </div>
                 </div>
@@ -122,7 +145,7 @@
                 <div class="detail-group">
                     <h3 class="detail-title">Certifications</h3>
                     <div class="certifications-grid">
-                        <div *ngFor="let cert of scoutData.certifications || []" class="certification-item">
+                        <div *ngFor="let cert of getCertifications()" class="certification-item">
                             <img [src]="'http://localhost:8000/storage/' + cert" alt="Certification">
                         </div>
                     </div>
