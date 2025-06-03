@@ -16,7 +16,7 @@
         <div class="settings-menu-item" (click)="goToEditProfile()">
           <i class="fas fa-user-edit"></i> Edit Profile
         </div>
-        <div class="settings-menu-item" (click)="goToSubscription()" *ngIf="playerData?.subscription_plan !== 'Premium'">
+        <div class="settings-menu-item" (click)="goToSubscription()" *ngIf="playerData?.membership !== 'premium'">
           <i class="fas fa-crown"></i> Upgrade to Premium
         </div>
         <div class="settings-divider"></div>
@@ -57,8 +57,8 @@
           <span class="username">{{"@"+playerData.username}}</span>
         </h1>
         <p class="player-title">{{ playerData.position }} | {{ playerData.current_club }}</p>
-        <p class="subscription-badge" [ngClass]="playerData.subscription_plan === 'Premium' ? 'premium' : 'free'">
-          {{ playerData.subscription_plan || 'Free' }} Player
+        <p class="subscription-badge" [ngClass]="playerData.membership === 'premium' ? 'premium' : 'free'">
+          {{ playerData.membership === 'premium' ? 'Premium' : 'Free' }} Player
         </p>
 
         <div class="key-stats">
@@ -183,18 +183,18 @@
         </div>
 
         <div class="detail-group">
-          <h3 class="detail-title">Account Plan</h3>
-          <div class="subscription-details">
-            <div class="current-plan" [ngClass]="playerData.subscription_plan === 'Premium' ? 'premium' : 'free'">
-              <h4>{{ playerData.subscription_plan || 'Free' }} Account</h4>
-              <p *ngIf="playerData.subscription_plan !== 'Premium'">
-                You currently have {{ playerData.remaining_uploads || 0 }}/3 video uploads available this month.
+          <h3 class="detail-title">Account Membership</h3>
+          <div class="membership-details">
+            <div class="current-plan" [ngClass]="playerData.membership === 'premium' ? 'premium' : 'free'">
+              <h4>{{ playerData.membership === 'premium' ? 'Premium' : 'Free' }} Account</h4>
+              <p *ngIf="playerData.membership !== 'premium'">
+                You currently have {{ 2 - (playerData.monthly_video_count || 0) }}/2 video uploads available this month.
               </p>
-              <p *ngIf="playerData.subscription_plan === 'Premium'">
+              <p *ngIf="playerData.membership === 'premium'">
                 Unlimited video uploads and premium features.
               </p>
             </div>
-            <button *ngIf="playerData.subscription_plan !== 'Premium'" class="btn btn-upgrade" (click)="goToSubscription()">Upgrade to Premium</button>
+            <button *ngIf="playerData.membership !== 'premium'" class="btn btn-upgrade" (click)="goToSubscription()">Upgrade to Premium</button>
           </div>
         </div>
       </div>
@@ -344,13 +344,20 @@
         <span>{{ uploadProgress }}%</span>
       </div>
       <p *ngIf="uploadError" class="error-message">{{ uploadError }}</p>
-      <p *ngIf="playerData?.subscription_plan === 'Free' && (playerData?.remaining_uploads ?? 0) > 0" class="upload-limit-info">
-        You have {{ playerData?.remaining_uploads ?? 0 }}/3 uploads remaining this month.
-      </p>
+      <div *ngIf="playerData?.membership === 'free'" class="upload-limit-info" [class.limit-reached]="(playerData?.monthly_video_count || 0) >= 2">
+        <p>You have {{ 2 - (playerData?.monthly_video_count || 0) }}/2 uploads remaining this month.</p>
+        <p *ngIf="(playerData?.monthly_video_count || 0) >= 2">
+          <a (click)="goToSubscription()" class="upgrade-link">Upgrade to Premium</a> for unlimited uploads.
+        </p>
+      </div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-outline" (click)="closeUploadModal()">Cancel</button>
-      <button class="btn btn-primary" (click)="uploadVideo()">Upload</button>
+      <button class="btn btn-primary"
+              (click)="uploadVideo()"
+              [disabled]="!uploadData.file || (playerData?.membership === 'free' && (playerData?.monthly_video_count || 0) >= 2)">
+        Upload
+      </button>
     </div>
   </div>
 </div>

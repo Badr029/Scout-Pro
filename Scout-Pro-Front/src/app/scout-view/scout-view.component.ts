@@ -91,15 +91,15 @@ export class ScoutViewComponent implements OnInit {
   }
 
   getArrayFromString(value: string | string[] | null | undefined): string[] {
-    if (!value) return [];
+  if (!value) return [];
     if (Array.isArray(value)) return value;
-    try {
-      const parsed = JSON.parse(value);
-      return Array.isArray(parsed) ? parsed : [parsed];
-    } catch {
-      return value.split(',').map(item => item.trim());
-    }
+  try {
+    const parsed = JSON.parse(value);
+    return Array.isArray(parsed) ? parsed : [parsed];
+  } catch {
+    return value.split(',').map(item => item.trim());
   }
+}
 
   // Helper methods to ensure arrays are always returned
   getScoutingRegions(): string[] {

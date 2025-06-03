@@ -571,33 +571,67 @@
   <div class="modal-content">
     <div class="modal-header">
       <h2>Upload New Video</h2>
-      <span class="close" (click)="closeUploadModal()">&times;</span>
+      <button class="close" (click)="closeUploadModal()">&times;</button>
     </div>
     <div class="modal-body">
-      <div class="form-group">
-        <label for="title">Title:</label>
-        <input type="text" id="title" [(ngModel)]="uploadData.title" class="form-control" placeholder="Video title">
+      <!-- Upload Form -->
+      <div class="upload-form">
+        <div class="form-group">
+          <label for="title">Title (optional)</label>
+          <input type="text"
+                 id="title"
+                 [(ngModel)]="uploadData.title"
+                 class="form-control"
+                 placeholder="Video title">
+        </div>
+
+        <div class="form-group">
+          <label for="description">Description (optional)</label>
+          <textarea id="description"
+                    [(ngModel)]="uploadData.description"
+                    class="form-control"
+                    rows="3"
+                    placeholder="Video description"></textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="video">Video File</label>
+          <input type="file"
+                 id="video"
+                 (change)="onFileSelected($event)"
+                 class="form-control"
+                 accept="video/*">
+
+        </div>
+
+        <!-- Upload Progress -->
+        <div *ngIf="uploadProgress > 0" class="upload-progress">
+          <div class="progress-bar" [style.width.%]="uploadProgress"></div>
+          <span>{{ uploadProgress }}%</span>
+        </div>
+
+        <!-- Error Message -->
+        <p *ngIf="uploadError" class="error-message">{{ uploadError }}</p>
+
+        <!-- Upload Limit Info -->
+        <div *ngIf="userProfile?.membership === 'free'" class="upload-limit-info" [class.limit-reached]="userProfile?.monthly_video_count >= 2">
+          <p class="info-text">Free Account Limits:</p>
+          <p>You have {{ 2 - (userProfile?.monthly_video_count || 0) }}/2 video uploads available this month.</p>
+          <p *ngIf="userProfile?.monthly_video_count >= 2" class="warning-text">
+            You have reached your monthly upload limit.
+            <a (click)="goToSubscription()" class="upgrade-link">Upgrade to Premium</a> for unlimited uploads.
+          </p>
+        </div>
       </div>
-      <div class="form-group">
-        <label for="description">Description:</label>
-        <textarea id="description" [(ngModel)]="uploadData.description" class="form-control" rows="3" placeholder="Video description"></textarea>
-      </div>
-      <div class="form-group">
-        <label for="video">Video File:</label>
-        <input type="file" id="video" (change)="onFileSelected($event)" class="form-control" accept="video/*">
-      </div>
-      <div *ngIf="uploadProgress > 0" class="upload-progress">
-        <div class="progress-bar" [style.width.%]="uploadProgress"></div>
-        <span>{{ uploadProgress }}%</span>
-      </div>
-      <p *ngIf="uploadError" class="error-message">{{ uploadError }}</p>
-      <p *ngIf="userProfile?.subscription_plan === 'Free' && (userProfile?.remaining_uploads ?? 0) > 0" class="upload-limit-info">
-        You have {{ userProfile?.remaining_uploads ?? 0 }}/3 uploads remaining this month.
-      </p>
     </div>
+
     <div class="modal-footer">
       <button class="btn btn-outline" (click)="closeUploadModal()">Cancel</button>
-      <button class="btn btn-primary" (click)="uploadVideo()">Upload</button>
+      <button class="btn btn-primary"
+              (click)="uploadVideo()"
+              [disabled]="!uploadData.file || (userProfile?.membership === 'free' && userProfile?.monthly_video_count >= 2)">
+        Upload
+      </button>
     </div>
   </div>
 </div>

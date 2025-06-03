@@ -1,6 +1,6 @@
 import { Component, ViewEncapsulation, OnInit, OnDestroy } from '@angular/core';
 import { Router } from '@angular/router';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient, HttpHeaders, HttpEventType } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../auth.service';
@@ -25,8 +25,9 @@ interface PlayerProfile {
   playing_style: string;
   transfer_status: string;
   bio: string;
-  subscription_plan: string;
-  remaining_uploads?: number;
+  membership: string;
+  monthly_video_count: number;
+  last_count_reset?: string;
   registration_type?: string; // 'email' or 'google'
 }
 
@@ -315,7 +316,7 @@ export class ProfileComponent implements OnInit, OnDestroy {
   // This method is kept for reference but no longer used
 
   openUploadModal() {
-    if (this.playerData?.subscription_plan === 'Free' && (this.playerData?.remaining_uploads ?? 0) <= 0) {
+    if (this.playerData?.membership === 'Free' && (this.playerData?.monthly_video_count ?? 0) <= 0) {
       // Show premium upgrade prompt
       this.router.navigate(['/subscription']);
       return;
@@ -356,74 +357,51 @@ export class ProfileComponent implements OnInit, OnDestroy {
     }
 
     const file = this.uploadData.file;
-    const totalChunks = Math.ceil(file.size / this.CHUNK_SIZE);
-    this.uploadProgress = 0;
+    const formData = new FormData();
+    if (this.uploadData.title) {
+      formData.append('title', this.uploadData.title);
+    }
+    if (this.uploadData.description) {
+      formData.append('description', this.uploadData.description);
+    }
+    formData.append('video', file);
+
+    const headers = new HttpHeaders({
+      'Authorization': `Bearer ${token}`
+    });
 
     try {
-      for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++) {
-        const start = chunkIndex * this.CHUNK_SIZE;
-        const end = Math.min(start + this.CHUNK_SIZE, file.size);
-        const chunk = file.slice(start, end);
-
-        const formData = new FormData();
-        if (this.uploadData.title) {
-          formData.append('title', this.uploadData.title);
-        }
-        if (this.uploadData.description) {
-          formData.append('description', this.uploadData.description);
-        }
-        formData.append('video', chunk);
-        formData.append('chunkIndex', chunkIndex.toString());
-        formData.append('totalChunks', totalChunks.toString());
-        formData.append('fileName', file.name);
-
-        const headers = new HttpHeaders({
-          'Authorization': `Bearer ${token}`
-        });
-
-        await new Promise<void>((resolve, reject) => {
-          this.http.post<any>('http://localhost:8000/api/videos/chunk', formData, {
-            headers,
-          }).subscribe({
-            next: () => {
-              this.uploadProgress = Math.round((chunkIndex + 1) * 100 / totalChunks);
-              resolve();
-            },
-            error: (error) => {
-              this.uploadError = error.error.message || 'Failed to upload video chunk';
-              reject(error);
-            }
-          });
-        });
-      }
-
-      // Final step - tell server to combine chunks
-      const finalizeData = {
-        fileName: file.name,
-        totalChunks: totalChunks,
-        title: this.uploadData.title || '',
-        description: this.uploadData.description || ''
-      };
-
-      const headers = new HttpHeaders({
-        'Authorization': `Bearer ${token}`
-      });
-
-      this.http.post<any>('http://localhost:8000/api/videos/finalize', finalizeData, {
+      // Single request upload
+      this.http.post<any>('http://localhost:8000/api/videos/upload', formData, {
         headers,
+        reportProgress: true,
+        observe: 'events'
       }).subscribe({
-        next: () => {
-          this.resetUploadForm();
-          this.fetchPlayerVideos();
-          this.closeUploadModal();
+        next: (event: any) => {
+          if (event.type === HttpEventType.UploadProgress) {
+            this.uploadProgress = Math.round(100 * event.loaded / event.total);
+          } else if (event.type === HttpEventType.Response) {
+            if (event.body.status === 'success') {
+              // Update the video count from the response
+              if (this.playerData && event.body.data.monthly_video_count !== undefined) {
+                this.playerData.monthly_video_count = event.body.data.monthly_video_count;
+              }
+
+              // Refresh videos list
+              this.fetchPlayerVideos();
+              this.closeUploadModal();
+              this.resetUploadForm();
+            }
+          }
         },
         error: (error) => {
-          this.uploadError = error.error.message || 'Failed to finalize video upload';
+          this.uploadError = error.error?.message || 'Failed to upload video';
+          console.error('Upload error:', error);
         }
       });
-
     } catch (error) {
       this.uploadError = 'Upload failed. Please try again.';
+      console.error('Upload error:', error);
     }
   }
 
@@ -782,7 +760,10 @@ export class ProfileComponent implements OnInit, OnDestroy {
         JSON.stringify(this.playerData.previous_clubs) :
         this.playerData.previous_clubs,
       playing_style: this.playerData.playing_style || '',
-      transfer_status: this.playerData.transfer_status || ''
+      transfer_status: this.playerData.transfer_status || '',
+      membership: this.playerData.membership,
+      monthly_video_count: this.playerData.monthly_video_count,
+      last_count_reset: this.playerData.last_count_reset
     };
 
     // Use the correct profile update endpoint

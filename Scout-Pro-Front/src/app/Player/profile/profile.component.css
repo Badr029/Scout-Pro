@@ -392,7 +392,7 @@ body {
     height: 100%;
 }
 
-.subscription-badge {
+.membership-badge {
     display: inline-block;
     padding: 0.3rem 0.8rem;
     border-radius: 20px;
@@ -401,14 +401,49 @@ body {
     margin-bottom: 1rem;
 }
 
-.subscription-badge.premium {
+.membership-badge.premium {
     background-color: #ffb100;
     color: #000;
 }
 
-.subscription-badge.free {
+.membership-badge.free {
     background-color: #4a6cf7;
     color: white;
+}
+
+.membership-details {
+    background: var(--surface-light);
+    border-radius: var(--border-radius);
+    padding: 1.5rem;
+    margin-top: 1rem;
+}
+
+.current-plan {
+    padding: 1rem;
+    border-radius: var(--border-radius-sm);
+    margin-bottom: 1rem;
+}
+
+.current-plan.premium {
+    background: linear-gradient(135deg, rgba(255, 177, 0, 0.1), rgba(255, 138, 0, 0.1));
+    border: 1px solid #ffb100;
+}
+
+.current-plan.free {
+    background: rgba(74, 108, 247, 0.1);
+    border: 1px solid #4a6cf7;
+}
+
+.current-plan h4 {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.2rem;
+    font-weight: 600;
+}
+
+.current-plan p {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
 }
 
 .btn-upgrade {
@@ -416,11 +451,50 @@ body {
     color: #000;
     font-weight: 600;
     border: none;
+    width: 100%;
+    padding: 1rem;
+    border-radius: var(--border-radius-sm);
+    cursor: pointer;
+    transition: all 0.2s ease;
 }
 
 .btn-upgrade:hover {
     background: linear-gradient(135deg, #ff8a00, #ffb100);
     transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 177, 0, 0.2);
+}
+
+.upload-limit-info {
+    background: rgba(74, 108, 247, 0.1);
+    border: 1px solid #4a6cf7;
+    border-radius: var(--border-radius-sm);
+    padding: 1rem;
+    margin-top: 1rem;
+    font-size: 0.9rem;
+}
+
+.upload-limit-info.limit-reached {
+    background: rgba(214, 48, 49, 0.1);
+    border-color: var(--danger);
+}
+
+.upload-limit-info p {
+    margin: 0;
+}
+
+.upload-limit-info p + p {
+    margin-top: 0.5rem;
+}
+
+.upgrade-link {
+    color: var(--primary);
+    text-decoration: underline;
+    cursor: pointer;
+    font-weight: 500;
+}
+
+.upgrade-link:hover {
+    color: var(--primary-dark);
 }
 
 /* Video Tab Styles */
@@ -749,35 +823,6 @@ textarea.form-control {
     background-color: var(--darker);
     padding: 1.5rem;
     border-radius: 10px;
-}
-
-.current-plan {
-    margin-bottom: 1.5rem;
-    padding: 1rem;
-    border-radius: 8px;
-}
-
-.current-plan.free {
-    background-color: rgba(74, 108, 247, 0.1);
-    border: 1px solid rgba(74, 108, 247, 0.3);
-}
-
-.current-plan.premium {
-    background-color: rgba(255, 177, 0, 0.1);
-    border: 1px solid rgba(255, 177, 0, 0.3);
-}
-
-.current-plan h4 {
-    margin-top: 0;
-    margin-bottom: 0.8rem;
-}
-
-.current-plan.premium h4 {
-    color: #ffb100;
-}
-
-.current-plan.free h4 {
-    color: #4a6cf7;
 }
 
 .position-list, .club-list {
