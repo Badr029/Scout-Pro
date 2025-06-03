@@ -553,26 +553,28 @@ body {
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
 }
 
-.video-stats {
-  display: flex;
-  gap: 1rem;
-  align-items: center;
-  padding: 0.5rem 0;
-}
-
-.stat-item {
+.video-stats, .upgrade-prompt {
+  margin-left: auto;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  cursor: pointer;
 }
 
-.stat-item i {
+.video-stats .views-count {
+  margin-left: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.video-stats .views-count i {
   font-size: 1.1rem;
 }
 
-.stat-item:hover {
-  color: var(--primary-color);
+.upgrade-prompt .btn-upgrade {
+  font-size: 0.85rem;
+  padding: 4px 12px;
 }
 
 .upgrade-prompt {

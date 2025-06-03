@@ -372,17 +372,8 @@
               <i class="bi bi-person"></i>
             </button>
             <div class="video-stats" *ngIf="userProfile?.membership === 'premium'">
-              <div class="stat-item">
-                <i class="fas fa-eye"></i>
-                <span>{{ post?.views || 0 }}</span>
-              </div>
-              <div class="stat-item" (click)="showLikesList(post?.id, $event)">
-                <i class="fas" [class.fa-heart]="post?.has_liked" [class.fa-heart-o]="!post?.has_liked"></i>
-                <span>{{ post?.likes_count || 0 }}</span>
-              </div>
-              <div class="stat-item" (click)="toggleCommentBox(post?.id)">
-                <i class="fas fa-comment"></i>
-                <span>{{ post?.comments_count || 0 }}</span>
+              <div class="views-count">
+                <i class="bi bi-eye"></i> {{ post?.views || 0 }}
               </div>
             </div>
             <div class="upgrade-prompt" *ngIf="userProfile?.membership === 'free'">
@@ -450,7 +441,7 @@
       <!-- Events View -->
       <div *ngIf="activeView === 'events'" class="events-container">
         <!-- Premium Users Content -->
-        <div *ngIf="currentUser?.membership === 'premium'">
+        <div *ngIf="userProfile?.membership === 'premium'">
           <div *ngIf="!feedData.upcoming_events?.length" class="empty-feed">
             No upcoming events. Check back later for new opportunities!
           </div>
@@ -473,7 +464,7 @@
         </div>
 
         <!-- Free Users Content -->
-        <div *ngIf="currentUser?.membership !== 'premium'" class="premium-upgrade-message">
+        <div *ngIf="userProfile?.membership !== 'premium'" class="premium-upgrade-message">
           <div class="upgrade-card">
             <h3>Upgrade to Premium</h3>
             <p>Get access to exclusive features:</p>
@@ -527,7 +518,7 @@
       </div>
 
       <!-- Events Section for Premium Users -->
-      <div class="events" *ngIf="currentUser?.membership === 'premium'">
+      <div class="events" *ngIf="userProfile?.membership === 'premium'">
         <div class="section-header">
           <h4>Upcoming Events</h4>
           <a href="#" (click)="switchView('events'); $event.preventDefault()" class="see-all">See all</a>
@@ -545,7 +536,7 @@
       </div>
 
       <!-- Premium Upgrade Message for Free Users -->
-      <div class="events" *ngIf="currentUser?.membership !== 'premium'">
+      <div class="events" *ngIf="userProfile?.membership !== 'premium'">
         <div class="premium-upgrade-message">
           <div class="upgrade-card">
             <h3>Upgrade to Premium</h3>

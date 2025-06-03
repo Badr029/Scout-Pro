@@ -57,8 +57,8 @@
           <span class="username">{{"@"+playerData.username}}</span>
         </h1>
         <p class="player-title">{{ playerData.position }} | {{ playerData.current_club }}</p>
-        <p class="subscription-badge" [ngClass]="playerData.membership === 'premium' ? 'premium' : 'free'">
-          {{ playerData.membership === 'premium' ? 'Premium' : 'Free' }} Player
+        <p class="subscription-badge premium" *ngIf="playerData.membership === 'premium'">
+          Premium
         </p>
 
         <div class="key-stats">
@@ -194,7 +194,7 @@
                 Unlimited video uploads and premium features.
               </p>
             </div>
-            <button *ngIf="playerData.membership !== 'premium'" class="btn btn-upgrade" (click)="goToSubscription()"><i class="fas fa-crown"></i>Upgrade to Premium</button>
+            <button *ngIf="playerData.membership !== 'premium'" class="btn btn-upgrade" (click)="goToSubscription()">Upgrade to Premium</button>
           </div>
         </div>
       </div>
@@ -434,13 +434,13 @@
         <div class="reel-actions">
           <button (click)="likeVideo(selectedVideo.id)" class="action-btn like-btn" [class.active]="selectedVideo.has_liked">
             <i class="bi" [ngClass]="{'bi-heart-fill': selectedVideo.has_liked, 'bi-heart': !selectedVideo.has_liked}"></i>
-            <span class="action-count" *ngIf="playerData?.membership === 'premium'" (click)="showLikesList(selectedVideo.id, $event)">{{ selectedVideo.likes_count || 0 }}</span>
+            <span class="action-count" (click)="showLikesList(selectedVideo.id, $event)">{{ selectedVideo.likes_count || 0 }}</span>
           </button>
           <button (click)="toggleCommentBox(selectedVideo.id)" class="action-btn">
             <i class="bi bi-chat"></i>
-            <span class="action-count" *ngIf="playerData?.membership === 'premium'">{{ selectedVideo.comments_count || 0 }}</span>
+            <span class="action-count">{{ selectedVideo.comments_count || 0 }}</span>
           </button>
-          <div class="views-count" *ngIf="playerData?.membership === 'premium'">
+          <div class="views-count">
             <i class="bi bi-eye"></i> {{ selectedVideo.views || 0 }}
           </div>
         </div>
