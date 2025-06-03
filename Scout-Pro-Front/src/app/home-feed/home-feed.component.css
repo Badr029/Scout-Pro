@@ -554,16 +554,41 @@ body {
 }
 
 .video-stats {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  padding: 0.5rem;
-  background: linear-gradient(transparent, rgba(0, 0, 0, 0.7));
-  color: white;
   display: flex;
-  justify-content: space-between;
-  font-size: 0.8rem;
+  gap: 1rem;
+  align-items: center;
+  padding: 0.5rem 0;
+}
+
+.stat-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+}
+
+.stat-item i {
+  font-size: 1.1rem;
+}
+
+.stat-item:hover {
+  color: var(--primary-color);
+}
+
+.upgrade-prompt {
+  padding: 0.5rem 0;
+  text-align: center;
+}
+
+.upgrade-link {
+  color: var(--primary-color);
+  text-decoration: none;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.upgrade-link:hover {
+  text-decoration: underline;
 }
 
 .grid-info {
@@ -2860,4 +2885,32 @@ input[type="file"].form-control::file-selector-button:hover {
 
 .upgrade-link:hover {
   color: var(--primary-dark);
+}
+
+.btn-upgrade {
+  background: linear-gradient(135deg, #6b46c1 0%, #9f7aea 100%);
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.btn-upgrade i {
+  font-size: 1.1rem;
+  color: #ffd700;
+  margin-right: 2px;
+}
+
+.btn-upgrade:hover {
+  background: linear-gradient(135deg, #553c9a 0%, #805ad5 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
 }

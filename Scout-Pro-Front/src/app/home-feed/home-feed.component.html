@@ -362,17 +362,33 @@
           <div class="reel-actions">
             <button (click)="likePost(post?.id)" class="action-btn like-btn" [ngClass]="{'active': post?.has_liked}">
               <i class="bi" [ngClass]="{'bi-heart-fill': post?.has_liked, 'bi-heart': !post?.has_liked}"></i>
-              <span class="action-count" (click)="showLikesList(post?.id, $event)">{{ post?.likes_count || 0 }}</span>
+              <span class="action-count" *ngIf="userProfile?.membership === 'premium'" (click)="showLikesList(post?.id, $event)">{{ post?.likes_count || 0 }}</span>
             </button>
             <button (click)="toggleCommentBox(post?.id)" class="action-btn">
               <i class="bi bi-chat"></i>
-              <span class="action-count">{{ post?.comments_count || 0 }}</span>
+              <span class="action-count" *ngIf="userProfile?.membership === 'premium'">{{ post?.comments_count || 0 }}</span>
             </button>
             <button class="action-btn" (click)="post?.user?.isCurrentUser ? goToProfile() : goToPlayerProfile(post?.user?.player_id)">
               <i class="bi bi-person"></i>
             </button>
-            <div class="views-count">
-              <i class="bi bi-eye"></i> {{ post?.views || 0 }}
+            <div class="video-stats" *ngIf="userProfile?.membership === 'premium'">
+              <div class="stat-item">
+                <i class="fas fa-eye"></i>
+                <span>{{ post?.views || 0 }}</span>
+              </div>
+              <div class="stat-item" (click)="showLikesList(post?.id, $event)">
+                <i class="fas" [class.fa-heart]="post?.has_liked" [class.fa-heart-o]="!post?.has_liked"></i>
+                <span>{{ post?.likes_count || 0 }}</span>
+              </div>
+              <div class="stat-item" (click)="toggleCommentBox(post?.id)">
+                <i class="fas fa-comment"></i>
+                <span>{{ post?.comments_count || 0 }}</span>
+              </div>
+            </div>
+            <div class="upgrade-prompt" *ngIf="userProfile?.membership === 'free'">
+              <button class="btn btn-upgrade" (click)="goToSubscription()">
+                Upgrade to Premium to view analytics
+              </button>
             </div>
           </div>
 

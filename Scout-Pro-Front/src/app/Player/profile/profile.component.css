@@ -447,21 +447,30 @@ body {
 }
 
 .btn-upgrade {
-    background: linear-gradient(135deg, #ffb100, #ff8a00);
-    color: #000;
-    font-weight: 600;
+    background: linear-gradient(135deg, #6b46c1 0%, #9f7aea 100%);
+    color: white;
     border: none;
-    width: 100%;
-    padding: 1rem;
-    border-radius: var(--border-radius-sm);
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 500;
     cursor: pointer;
-    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.btn-upgrade i {
+    font-size: 1rem;
+    color: #ffd700;
 }
 
 .btn-upgrade:hover {
-    background: linear-gradient(135deg, #ff8a00, #ffb100);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(255, 177, 0, 0.2);
+    background: linear-gradient(135deg, #553c9a 0%, #805ad5 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
 }
 
 .upload-limit-info {
@@ -640,8 +649,23 @@ body {
 .video-stats {
     display: flex;
     gap: 1rem;
-    font-size: 0.75rem;
-    color: var(--gray);
+    align-items: center;
+    padding: 0.5rem 0;
+}
+
+.stat-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+}
+
+.stat-item i {
+    font-size: 1.1rem;
+}
+
+.stat-item:hover {
+    color: var(--primary-color);
 }
 
 .premium-promo {
@@ -1597,4 +1621,20 @@ textarea.form-control {
     font-size: 0.8rem;
     min-width: fit-content;
     margin-left: auto;
+}
+
+.upgrade-prompt {
+    padding: 0.5rem 0;
+    text-align: center;
+}
+
+.upgrade-link {
+    color: var(--primary-color);
+    text-decoration: none;
+    font-size: 0.9rem;
+    cursor: pointer;
+}
+
+.upgrade-link:hover {
+    text-decoration: underline;
 }
