@@ -174,19 +174,22 @@ body {
 }
 
 .stat-value, .regions-list, .roles-list {
-    font-weight: 600;
-    color: $light;
-    margin-top: 0.2rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
 }
 
 /* Ensure tags are styled appropriately */
 .region-tag, .age-group-tag {
     background: rgba(38, 103, 204, 0.1);
     color: $primary;
-    padding: 0.3rem 0.8rem;
-    border-radius: 15px;
-    font-size: 0.9em;
-    font-weight: 500;
+    padding: 4px 12px;
+    border-radius: 16px;
+    font-size: 14px;
+    display: inline-flex;
+    align-items: center;
+    white-space: nowrap;
 }
 
 .role-tag {

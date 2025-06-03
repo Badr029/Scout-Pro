@@ -432,10 +432,11 @@ export class HomeFeedComponent implements OnInit {
   goToScoutProfile(scoutId: number) {
     if (!scoutId) return;
 
-    if (scoutId === this.currentUser?.id) {
-      this.goToProfile(); // Use the existing goToProfile method for current user
-        } else {
-      this.router.navigate(['/scout/profile', scoutId]);
+    // Check if the scout ID matches the current user's ID
+    if (this.currentUser?.user_type === 'scout' && scoutId === this.currentUser?.id) {
+      this.router.navigate(['/scout/profile']); // Navigate to own profile
+    } else {
+      this.router.navigate(['/scout', scoutId]); // Navigate to scout view page
     }
   }
 

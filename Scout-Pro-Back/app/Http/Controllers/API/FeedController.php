@@ -661,7 +661,8 @@ class FeedController extends Controller
                 'position_title' => $scout->position_title,
                 'city' => $scout->city,
                 'country' => $scout->country,
-                'type' => 'scout'
+                'type' => 'scout',
+                'scout_id' => $scout->user_id
             ];
         });
 
@@ -1005,6 +1006,7 @@ class FeedController extends Controller
         return $applied;
     }
 
+
     /**
      * Get available filters based on user type
      */
@@ -1024,5 +1026,30 @@ class FeedController extends Controller
 
         return $filters;
     }
+
+    public function playerviewprofile($user_id) {
+        $playerprofiledata = Player::with('user')->where('user_id', $user_id)->first();
+        if (!$playerprofiledata) {
+            return response()->json([
+                'message' => 'No player profile found for this user'
+            ], 404);
+        }
+        return response()->json([
+            'data' => $playerprofiledata
+        ]);
+    }
+
+    public function scoutviewprofile($user_id) {
+        $scoutprofiledata = Scout::with('user')->where('user_id', $user_id)->first();
+        if (!$scoutprofiledata) {
+            return response()->json([
+                'message' => 'No scout profile found for this user'
+            ], 404);
+        }
+        return response()->json([
+            'data' => $scoutprofiledata
+        ]);
+    }
+
 }
 

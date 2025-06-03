@@ -47,8 +47,7 @@ Route::post('/reset-password', [ResetPasswordController::class, 'reset']);
 
 Route::get('/scout-count', [HomeController::class, 'scoutCount']);
 Route::get('/player-count', [HomeController::class, 'playerCount']);
-Route::get('/player/{user_id}', [ProfileController::class, 'playerviewprofile']);
-Route::get('/scout/{user_id}', [ProfileController::class, 'scoutviewprofile']);
+
 
 
 
@@ -100,7 +99,8 @@ Route::middleware('auth:sanctum')->group(function () {
     // Feed related routes
     Route::get('/events', [EventController::class, 'index']);
     Route::get('/events/{event}', [EventController::class, 'show']);
-
+    Route::get('/player/{user_id}', [FeedController::class, 'playerviewprofile']);
+    Route::get('/scout/{user_id}', [FeedController::class, 'scoutviewprofile']);
     // Player routes
     Route::get('/players/{id}', [PlayerController::class, 'show']);
     Route::post('/players/{player}/follow', [PlayerController::class, 'follow']);

@@ -173,19 +173,22 @@
     </div>
 
     <!-- Loading State -->
-    <div class="loading-spinner" *ngIf="loading">
-      <i class="fas fa-spinner fa-spin"></i>
+    <div *ngIf="loading" class="loading-state">
+      <div class="spinner"></div>
+      <p>Searching...</p>
     </div>
 
     <!-- Search Results -->
-    <div class="search-results" *ngIf="searchResults.length > 0">
+    <div class="search-results" *ngIf="!loading && searchResults.length > 0">
       <div *ngFor="let result of searchResults" class="player-card" [ngClass]="{'scout-card': result.type === 'scout'}">
         <img [src]="result.profile_image || getAvatarUrl(result.first_name, result.last_name)"
-             [alt]="result.full_name"
+             [alt]="result.first_name + ' ' + result.last_name"
              class="player-avatar"
              (error)="handleImageError($event, result.first_name, result.last_name)">
         <div class="player-info">
-          <h3>{{ result.full_name }}</h3>
+          <h3 class="clickable" (click)="result.type === 'scout' ? goToScoutProfile(result.scout_id || result.id) : goToPlayerProfile(result.id)">
+            {{ result.first_name }} {{ result.last_name }}
+          </h3>
           <div class="type-badge" [ngClass]="result.type">{{ result.type | titlecase }}</div>
 
           <!-- Player-specific info -->
@@ -201,7 +204,7 @@
             <div class="meta">{{ result.city }}, {{ result.country }}</div>
           </ng-container>
         </div>
-        <button class="view-profile-btn" (click)="result.type === 'player' ? goToPlayerProfile(result.id) : goToScoutProfile(result.id)">
+        <button class="view-profile-btn" (click)="result.type === 'scout' ? goToScoutProfile(result.scout_id || result.id) : goToPlayerProfile(result.id)">
           View Profile
         </button>
       </div>
@@ -573,7 +576,7 @@
     <div class="modal-body">
       <div class="likes-list">
         <div *ngFor="let like of selectedPostLikes" class="like-item">
-          <div class="like-user" (click)="like?.user?.id === currentUser?.id ? goToProfile() : goToPlayerProfile(like?.user?.id)">
+          <div class="like-user" (click)="like?.user?.id === currentUser?.id ? goToProfile() : (like?.user?.user_type === 'scout' ? goToScoutProfile(like?.user?.id) : goToPlayerProfile(like?.user?.id))">
             <img [src]="like?.user?.profile_image || getAvatarUrl(like?.user?.first_name, like?.user?.last_name)"
                  class="avatar-sm"
                  [alt]="like?.user?.full_name"
