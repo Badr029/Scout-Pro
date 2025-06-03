@@ -99,10 +99,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // Feed related routes
     Route::get('/events', [EventController::class, 'index']);
     Route::get('/events/{event}', [EventController::class, 'show']);
-    Route::get('/player/{user_id}', [FeedController::class, 'playerviewprofile']);
-    Route::get('/scout/{user_id}', [FeedController::class, 'scoutviewprofile']);
-    // Player routes
-    Route::get('/players/{id}', [PlayerController::class, 'show']);
+    Route::get('/player/{user_id}', [FeedController::class, 'playerviewprofile']);  
     Route::post('/players/{player}/follow', [PlayerController::class, 'follow']);
     Route::post('/players/{player}/unfollow', [PlayerController::class, 'unfollow']);
     Route::get('/trending-players', [PlayerController::class, 'getTrendingPlayers']);

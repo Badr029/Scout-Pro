@@ -1,6 +1,53 @@
-import { Component, ViewEncapsulation } from '@angular/core';
+import { Component, OnInit, ViewEncapsulation } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
-import { ActivatedRoute } from '@angular/router';
+import { AuthService } from '../auth.service';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
+
+export interface Player {
+  user_id: number;
+  profile_image: string | null;
+  username: string;
+  first_name: string;
+  last_name: string;
+  DateofBirth: string;
+  phone_number: string;
+  height: number;
+  weight: number;
+  preferred_foot: string;
+  position: string;
+  position_primary?: string;
+  secondary_position: string[];
+  gender: string;
+  nationality: string;
+  current_city: string;
+  current_club: string;
+  previous_clubs: string[];
+  playing_style: string;
+  transfer_status: string;
+  bio: string | null;
+  membership: string;
+  age?: number;
+  career?: { years: string; club: string; stats: string }[];
+}
+
+interface Video {
+  title: string;
+  thumbnail: string;
+  url: string;
+  channel: string;
+  views: string;
+  time: string;
+  duration: string;
+  avatar: string;
+}
+
+interface PlayerApiResponse {
+  data: Player;
+  age: number;
+  videos: Video[];
+}
 
 @Component({
   selector: 'app-player-view',
@@ -10,53 +57,91 @@ import { ActivatedRoute } from '@angular/router';
   styleUrl: './player-view.component.css',
   encapsulation: ViewEncapsulation.None
 })
-export class PlayerViewComponent {
+export class PlayerViewComponent implements OnInit {
+  loading: boolean = true;
+  error: string | null = null;
+  playerData: Player | null = null;
+  videos: Video[] = [];
+  safeVideoUrls: SafeResourceUrl[] = [];
+  activeTab: string = 'about';
   playerId: string | null = null;
-  activeTab = 'about';
-  player = {
-    name: 'Ethan Nwaneri',
-    rating: 4.3,
-    likes: '10K+',
-    bio: 'Ethan Chidiebere Nwaneri is an English professional footballer who plays as a right winger or attacking midfielder for Premier League club Arsenal. Born in North London',
-    image: 'https://images.unsplash.com/photo-1517649763962-0c623066013b?auto=format&fit=facearea&w=800&h=400',
-    height: '176 cm',
-    weight: '68 kg',
-    shirt: '57',
-    age: '17 years',
-    dob: 'Mar 21, 2007',
-    foot: 'Left',
-    country: 'England',
-    marketValue: '$13M',
-    club: 'Arsenal',
-    position: {
-      primary: 'Central Midfielder',
-      other: 'Attacking Midfielder, Right Winger',
-      diagram: 'https://i.imgur.com/1Q9Z1Zm.png' // placeholder pitch image
-    },
-    career: [
-      { years: '2021-2022', club: 'Arsenal U18', stats: '10 apps, 3 goals' },
-      { years: '2022-2024', club: 'Arsenal', stats: '15 apps, 2 goals' },
-      { years: '2024-Present', club: 'Arsenal', stats: 'Current' }
-    ]
-  };
-  videos = [
-    {
-      title: 'Ethan Nwaneri is a Force of Nature 2024',
-      thumbnail: 'https://i.imgur.com/2nCt3Sbl.jpg',
-      url: 'https://www.youtube.com/watch?v=xxxx',
-      channel: 'Nwaneri',
-      views: '44K',
-      time: '4 months ago',
-      duration: '54:48',
-      avatar: 'https://ui-avatars.com/api/?name=Ethan+Nwaneri'
-    }
-  ];
 
-  constructor(private route: ActivatedRoute) {
+  private readonly BASE_API_URL = 'http://localhost:8000';
+
+  constructor(
+    private route: ActivatedRoute,
+    private router: Router,
+    private http: HttpClient,
+    private authService: AuthService,
+    private sanitizer: DomSanitizer
+  ) {
     this.playerId = this.route.snapshot.paramMap.get('id');
   }
 
-  setTab(tab: string) {
+  ngOnInit(): void {
+    this.fetchPlayerProfile();
+  }
+
+  fetchPlayerProfile(): void {
+    this.loading = true;
+    this.error = null;
+
+    const token = localStorage.getItem('auth_token');
+    if (!token) {
+      this.router.navigate(['/login']);
+      return;
+    }
+
+    const headers = new HttpHeaders({
+      Authorization: `Bearer ${token}`,
+    });
+
+    const apiUrl = this.playerId
+      ? `${this.BASE_API_URL}/api/player/${this.playerId}`
+      : `${this.BASE_API_URL}/api/player/profile`;
+
+    this.http.get<PlayerApiResponse>(apiUrl, { headers }).subscribe({
+      next: (response) => {
+        this.playerData = {
+          ...response.data,
+          age: response.age
+        };
+
+        this.videos = response.videos || [];
+
+        this.safeVideoUrls = this.videos.map(video =>
+          this.sanitizer.bypassSecurityTrustResourceUrl(video.url)
+        );
+
+        this.loading = false;
+      },
+      error: (error) => {
+        console.error('Error fetching player profile:', error);
+        this.error = error.error?.message || 'Failed to load player profile';
+        this.loading = false;
+      }
+    });
+  }
+
+  switchTab(tab: string): void {
     this.activeTab = tab;
+  }
+
+  goToHome(): void {
+    this.router.navigate(['/home-feed']);
+  }
+
+  get playerImageUrl(): string {
+    return this.playerData?.profile_image
+      ? `${this.BASE_API_URL}/storage/${this.playerData.profile_image}`
+      : 'assets/default-avatar.png';
+  }
+
+  getFirstInitial(): string {
+    return this.playerData?.first_name?.charAt(0).toUpperCase() || '';
+  }
+
+  getLastInitial(): string {
+    return this.playerData?.last_name?.charAt(0).toUpperCase() || '';
   }
 }

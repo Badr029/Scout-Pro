@@ -1027,17 +1027,34 @@ class FeedController extends Controller
         return $filters;
     }
 
-    public function playerviewprofile($user_id) {
-        $playerprofiledata = Player::with('user')->where('user_id', $user_id)->first();
-        if (!$playerprofiledata) {
-            return response()->json([
-                'message' => 'No player profile found for this user'
-            ], 404);
-        }
-        return response()->json([
-            'data' => $playerprofiledata
-        ]);
+       public function calculateAge($DateofBirth)
+   {
+       if (!$DateofBirth) return null;
+       $birthDate = new \DateTime($DateofBirth);
+       $currentDate = new \DateTime();
+     $age = $birthDate->diff($currentDate)->y;
+     return $age;
+ }
+public function playerviewprofile($user_id) {
+    $player = Player::with('user')->where('user_id', $user_id)->first();
+
+    if (!$player) {
+        return response()->json(['message' => 'No player profile found for this user'], 404);
     }
+
+    $age = $this->calculateAge($player->DateofBirth);
+    $videos = Video::where('user_id', $user_id)->get();
+
+    $playerData = $player->toArray();
+    $userData = $player->user ? $player->user->only(['first_name', 'last_name', 'username', 'email']) : [];
+
+    return response()->json([
+        'data' => array_merge($playerData, $userData),
+        'age' => $age,
+        'videos' => $videos,
+    ]);
+}
+
 
     public function scoutviewprofile($user_id) {
         $scoutprofiledata = Scout::with('user')->where('user_id', $user_id)->first();
