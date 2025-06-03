@@ -27,22 +27,19 @@ export class SubscriptionComponent implements OnInit {
       name: 'Free',
       price: 0,
       features: [
-        'Limited video uploads (3 per month)',
-        'Basic profile visibility',
-        'Basic stats',
-        'See number of scout requests'
+        '✔️Limited video uploads (3 per month)',
+        '✔️Basic profile visibility',
+        '❌ No access to scout events',
+        
       ]
     },
     {
       name: 'Premium',
       price: 9.99,
       features: [
-        'Unlimited video uploads',
-        'Priority in search results',
-        'Detailed video analytics',
-        'Get notified when scouts view your profile',
-        'See which scouts requested contact',
-        'Premium badge on profile'
+        '🚀Unlimited video uploads',
+        '🎖️Premium badge on profile',
+        "📥Apply for scouts' events",
       ]
     }
   ];
@@ -165,7 +162,8 @@ export class SubscriptionComponent implements OnInit {
     );
   }
 
-  goBack() {
-    this.router.navigate(['/profile']);
+  
+  goToHome(): void {
+    this.router.navigate(['/home-feed']);
   }
 }

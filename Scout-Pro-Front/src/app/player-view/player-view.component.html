@@ -1,97 +1,180 @@
 <div class="container">
+  <!-- Loading State -->
+  <div *ngIf="loading" class="loading-state">
+    <div class="spinner"></div>
+    <p>Loading profile...</p>
+  </div>
+
+  <!-- Error State -->
+  <div *ngIf="!loading && error" class="error-state">
+    <p class="error-message">{{ error }}</p>
+    <button class="btn btn-primary" (click)="fetchPlayerProfile()">Try Again</button>
+  </div>
+
   <!-- Profile Header -->
-  <div class="profile-header">
+  <div class="profile-header" *ngIf="!loading && playerData">
+    <div class="page-header">
+      <button class="btn-back" (click)="goToHome()">
+        <i class="fas fa-arrow-left"></i>
+        Back to Home
+      </button>
+    </div>
+
+    <!-- Avatar -->
     <div class="avatar-container">
-      <img [src]="player.image" alt="Player avatar" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" *ngIf="player.image; else noAvatar" />
-      <ng-template #noAvatar>Profile Picture</ng-template>
+      <div class="profile-picture">
+        <img *ngIf="playerData.profile_image"
+             [src]="playerImageUrl"
+             [alt]="playerData.first_name || ''">
+        <div *ngIf="!playerData.profile_image" class="no-avatar">
+          {{ getFirstInitial() }}{{ getLastInitial() }}
+        </div>
+      </div>
     </div>
+
+    <!-- Action Buttons -->
+    <div class="action-buttons" style="justify-content: center;">
+      <button class="btn btn-primary">Follow</button>
+      <button class="btn btn-primary">Contact Player</button>
+    </div>
+
+    <!-- Player Info -->
     <div class="player-info">
-      <h1 class="player-name">{{ player.name }}</h1>
-      <p class="player-title">{{ player.position.primary }} <span *ngIf="player.club">| {{ player.club }}</span></p>
-      <div class="key-stats">
-        <div class="stat-item">
-          <span class="stat-label">Age:</span>
-          <span class="stat-value">{{ player.age }}</span>
-        </div>
-        <div class="stat-item">
-          <span class="stat-label">Height:</span>
-          <span class="stat-value">{{ player.height }}</span>
-        </div>
-        <div class="stat-item">
-          <span class="stat-label">Position:</span>
-          <span class="stat-value">{{ player.position.primary }}</span>
-        </div>
-        <div class="stat-item">
-          <span class="stat-label">Weight:</span>
-          <span class="stat-value">{{ player.weight || '--' }}</span>
-        </div>
+      <h1 class="player-name">
+        {{ playerData.first_name || '' }} {{ playerData.last_name || '' }}
+        <span class="username">{{ "@" + (playerData.username || '') }}</span>
+      </h1>
+      <div class="detail-item1">
+        <span class="detail-label1"></span>
+                   <span class="detail-value1">{{ playerData.position }} | {{ playerData.current_club }}</span>
       </div>
-      <div class="action-buttons">
-        <button class="btn btn-primary">Follow</button>
-        <button class="btn btn-primary">Contact Player</button>
-      </div>
+      <div class="detail-item1">
+          <span class="detail-label1"></span>
+          </div>
     </div>
+
+    <!-- Key Stats -->
+  
+
+<div class="player-inline-stats">
+  <div class="inline-item">
+    <span class="stat-label">Transfer Status</span>
+    <span class="stat-tag">{{ playerData.transfer_status || 'N/A' }}</span>
   </div>
-  <!-- Tabs -->
-  <div class="tabs">
-    <div class="tab" [class.active]="activeTab === 'about'" (click)="setTab('about')">About</div>
-    <div class="tab" [class.active]="activeTab === 'video'" (click)="setTab('video')">Video</div>
-    <div class="tab" [class.active]="activeTab === 'career'" (click)="setTab('career')">Career</div>
+  <div class="inline-item">
+    <span class="stat-label">Preferred Foot</span>
+    <span class="stat-tag">{{ playerData.preferred_foot || 'N/A' }}</span>
   </div>
-  <!-- About Tab -->
-  <div class="tab-content" [class.active]="activeTab === 'about'">
-    <div class="player-details">
-      <div class="detail-group">
-        <h3 class="detail-title">Personal Info</h3>
-        <div class="detail-item">
-          <span class="detail-label">Full Name:</span>
-          <span class="detail-value">{{ player.name }}</span>
-        </div>
-        <div class="detail-item">
-          <span class="detail-label">Date of Birth:</span>
-          <span class="detail-value">{{ player.dob }}</span>
-        </div>
-        <div class="detail-item">
-          <span class="detail-label">Nationality:</span>
-          <span class="detail-value">{{ player.country }}</span>
-        </div>
-        <div class="detail-item">
-          <span class="detail-label">Preferred Foot:</span>
-          <span class="detail-value">{{ player.foot }}</span>
-        </div>
-      </div>
-      <div class="detail-group">
-        <h3 class="detail-title">Current Club</h3>
-        <div class="detail-item">
-          <span class="detail-label">Club:</span>
-          <span class="detail-value">{{ player.club || '--' }}</span>
-        </div>
-      </div>
+  <div class="inline-item">
+  <span class="stat-label">Age</span>
+  <span class="stat-tag">{{ playerData.age || 'N/A' }}</span>
+</div>
+</div>
+
+
+
+    <!-- Tabs -->
+    <div class="tabs">
+      <div class="tab" [class.active]="activeTab === 'about'" (click)="switchTab('about')">About</div>
+      <div class="tab" [class.active]="activeTab === 'video'" (click)="switchTab('video')">Video</div>
+      <div class="tab" [class.active]="activeTab === 'career'" (click)="switchTab('career')">Career</div>
+    </div>
+
+    <!-- About Tab -->
+    <div class="tab-content" [class.active]="activeTab === 'about'">
       <div class="detail-group">
         <h3 class="detail-title">Bio</h3>
+        <p class="player-bio"> {{ playerData.bio || '' }}</p>
       </div>
-      <p class="player-bio">{{ player.bio }}</p>
-    </div>
+
+      <div class="player-details">
+        <div class="detail-group">
+          <h3 class="detail-title">Personal Info</h3>
+          <div class="detail-item">
+            <span class="detail-label">Full Name</span>
+            <span class="detail-value"> {{ playerData.first_name }} {{ playerData.last_name }}</span>
+          </div>
+          
+          <div class="detail-item">
+            <span class="detail-label">Date of Birth</span>
+            <span class="detail-value"> {{ playerData.DateofBirth | date:'longDate' }}</span>
+          </div>
+          <div class="player-physical-stats">
+  <span class="physical">Physical Stats</span>
+  <div class="stat-line">
+    <span class="label">Height</span>
+    <span class="arrow">→</span>
+    <span class="value">{{ playerData.height || 'N/A' }} cm</span>
   </div>
-  <!-- Video Tab -->
-  <div class="tab-content" [class.active]="activeTab === 'video'">
-    <div class="video-container" *ngIf="videos.length">
-      <iframe [src]="videos[0].url" frameborder="0" allowfullscreen></iframe>
-    </div>
-    <h3 *ngIf="videos.length">Recent Highlights</h3>
-    <div class="video-container" style="padding-bottom: 30%; margin-top: 1rem;" *ngIf="videos.length > 1">
-      <iframe [src]="videos[1].url" frameborder="0" allowfullscreen></iframe>
-    </div>
-    <div *ngIf="!videos.length" class="player-bio">No videos available.</div>
+  <div class="stat-line">
+    <span class="label">Weight</span>
+    <span class="arrow">→</span>
+    <span class="value">{{ playerData.weight || 'N/A' }} kg</span>
   </div>
-  <!-- Career Tab -->
-  <div class="tab-content" [class.active]="activeTab === 'career'">
-    <h3>Career Timeline</h3>
-    <div class="player-details" style="grid-template-columns: 1fr; margin-top: 1rem;">
-      <div class="detail-group">
-        <div class="detail-item" *ngFor="let entry of player.career">
-          <span class="detail-label">{{ entry.years }}:</span>
-          <span class="detail-value">{{ entry.club }} - {{ entry.stats }}</span>
+</div>
+          <div class="detail-item">
+            <span class="detail-label">Nationality</span>
+            <span class="detail-value"> {{ playerData.nationality }}</span>
+          </div>
+         
+ 
+
+      
+        
+          
+          <div class="detail-item">
+            <span class="detail-label">Playing Style</span>
+            <span class="detail-value"> {{ playerData.playing_style }}</span>
+          </div>
+          
+          
+        </div>
+
+        <div class="detail-group">
+          <h3 class="detail-title">Primary Position</h3>
+          <div class="detail-item">
+            <span class="detail-value">{{ playerData.position || 'N/A' }}</span>
+          </div>
+
+          <h3 class="detail-title">Secondary Position</h3>
+          <div class="detail-item">
+            
+          
+            <span class="detail-value"> {{ playerData.secondary_position || 'N/A' }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Video Tab -->
+    <div class="tab-content" [class.active]="activeTab === 'video'">
+      <div class="video-container" *ngIf="safeVideoUrls.length">
+        <iframe [src]="safeVideoUrls[0]" frameborder="0" allowfullscreen></iframe>
+      </div>
+      <h3 *ngIf="videos.length">Recent Highlights</h3>
+      <div class="video-container" style="padding-bottom: 30%; margin-top: 1rem;" *ngIf="safeVideoUrls.length > 1">
+        <iframe [src]="safeVideoUrls[1]" frameborder="0" allowfullscreen></iframe>
+      </div>
+      <div *ngIf="!videos.length" class="player-bio">No videos available.</div>
+    </div>
+
+    <!-- Career Tab -->
+    <div class="tab-content" [class.active]="activeTab === 'career'">
+      <h3>Career Overview</h3>
+      <div class="player-details" style="grid-template-columns: 1fr; margin-top: 1rem;">
+        <div class="detail-group">
+          <div class="detail-item">
+            <span class="detail-label">Current Club</span>
+            <span class="detail-value">| {{ playerData.current_club || 'N/A' }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Previous Club</span>
+            <span class="detail-value">| {{ playerData.previous_club || 'N/A' }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Transfer Status</span>
+            <span class="detail-value">| {{ playerData.transfer_status || 'N/A' }}</span>
+          </div>
         </div>
       </div>
     </div>
