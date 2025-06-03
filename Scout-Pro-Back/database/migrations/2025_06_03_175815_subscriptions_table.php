@@ -14,7 +14,9 @@ return new class extends Migration
         Schema::create('subscriptions', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
-            $table->string('plan')->default('Free'); // Free, Premium
+            $table->foreignId('plan_id')->constrained()->onDelete('cascade');
+            $table->foreignId('payment_id')->nullable()->constrained()->onDelete('set null');
+            $table->string('plan')->default('Free'); 
             $table->boolean('active')->default(true);
             $table->timestamp('trial_ends_at')->nullable();
             $table->timestamp('expires_at')->nullable();
