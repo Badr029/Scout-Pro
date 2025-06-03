@@ -1822,11 +1822,12 @@ textarea.form-control {
     right: 0;
     background: var(--surface);
     border: 1px solid var(--border);
-    border-radius: var(--border-radius-sm);
-    max-height: 300px;
+    border-radius: var(--border-radius);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    margin-top: 4px;
+    max-height: 200px;
     overflow-y: auto;
     z-index: 1000;
-    margin-top: 4px;
   }
 
   /* Search results container */
@@ -2623,4 +2624,137 @@ textarea.form-control {
 @keyframes spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
+}
+
+.premium-upgrade-message {
+  padding: 1rem;
+  margin: 1rem 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+}
+
+.upgrade-card {
+  background: var(--surface-light);
+  border: 1px solid var(--border);
+  border-radius: var(--border-radius);
+  padding: 1.5rem;
+  color: var(--text-primary);
+  width: 100%;
+  text-align: center;
+}
+
+.upgrade-card h3 {
+  font-size: 1.2rem;
+  margin-bottom: 1rem;
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.upgrade-card p {
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+  color: var(--text-secondary);
+}
+
+.upgrade-card ul {
+  list-style: none;
+  padding: 0;
+  margin: 1rem 0;
+  text-align: left;
+}
+
+.upgrade-card ul li {
+  margin: 0.5rem 0;
+  padding-left: 1.5rem;
+  position: relative;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.upgrade-card ul li:before {
+  content: "✓";
+  position: absolute;
+  left: 0;
+  color: var(--primary);
+}
+
+.upgrade-btn {
+  width: 100%;
+  background-color: var(--primary);
+  color: white;
+  border: none;
+  padding: 0.75rem 1rem;
+  border-radius: var(--border-radius-sm);
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-top: 1rem;
+}
+
+.upgrade-btn:hover {
+  background-color: var(--primary-hover);
+  transform: translateY(-1px);
+}
+
+.position-suggestions {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--border-radius);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  margin-top: 4px;
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 1000;
+}
+
+.position-suggestion-item {
+  padding: 0.75rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  color: var(--text-primary);
+  transition: all 0.2s ease;
+}
+
+.position-suggestion-item i {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.position-suggestion-item:hover,
+.position-suggestion-item.active {
+  background: var(--primary-light);
+  color: var(--primary);
+}
+
+.position-suggestion-item:hover i,
+.position-suggestion-item.active i {
+  color: var(--primary);
+}
+
+/* Add scrollbar styling for the suggestions dropdown */
+.position-suggestions::-webkit-scrollbar {
+  width: 6px;
+}
+
+.position-suggestions::-webkit-scrollbar-track {
+  background: var(--surface-light);
+  border-radius: 3px;
+}
+
+.position-suggestions::-webkit-scrollbar-thumb {
+  background: var(--primary);
+  border-radius: 3px;
+}
+
+.position-suggestions::-webkit-scrollbar-thumb:hover {
+  background: var(--primary-hover);
 }

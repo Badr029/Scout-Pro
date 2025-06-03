@@ -916,29 +916,11 @@ export class HomeFeedComponent implements OnInit {
   }
 
   get isPlayer(): boolean {
-    const isPlayerType = this.currentUser?.user_type === 'player';
-    const isPlayerID = this.currentUser?.player_id && this.currentUser.player_id >= 1000000 && this.currentUser.player_id < 2000000;
-    console.log('isPlayer check:', {
-      userType: this.currentUser?.user_type,
-      userId: this.currentUser?.id,
-      playerId: this.currentUser?.player_id,
-      isPlayerType,
-      isPlayerID
-    });
-    return isPlayerType || isPlayerID;
+    return this.currentUser?.user_type === 'player';
   }
 
   get isScout(): boolean {
-    const isScoutType = this.currentUser?.user_type === 'scout';
-    const isScoutID = this.currentUser?.scout_id && this.currentUser.scout_id >= 2000000;
-    console.log('isScout check:', {
-      userType: this.currentUser?.user_type,
-      userId: this.currentUser?.id,
-      scoutId: this.currentUser?.scout_id,
-      isScoutType,
-      isScoutID
-    });
-    return isScoutType || isScoutID;
+    return this.currentUser?.user_type === 'scout';
   }
 
   onFilterChange(key: string, value: string) {
@@ -1407,5 +1389,9 @@ export class HomeFeedComponent implements OnInit {
 
   closeRightPanel() {
     this.showRightPanel = false;
+  }
+
+  goToSubscription() {
+    this.router.navigate(['/subscription']);
   }
 }
