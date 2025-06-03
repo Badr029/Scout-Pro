@@ -244,9 +244,24 @@ class VideoController extends Controller
      */
     public function show(Video $video)
     {
-        // Increment view count
-        $video->views++;
-        $video->save();
+        $user = Auth::user();
+
+        // Record the view if the user hasn't viewed this video in the last 24 hours
+        $lastView = View::where('user_id', $user->id)
+            ->where('video_id', $video->id)
+            ->where('viewed_at', '>=', now()->subHours(24))
+            ->first();
+
+        if (!$lastView) {
+            View::create([
+                'user_id' => $user->id,
+                'video_id' => $video->id,
+                'viewed_at' => now()
+            ]);
+
+            // Update the video's view count
+            $video->increment('views');
+        }
 
         // Load relationships and add URLs
         $video->load(['user.player', 'comments.user', 'likes']);
@@ -256,6 +271,47 @@ class VideoController extends Controller
         return response()->json([
             'status' => 'success',
             'data' => $video
+        ]);
+    }
+
+    /**
+     * Record a video view.
+     */
+    public function recordView(Video $video)
+    {
+        $user = Auth::user();
+
+        // Check if the user has viewed this video in the last 24 hours
+        $lastView = View::where('user_id', $user->id)
+            ->where('video_id', $video->id)
+            ->where('viewed_at', '>=', now()->subHours(24))
+            ->first();
+
+        if (!$lastView) {
+            View::create([
+                'user_id' => $user->id,
+                'video_id' => $video->id,
+                'viewed_at' => now()
+            ]);
+
+            // Update the video's view count
+            $video->increment('views');
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'View recorded successfully',
+                'data' => [
+                    'views' => $video->views
+                ]
+            ]);
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'View already recorded',
+            'data' => [
+                'views' => $video->views
+            ]
         ]);
     }
 
@@ -335,7 +391,54 @@ class VideoController extends Controller
     }
 
     /**
-     * Add a comment to a video.
+     * Get comments for a video
+     */
+    public function getComments(Video $video)
+    {
+        $comments = $video->comments()
+            ->with(['user.player'])
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->map(function ($comment) {
+                return [
+                    'id' => $comment->id,
+                    'content' => $comment->content,
+                    'created_at' => $comment->created_at,
+                    'user' => [
+                        'id' => $comment->user->id,
+                        'first_name' => $comment->user->first_name,
+                        'last_name' => $comment->user->last_name,
+                        'profile_image' => $comment->user->player ? $comment->user->player->profile_image : null,
+                    ]
+                ];
+            });
+
+        return response()->json([
+            'status' => 'success',
+            'data' => $comments
+        ]);
+    }
+
+    /**
+     * Get like status for a video
+     */
+    public function getLikeStatus(Video $video)
+    {
+        $user = Auth::user();
+        $hasLiked = $video->likes()->where('user_id', $user->id)->exists();
+        $likesCount = $video->likes()->count();
+
+        return response()->json([
+            'status' => 'success',
+            'data' => [
+                'has_liked' => $hasLiked,
+                'likes_count' => $likesCount
+            ]
+        ]);
+    }
+
+    /**
+     * Add a comment to a video
      */
     public function comment(Request $request, Video $video)
     {
@@ -351,34 +454,27 @@ class VideoController extends Controller
         }
 
         $user = Auth::user();
-
         $comment = $video->comments()->create([
             'user_id' => $user->id,
             'content' => $request->content
         ]);
 
-        // Load the user with their player relationship
-        $comment->load(['user.player']);
-
-        // Format the response data
-        $responseData = [
-            'id' => $comment->id,
-            'content' => $comment->content,
-            'created_at' => $comment->created_at,
-            'user_id' => $comment->user_id,
-            'user' => [
-                'id' => $comment->user->id,
-                'first_name' => $comment->user->first_name,
-                'last_name' => $comment->user->last_name,
-                'profile_image' => $comment->user->player ? url('storage/' . $comment->user->player->profile_image) : null,
-                'full_name' => $comment->user->first_name . ' ' . $comment->user->last_name
-            ]
-        ];
+        // Load the user relationship for the response
+        $comment->load('user.player');
 
         return response()->json([
             'status' => 'success',
-            'message' => 'Comment added successfully',
-            'data' => $responseData
+            'data' => [
+                'id' => $comment->id,
+                'content' => $comment->content,
+                'created_at' => $comment->created_at,
+                'user' => [
+                    'id' => $comment->user->id,
+                    'first_name' => $comment->user->first_name,
+                    'last_name' => $comment->user->last_name,
+                    'profile_image' => $comment->user->player ? $comment->user->player->profile_image : null,
+                ]
+            ]
         ]);
     }
 

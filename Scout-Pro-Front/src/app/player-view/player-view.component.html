@@ -24,8 +24,9 @@
     <div class="avatar-container">
       <div class="profile-picture">
         <img *ngIf="playerData.profile_image"
-             [src]="playerImageUrl"
-             [alt]="playerData.first_name || ''">
+             [src]="'http://localhost:8000/storage/' + playerData.profile_image"
+             [alt]="playerData.first_name"
+             (error)="handleImageError($event, playerData.first_name, playerData.last_name)">
         <div *ngIf="!playerData.profile_image" class="no-avatar">
           {{ getFirstInitial() }}{{ getLastInitial() }}
         </div>
@@ -54,7 +55,7 @@
     </div>
 
     <!-- Key Stats -->
-  
+
 
 <div class="player-inline-stats">
   <div class="inline-item">
@@ -94,7 +95,7 @@
             <span class="detail-label">Full Name</span>
             <span class="detail-value"> {{ playerData.first_name }} {{ playerData.last_name }}</span>
           </div>
-          
+
           <div class="detail-item">
             <span class="detail-label">Date of Birth</span>
             <span class="detail-value"> {{ playerData.DateofBirth | date:'longDate' }}</span>
@@ -116,18 +117,18 @@
             <span class="detail-label">Nationality</span>
             <span class="detail-value"> {{ playerData.nationality }}</span>
           </div>
-         
- 
 
-      
-        
-          
+
+
+
+
+
           <div class="detail-item">
             <span class="detail-label">Playing Style</span>
             <span class="detail-value"> {{ playerData.playing_style }}</span>
           </div>
-          
-          
+
+
         </div>
 
         <div class="detail-group">
@@ -138,8 +139,8 @@
 
           <h3 class="detail-title">Secondary Position</h3>
           <div class="detail-item">
-            
-          
+
+
             <span class="detail-value"> {{ playerData.secondary_position || 'N/A' }}</span>
           </div>
         </div>
@@ -148,14 +149,60 @@
 
     <!-- Video Tab -->
     <div class="tab-content" [class.active]="activeTab === 'video'">
-      <div class="video-container" *ngIf="safeVideoUrls.length">
-        <iframe [src]="safeVideoUrls[0]" frameborder="0" allowfullscreen></iframe>
+      <div class="videos-container">
+        <!-- Show this when no videos are present -->
+        <div *ngIf="!playerVideos || playerVideos.length === 0" class="no-videos">
+          <p>No videos uploaded yet.</p>
+        </div>
+
+        <!-- Video cards -->
+        <div *ngFor="let video of playerVideos" class="video-card">
+          <div class="video-thumbnail" (click)="playVideo(video)">
+            <img [src]="'http://localhost:8000/storage/' + video.thumbnail_url"
+                 [alt]="video.title"
+                 (error)="handleThumbnailError($event, video)"
+                 class="thumbnail-img">
+            <div class="play-overlay">
+              <span class="play-icon">▶</span>
+              <span class="duration" *ngIf="video.duration">{{ formatDuration(video.duration) }}</span>
+            </div>
+            <!-- Fallback preview when thumbnail fails -->
+            <div *ngIf="!video.thumbnail_url || video.thumbnailError" class="video-preview-fallback">
+              <video [src]="'http://localhost:8000/storage/' + video.file_path" preload="metadata" (loadedmetadata)="onVideoMetadataLoaded($event, video)">
+                Your browser does not support the video tag.
+              </video>
+              <div class="fallback-title">{{ video.title || 'Untitled Video' }}</div>
+            </div>
+          </div>
+          <div class="video-info">
+            <h4>{{ video.title || 'Untitled Video' }}</h4>
+            <p class="video-description">{{ video.description || 'No description' }}</p>
+            <ng-container *ngIf="userProfile?.membership === 'premium' || isScout">
+              <div class="video-stats">
+                <div class="stat-display">
+                  <i class="fas fa-eye"></i>
+                  <span>{{ video.views || 0 }}</span>
+                </div>
+                <div class="stat-display">
+                  <i class="fas fa-heart"></i>
+                  <span>{{ video.likes_count || 0 }}</span>
+                </div>
+                <div class="stat-display">
+                  <i class="fas fa-comment"></i>
+                  <span>{{ video.comments_count || 0 }}</span>
+                </div>
+              </div>
+            </ng-container>
+            <ng-container *ngIf="userProfile?.membership === 'free' && !isScout">
+              <div class="upgrade-prompt">
+                <button class="btn btn-upgrade" (click)="goToSubscription()">
+                  Upgrade to Premium to view analytics
+                </button>
+              </div>
+            </ng-container>
+          </div>
+        </div>
       </div>
-      <h3 *ngIf="videos.length">Recent Highlights</h3>
-      <div class="video-container" style="padding-bottom: 30%; margin-top: 1rem;" *ngIf="safeVideoUrls.length > 1">
-        <iframe [src]="safeVideoUrls[1]" frameborder="0" allowfullscreen></iframe>
-      </div>
-      <div *ngIf="!videos.length" class="player-bio">No videos available.</div>
     </div>
 
     <!-- Career Tab -->
@@ -174,6 +221,94 @@
           <div class="detail-item">
             <span class="detail-label">Transfer Status</span>
             <span class="detail-value">| {{ playerData.transfer_status || 'N/A' }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Video Player Modal -->
+<div class="modal" [class.show]="showVideoModal">
+  <div class="modal-content video-modal">
+    <div class="modal-header">
+      <span class="close" (click)="closeVideoModal()">&times;</span>
+    </div>
+    <div class="modal-body">
+      <div class="reel-card" *ngIf="selectedVideo && playerData">
+        <div class="reel-header">
+          <div class="reel-user">
+            <img [src]="playerData.profile_image ? 'http://localhost:8000/storage/' + playerData.profile_image : 'https://ui-avatars.com/api/?name=' + (playerData.first_name + '+' + playerData.last_name || 'User')" class="avatar-sm">
+            <div class="reel-user-info">
+              <span class="username">{{ (playerData.first_name + ' ' + playerData.last_name) || 'Unknown User' }}</span>
+              <span class="user-meta">{{ playerData.position || 'No Position' }} • {{ playerData.nationality || 'No Region' }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="reel-video">
+          <video controls [src]="'http://localhost:8000/storage/' + selectedVideo.file_path" class="video-player">
+            Your browser does not support the video tag.
+          </video>
+        </div>
+
+        <div class="reel-actions">
+          <button (click)="likeVideo(selectedVideo.id)" class="action-btn like-btn">
+            <i class="fas fa-heart"></i>
+            <span class="action-count" *ngIf="userProfile?.membership === 'premium' || isScout" (click)="showLikesList(selectedVideo?.id, $event)">
+              {{ selectedVideo.likes_count || 0 }}
+            </span>
+          </button>
+          <button class="action-btn">
+            <i class="fas fa-comment"></i>
+            <span class="action-count" *ngIf="userProfile?.membership === 'premium' || isScout">
+              {{ selectedVideo.comments_count || 0 }}
+            </span>
+          </button>
+          <div class="video-stats" *ngIf="userProfile?.membership === 'premium' || isScout">
+            <div class="views-count">
+              <i class="fas fa-eye"></i> {{ selectedVideo?.views || 0 }}
+            </div>
+          </div>
+          <div class="upgrade-prompt" *ngIf="userProfile?.membership === 'free' && !isScout">
+            <button class="btn btn-upgrade" (click)="goToSubscription()">
+              Upgrade to Premium to view analytics
+            </button>
+          </div>
+        </div>
+
+        <div class="reel-caption">
+          <h4>{{ selectedVideo.title || 'Untitled Video' }}</h4>
+          <p>{{ selectedVideo.description || 'No description' }}</p>
+        </div>
+
+        <!-- Comments Section -->
+        <div class="reel-comments" *ngIf="showCommentBox[selectedVideo.id]">
+          <div class="comment-input">
+            <input type="text"
+                   [(ngModel)]="newComment"
+                   placeholder="Add a comment..."
+                   (keyup.enter)="postComment(selectedVideo.id)"
+                   class="comment-input-field">
+            <button (click)="postComment(selectedVideo.id)"
+                    [disabled]="!newComment.trim()"
+                    class="comment-submit-btn">
+              Post
+            </button>
+          </div>
+          <div class="comments-list">
+            <div class="comment" *ngFor="let comment of selectedVideo.comments">
+              <div class="comment-header">
+                <div class="comment-user-info">
+                  <span class="comment-username">{{ (comment.user?.first_name || '') + ' ' + (comment.user?.last_name || '') }}</span>
+                  <span class="comment-time">{{ comment.created_at | date:'medium' }}</span>
+                </div>
+              </div>
+              <p class="comment-content">{{ comment.content }}</p>
+            </div>
+            <div *ngIf="!selectedVideo.comments?.length" class="no-comments">
+              <p>No comments yet. Be the first to comment!</p>
+            </div>
           </div>
         </div>
       </div>

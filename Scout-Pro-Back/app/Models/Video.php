@@ -68,6 +68,14 @@ class Video extends Model
     }
 
     /**
+     * Get the views for the video.
+     */
+    public function views()
+    {
+        return $this->hasMany(View::class);
+    }
+
+    /**
      * Get the number of likes for the video.
      */
     public function getLikesCountAttribute()
@@ -81,5 +89,23 @@ class Video extends Model
     public function getCommentsCountAttribute()
     {
         return $this->comments()->count();
+    }
+
+    /**
+     * Get the total number of unique viewers.
+     */
+    public function getUniqueViewersCountAttribute()
+    {
+        return $this->views()->distinct('user_id')->count('user_id');
+    }
+
+    /**
+     * Get the total number of views in the last 24 hours.
+     */
+    public function getRecentViewsCountAttribute()
+    {
+        return $this->views()
+            ->where('viewed_at', '>=', now()->subHours(24))
+            ->count();
     }
 }

@@ -902,14 +902,14 @@ export class HomeFeedComponent implements OnInit {
           // Find the post and update its view count
           const post = this.feedData.posts.data.find((p: any) => p.id === postId);
           if (post) {
-            post.views = (post.views || 0) + 1;
+            post.views = response.data.views;
             // Add to viewed videos set
             this.viewedVideos.add(postId);
           }
         }
       },
       error: (error: any) => {
-        console.error('Error incrementing video views:', error);
+        console.error('Error recording video view:', error);
       }
     });
   }

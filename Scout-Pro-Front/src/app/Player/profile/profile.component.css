@@ -1417,6 +1417,7 @@ textarea.form-control {
 .video-modal .modal-header {
     padding: 0.5rem 1rem;
     border-bottom: none;
+    background-color: var(--dark);
 }
 
 .video-modal .modal-body {

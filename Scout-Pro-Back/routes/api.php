@@ -79,7 +79,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/videos/{video}/like', [VideoController::class, 'like']);
     Route::post('/videos/{video}/unlike', [VideoController::class, 'unlike']);
     Route::post('/videos/{video}/comment', [VideoController::class, 'comment']);
-    Route::post('/videos/{video}/view', [VideoController::class, 'view']);
+    Route::get('/videos/{video}/comments', [VideoController::class, 'getComments']);
+    Route::get('/videos/{video}/like-status', [VideoController::class, 'getLikeStatus']);
+    Route::post('/videos/{video}/view', [VideoController::class, 'recordView']);
     Route::get('/videos/{video}/likes', [VideoController::class, 'getLikes']);
 
     // Setup routes
@@ -99,7 +101,8 @@ Route::middleware('auth:sanctum')->group(function () {
     // Feed related routes
     Route::get('/events', [EventController::class, 'index']);
     Route::get('/events/{event}', [EventController::class, 'show']);
-    Route::get('/player/{user_id}', [FeedController::class, 'playerviewprofile']);  
+    Route::get('/player/{user_id}', [FeedController::class, 'playerviewprofile']);
+    Route::get('/scout/{user_id}', [FeedController::class, 'scoutviewprofile']);
     Route::post('/players/{player}/follow', [PlayerController::class, 'follow']);
     Route::post('/players/{player}/unfollow', [PlayerController::class, 'unfollow']);
     Route::get('/trending-players', [PlayerController::class, 'getTrendingPlayers']);

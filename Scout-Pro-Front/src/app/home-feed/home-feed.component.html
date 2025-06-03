@@ -105,10 +105,6 @@
       </div>
 
       <!-- Scout Filters -->
-      <div class="filter-toggle" (click)="toggleFilter()" *ngIf="isScout">
-        <span><i class="fas fa-filter"></i> Filters</span>
-        <span class="toggle-indicator" [class.active]="showFilters">▼</span>
-      </div>
 
       <div class="advanced-filters" [class.active]="showFilters && isScout">
         <div class="filter-container">
@@ -185,7 +181,7 @@
              class="player-avatar"
              (error)="handleImageError($event, result.first_name, result.last_name)">
         <div class="player-info">
-          <h3 class="clickable" (click)="result.type === 'scout' ? goToScoutProfile(result.scout_id || result.id) : goToPlayerProfile(result.id)">
+          <h3 class="clickable" (click)="result.id === currentUser?.id ? goToProfile() : (result.type === 'scout' ? goToScoutProfile(result.scout_id) : goToPlayerProfile(result.user_id))">
             {{ result.first_name }} {{ result.last_name }}
           </h3>
           <div class="type-badge" [ngClass]="result.type">{{ result.type | titlecase }}</div>
@@ -203,7 +199,7 @@
             <div class="meta">{{ result.city }}, {{ result.country }}</div>
           </ng-container>
         </div>
-        <button class="view-profile-btn" (click)="result.type === 'scout' ? goToScoutProfile(result.scout_id || result.id) : goToPlayerProfile(result.id)">
+        <button class="view-profile-btn" (click)="result.id === currentUser?.id ? goToProfile() : (result.type === 'scout' ? goToScoutProfile(result.scout_id) : goToPlayerProfile(result.user_id))">
           View Profile
         </button>
       </div>
@@ -323,7 +319,8 @@
 
         <div *ngFor="let post of feedData?.posts?.data" class="reel-card">
           <div class="reel-header">
-            <div class="reel-user" (click)="post?.user?.isCurrentUser ? goToProfile() : goToPlayerProfile(post?.user?.player_id)">
+
+            <div class="reel-user" (click)="post?.user?.isCurrentUser ? goToProfile() : goToPlayerProfile(post?.user?.id)">
               <img [src]="getProfileImageUrl(post?.user?.profile_image)"
                    class="avatar-sm"
                    [alt]="post?.user?.full_name"
@@ -362,21 +359,21 @@
           <div class="reel-actions">
             <button (click)="likePost(post?.id)" class="action-btn like-btn" [ngClass]="{'active': post?.has_liked}">
               <i class="bi" [ngClass]="{'bi-heart-fill': post?.has_liked, 'bi-heart': !post?.has_liked}"></i>
-              <span class="action-count" *ngIf="userProfile?.membership === 'premium'" (click)="showLikesList(post?.id, $event)">{{ post?.likes_count || 0 }}</span>
+              <span class="action-count" *ngIf="userProfile?.membership === 'premium' || isScout" (click)="showLikesList(post?.id, $event)">{{ post?.likes_count || 0 }}</span>
             </button>
             <button (click)="toggleCommentBox(post?.id)" class="action-btn">
               <i class="bi bi-chat"></i>
-              <span class="action-count" *ngIf="userProfile?.membership === 'premium'">{{ post?.comments_count || 0 }}</span>
+              <span class="action-count" *ngIf="userProfile?.membership === 'premium' || isScout">{{ post?.comments_count || 0 }}</span>
             </button>
-            <button class="action-btn" (click)="post?.user?.isCurrentUser ? goToProfile() : goToPlayerProfile(post?.user?.player_id)">
+            <button class="action-btn" (click)="post?.user?.isCurrentUser ? goToProfile() : goToPlayerProfile(post?.user?.id)">
               <i class="bi bi-person"></i>
             </button>
-            <div class="video-stats" *ngIf="userProfile?.membership === 'premium'">
+            <div class="video-stats" *ngIf="userProfile?.membership === 'premium' || isScout">
               <div class="views-count">
                 <i class="bi bi-eye"></i> {{ post?.views || 0 }}
               </div>
             </div>
-            <div class="upgrade-prompt" *ngIf="userProfile?.membership === 'free'">
+            <div class="upgrade-prompt" *ngIf="userProfile?.membership === 'free' && !isScout">
               <button class="btn btn-upgrade" (click)="goToSubscription()">
                 Upgrade to Premium to view analytics
               </button>
@@ -386,7 +383,7 @@
           <div class="reel-caption">
             <p>
               <span>
-                <span class="username" (click)="post?.user?.isCurrentUser ? goToProfile() : goToPlayerProfile(post?.user?.player_id)">
+                <span class="username" (click)="post?.user?.isCurrentUser ? goToProfile() : goToPlayerProfile(post?.user?.id)">
                   {{ post?.user?.isCurrentUser ? 'You' : post?.user?.full_name }}
                 </span>
                 {{ post?.description }}
@@ -398,9 +395,15 @@
           <!-- Comments Section -->
           <div class="reel-comments" *ngIf="post?.comments?.length > 0">
             <div *ngFor="let comment of post?.comments?.slice(0, 2)" class="comment">
-              <span class="comment-user" (click)="comment?.user?.isCurrentUser ? goToProfile() : goToUserProfile(comment?.user?.player_id)">
-                {{ comment?.user?.isCurrentUser ? 'You' : comment.user?.full_name }}
-              </span>
+              <div class="comment-header">
+                <img [src]="getProfileImageUrl(comment.user?.profile_image)"
+                     class="comment-avatar"
+                     [alt]="comment.user?.full_name"
+                     (error)="handleImageError($event, comment.user?.first_name, comment.user?.last_name)">
+                <span class="comment-user" (click)="comment.user?.isCurrentUser ? goToProfile() : goToUserProfile(comment.user?.id)">
+                  {{ comment.user?.isCurrentUser ? 'You' : comment.user?.full_name }}
+                </span>
+              </div>
               <span class="comment-text">{{ comment.content }}</span>
               <span class="comment-time">{{ comment.created_at | date:'short' }}</span>
             </div>
@@ -411,13 +414,21 @@
 
           <!-- Comment Box -->
           <div class="comment-box" *ngIf="showCommentBox[post?.id]">
-            <!-- <div class="all-comments">
+            <div class="all-comments">
               <div *ngFor="let comment of post?.comments" class="comment">
-                <span class="comment-user">{{ comment.user_id === currentUser?.id ? 'You' : comment.user?.full_name }}</span>
+                <div class="comment-header">
+                  <img [src]="getProfileImageUrl(comment.user?.profile_image)"
+                       class="comment-avatar"
+                       [alt]="comment.user?.full_name"
+                       (error)="handleImageError($event, comment.user?.first_name, comment.user?.last_name)">
+                  <span class="comment-user" (click)="comment.user?.isCurrentUser ? goToProfile() : goToUserProfile(comment.user?.id)">
+                    {{ comment.user?.isCurrentUser ? 'You' : comment.user?.full_name }}
+                  </span>
+                </div>
                 <span class="comment-text">{{ comment.content }}</span>
                 <span class="comment-time">{{ comment.created_at | date:'short' }}</span>
               </div>
-            </div> -->
+            </div>
             <div class="add-comment">
               <input
                 type="text"
@@ -441,7 +452,7 @@
       <!-- Events View -->
       <div *ngIf="activeView === 'events'" class="events-container">
         <!-- Premium Users Content -->
-        <div *ngIf="userProfile?.membership === 'premium'">
+        <div *ngIf="userProfile?.membership === 'premium' || isScout">
           <div *ngIf="!feedData.upcoming_events?.length" class="empty-feed">
             No upcoming events. Check back later for new opportunities!
           </div>
@@ -464,7 +475,7 @@
         </div>
 
         <!-- Free Users Content -->
-        <div *ngIf="userProfile?.membership !== 'premium'" class="premium-upgrade-message">
+        <div *ngIf="userProfile?.membership !== 'premium' && !isScout" class="premium-upgrade-message">
           <div class="upgrade-card">
             <h3>Upgrade to Premium</h3>
             <p>Get access to exclusive features:</p>
@@ -518,7 +529,7 @@
       </div>
 
       <!-- Events Section for Premium Users -->
-      <div class="events" *ngIf="userProfile?.membership === 'premium'">
+      <div class="events" *ngIf="userProfile?.membership === 'premium' || isScout">
         <div class="section-header">
           <h4>Upcoming Events</h4>
           <a href="#" (click)="switchView('events'); $event.preventDefault()" class="see-all">See all</a>
@@ -536,7 +547,7 @@
       </div>
 
       <!-- Premium Upgrade Message for Free Users -->
-      <div class="events" *ngIf="userProfile?.membership !== 'premium'">
+      <div class="events" *ngIf="userProfile?.membership !== 'premium' && !isScout">
         <div class="premium-upgrade-message">
           <div class="upgrade-card">
             <h3>Upgrade to Premium</h3>
