@@ -10,13 +10,13 @@ import { PlayerViewComponent } from './player-view/player-view.component';
 import { ForgotPasswordComponent } from './forgot-password/forgot-password.component';
 import { ResetPasswordComponent } from './reset-password/reset-password.component';
 import { EmailVerificationComponent } from './email-verification/email-verification.component';
-import { SubscriptionComponent } from './subscription/subscription.component';
 import { AuthGuard } from './auth.guard';
 import { ScoutProfileComponent } from './Scout/profile/profile.component';
 import { WelcomeComponent } from './welcome/welcome.component';
 import { ScoutEditComponent } from './Scout/profile/scout-edit/scout-edit.component';
 import { ScoutViewComponent } from './scout-view/scout-view.component';
 import { ScoutSubscriptionComponent } from './subscription/scout-subscription/scout-subscription.component';
+import { SubscriptionComponent } from './subscription/subscription/subscription.component';
 
 export const routes: Routes = [
     {
@@ -127,7 +127,11 @@ export const routes: Routes = [
         component: ScoutSubscriptionComponent,
         canActivate: [AuthGuard]
     },
-    
+    {
+        path: 'subscription',
+        component: SubscriptionComponent,
+        canActivate: [AuthGuard]
+    },
 
 
 
