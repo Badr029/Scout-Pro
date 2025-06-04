@@ -1,0 +1,131 @@
+<div class="subscription-container">
+    <div class="page-header">
+        <button class="btn-back" (click)="goToHome()">
+            <i class="fas fa-arrow-left"></i>
+            Back to Home
+        </button>
+    </div>
+    <div>
+        <h1>Subscription Plans</h1>
+    </div>
+
+    <!-- Loading State -->
+    <div *ngIf="loading" class="loading-state">
+        <div class="spinner"></div>
+        <p>Processing...</p>
+    </div>
+
+    <!-- Error Message -->
+    <div *ngIf="error" class="error-state">
+        <p class="error-message">{{ error }}</p>
+    </div>
+
+    <!-- Success Message -->
+    <div *ngIf="success" class="success-state">
+        <p class="success-message">{{ success }}</p>
+    </div>
+
+    <div class="plans-container">
+        <!-- Free Plan -->
+        <div class="plan-card" [class.active]="currentPlan === 'Free'" [class.selected]="selectedPlanType === 'free'"
+            (click)="selectPlan('free')">
+            <div class="plan-header">
+                <h2>Free</h2>
+                <p class="price">$0 <span>/month</span></p>
+            </div>
+            <div class="plan-features">
+                <ul>
+                    <li *ngFor="let feature of subscriptionPlans[0].features">
+                        <i class="fi fi-br-check"></i> {{ feature }}
+                    </li>
+                </ul>
+            </div>
+            <div class="plan-footer">
+                <div *ngIf="currentPlan === 'Free' && selectedPlanType === 'free'">
+                    <button class="btn btn-current" disabled>Current Plan</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Monthly Premium Plan -->
+        <div class="plan-card premium" [class.active]="currentPlan === 'Premium' && selectedPlanType === 'monthly'"
+            [class.selected]="selectedPlanType === 'monthly'" (click)="selectPlan('monthly')">
+            <div class="plan-ribbon">Recommended</div>
+            <div class="plan-header">
+                <h2>Premium</h2>
+                <p class="price">${{ subscriptionPlans[1].price }} <span>/month</span></p>
+            </div>
+            <div class="plan-features">
+                <ul>
+                    <li *ngFor="let feature of subscriptionPlans[1].features">
+                        <i class="fi fi-br-check"></i> {{ feature }}
+                    </li>
+                </ul>
+            </div>
+            <div class="plan-footer">
+                <div *ngIf="currentPlan === 'Premium' && selectedPlanType === 'monthly'">
+                    <button class="btn btn-current" disabled>Current Plan</button>
+                    <button class="btn btn-outline" (click)="cancelSubscription(); $event.stopPropagation()"
+                        [disabled]="loading">Cancel</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Yearly Premium Plan -->
+        <div class="plan-card premium" [class.active]="currentPlan === 'Premium' && selectedPlanType === 'yearly'"
+            [class.selected]="selectedPlanType === 'yearly'" (click)="selectPlan('yearly')">
+            <div class="plan-header">
+                <h2>Premium</h2>
+                <p class="price">${{ subscriptionPlans[1].yearlyPrice }} <span>/year</span></p>
+            </div>
+            <div class="plan-features">
+                <ul>
+                    <li *ngFor="let feature of subscriptionPlans[1].features">
+                        <i class="fi fi-br-check"></i> {{ feature }}
+                    </li>
+                </ul>
+            </div>
+            <div class="plan-footer">
+                <div *ngIf="currentPlan === 'Premium' && selectedPlanType === 'yearly'">
+                    <button class="btn btn-current" disabled>Current Plan</button>
+                    <button class="btn btn-outline" (click)="cancelSubscription(); $event.stopPropagation()"
+                        [disabled]="loading">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Payment Form (styled as a credit card) -->
+    <div *ngIf="currentPlan !== 'Premium' && selectedPlanType && selectedPlanType !== 'free'" class="payment-section">
+        <h2>Payment Details</h2>
+        <div class="card-container">
+            <div class="header-row">
+                <input class="card-name-input" type="text" name="cardName" id="cardName" placeholder="Full Name" />
+                <div class="card-logo-container">
+                    <svg class="card-logo" xmlns="http://www.w3.org/2000/svg" width="30" height="30"
+                        viewBox="0 0 48 48">
+                        <path fill="#ff9800" d="M32 10A14 14 0 1 0 32 38A14 14 0 1 0 32 10Z"></path>
+                        <path fill="#d50000" d="M16 10A14 14 0 1 0 16 38A14 14 0 1 0 16 10Z"></path>
+                        <path fill="#ff3d00"
+                            d="M18,24c0,4.755,2.376,8.95,6,11.48c3.624-2.53,6-6.725,6-11.48s-2.376-8.95-6-11.48 C20.376,15.05,18,19.245,18,24z">
+                        </path>
+                    </svg>
+                </div>
+            </div>
+            <div class="form-container">
+                <input class="card-number-input" type="text" name="cardNumber" id="cardNumber"
+                    placeholder="0000 0000 0000 0000" />
+                <div class="details-row">
+                    <input class="expiry-input" type="text" name="expiryDate" id="expiryDate" placeholder="MM/AA" />
+                    <input class="cvv-input" type="text" name="cvv" id="cvv" placeholder="CVV" />
+                </div>
+            </div>
+        </div>
+            <div class="payment-button-container">
+                <button class="btn btn-primary wide" (click)="upgradeSubscription()" [disabled]="loading">
+                    <span *ngIf="!loading">Upgrade to Premium</span>
+                    <span *ngIf="loading" class="spinner small"></span>
+                </button>
+            </div>
+        </div>
+    </div>
