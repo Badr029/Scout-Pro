@@ -16,6 +16,7 @@ import { ScoutProfileComponent } from './Scout/profile/profile.component';
 import { WelcomeComponent } from './welcome/welcome.component';
 import { ScoutEditComponent } from './Scout/profile/scout-edit/scout-edit.component';
 import { ScoutViewComponent } from './scout-view/scout-view.component';
+import { ScoutSubscriptionComponent } from './subscription/scout-subscription/scout-subscription.component';
 
 export const routes: Routes = [
     {
@@ -121,6 +122,12 @@ export const routes: Routes = [
         component: ScoutViewComponent,
         canActivate: [AuthGuard]
     },
+    {
+        path: 'scout-subscription',
+        component: ScoutSubscriptionComponent,
+        canActivate: [AuthGuard]
+    },
+    
 
 
 
