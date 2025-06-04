@@ -1139,5 +1139,37 @@ public function playerviewprofile($user_id) {
         ]);
     }
 
+    public function getPremiumPlayers()
+    {
+        try {
+            $premiumPlayers = Player::with('user')
+                ->where('membership', 'premium')
+                ->orderBy('created_at', 'desc')
+                ->get()
+                ->map(function($player) {
+                    return [
+                        'id' => $player->id,
+                        'name' => $player->first_name . ' ' . $player->last_name,
+                        'position' => $player->position,
+                        'region' => $player->current_city,
+                        'image' => $player->profile_image ? url('storage/' . $player->profile_image) : null,
+                        'membership' => $player->membership,
+                        'user_id' => $player->user_id
+                    ];
+                });
+
+            return response()->json([
+                'status' => 'success',
+                'data' => $premiumPlayers
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error fetching premium players: ' . $e->getMessage());
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to fetch premium players'
+            ], 500);
+        }
+    }
+
 }
 

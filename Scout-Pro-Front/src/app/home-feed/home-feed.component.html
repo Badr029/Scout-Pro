@@ -572,20 +572,21 @@
         </div>
       </div>
 
+
+
       <!-- Recommendations (Only for Scouts) -->
       <div class="recommendations" *ngIf="isScout">
         <h4>You May Also Like</h4>
         <div class="recommendation-list">
-          <div *ngFor="let rec of feedData?.recommendations" class="recommendation-item" (click)="goToPlayerProfile(rec?.id)">
-            <img [src]="rec?.image || getAvatarUrl(rec?.name?.split(' ')[0], rec?.name?.split(' ')[1])"
+          <div *ngFor="let player of premiumPlayers" class="recommendation-item" (click)="goToPlayerProfile(player?.id)">
+            <img [src]="player?.image || getAvatarUrl(player?.name?.split(' ')[0], player?.name?.split(' ')[1])"
                  class="avatar-sm"
-                 [alt]="rec?.name"
-                 (error)="handleImageError($event, rec?.name?.split(' ')[0], rec?.name?.split(' ')[1])">
+                 [alt]="player?.name"
+                 (error)="handleImageError($event, player?.name?.split(' ')[0], player?.name?.split(' ')[1])">
             <div class="recommendation-info">
-              <span class="recommendation-name">{{ rec?.name || 'Unknown Player' }}</span>
-              <span class="recommendation-meta">{{ rec?.position || 'No Position' }} • {{ rec?.region || 'No Region' }}</span>
+              <span class="recommendation-name">{{ player?.name || 'Unknown Player' }}</span>
+              <span class="recommendation-meta">{{ player?.position || 'No Position' }} • {{ player?.region || 'No Region' }}</span>
             </div>
-            <button class="btn btn-sm">View</button>
           </div>
         </div>
       </div>

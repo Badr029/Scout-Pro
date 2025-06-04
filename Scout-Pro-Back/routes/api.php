@@ -69,6 +69,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/feed/like', [FeedController::class, 'toggleLike']);
     Route::post('/feed/follow', [FeedController::class, 'toggleFollow']);
     Route::get('/feed/events', [FeedController::class, 'getEvents']);
+    Route::get('/premium-players', [FeedController::class, 'getPremiumPlayers']);
 
     // Video routes
     Route::post('/videos/upload', [VideoController::class, 'upload']);

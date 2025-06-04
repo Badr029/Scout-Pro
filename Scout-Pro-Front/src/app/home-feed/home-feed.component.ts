@@ -92,6 +92,7 @@ export class HomeFeedComponent implements OnInit {
   showAccountMenu = false;
   isMobile = false;
   showRightPanel = false;
+  premiumPlayers: any[] = [];
 
   // Filter Options
   ageRanges = [
@@ -220,6 +221,7 @@ export class HomeFeedComponent implements OnInit {
     this.getUserProfile();
     // Then load other data
     this.loadFeedData();
+    this.loadPremiumPlayers();
     this.loadRecentSearches();
     this.initializeFilteredLists();
   }
@@ -424,7 +426,22 @@ export class HomeFeedComponent implements OnInit {
 
     if (playerId === this.currentUser?.id) {
       this.goToProfile(); // Use the existing goToProfile method for current user
-          } else {
+    } else {
+      // For premium players section
+      const premiumPlayer = this.premiumPlayers.find((p: { id: number; user_id: number }) => p.id === playerId);
+      if (premiumPlayer) {
+        this.router.navigate(['/player', premiumPlayer.user_id]);
+        return;
+      }
+
+      // For trending players section
+      const trendingPlayer = this.feedData?.trending_players?.find((p: { id: number }) => p.id === playerId);
+      if (trendingPlayer) {
+        this.router.navigate(['/player', trendingPlayer.id]);
+        return;
+      }
+
+      // Default case
       this.router.navigate(['/player', playerId]);
     }
   }
@@ -1469,5 +1486,18 @@ export class HomeFeedComponent implements OnInit {
 
   goToSubscription() {
     this.router.navigate(['/subscription']);
+  }
+
+  loadPremiumPlayers() {
+    this.apiService.getData('premium-players').subscribe({
+      next: (response: any) => {
+        if (response.data) {
+          this.premiumPlayers = response.data;
+        }
+      },
+      error: (error) => {
+        console.error('Error loading premium players:', error);
+      }
+    });
   }
 }
