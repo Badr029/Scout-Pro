@@ -941,6 +941,8 @@ export class HomeFeedComponent implements OnInit {
     if (!this.searchQuery.trim()) return;
 
     console.log('Performing search with query:', this.searchQuery);
+    console.log('Current user:', this.currentUser);
+    console.log('Is Scout:', this.isScout);
     this.loading = true;
 
     // Save the search term to localStorage first
@@ -952,35 +954,106 @@ export class HomeFeedComponent implements OnInit {
       this.recentSearches = recentSearches;
     }
 
+    // Prepare search filters based on user type
+    const userType = this.currentUser?.user_type || localStorage.getItem('user_type');
+    let searchFilters = {};
+
+    if (this.isScout) {
+      // Only include non-empty filter values
+      const filters: any = {
+        age_range: this.filters.age_range,
+        preferred_foot: this.filters.preferred_foot,
+        region: this.filters.region,
+        position: this.filters.position,
+        transfer_status: this.filters.transfer_status
+      };
+
+      // Remove undefined or empty string values
+      Object.keys(filters).forEach(key => {
+        if (filters[key] === undefined || filters[key] === '') {
+          delete filters[key];
+        }
+      });
+
+      searchFilters = filters;
+    }
+
     const searchData = {
-      query: this.searchQuery,
-      filters: this.isScout ? this.filters : {}
+      search_query: this.searchQuery.trim(),
+      filters: searchFilters,
+      user_type: userType
     };
+
+    console.log('Search request data:', searchData);
 
     this.apiService.postData('search', searchData).subscribe({
       next: (response: any) => {
         console.log('Search response:', response);
-        // Update to use results instead of players
-        this.searchResults = response.data.results || [];
+        if (response.data) {
+          // Handle the results array from the response
+          const results = response.data.results || response.data || [];
+          console.log('Raw search results:', results);
 
-        // Process each result to ensure proper image URLs
-        this.searchResults = this.searchResults.map((result: any) => ({
-          ...result,
-          profile_image: result.profile_image ? this.getProfileImageUrl(result.profile_image) : null,
-          full_name: `${result.first_name} ${result.last_name}`.trim()
-        }));
+          // Process each result to ensure proper image URLs and data structure
+          this.searchResults = results.map((result: any) => {
+            console.log('Processing result:', result);
 
-        console.log('Processed search results:', this.searchResults);
+            // Base result object with common properties
+            const processedResult = {
+              ...result,
+              profile_image: result.profile_image ? this.getProfileImageUrl(result.profile_image) : null,
+              first_name: result.first_name || '',
+              last_name: result.last_name || '',
+              full_name: `${result.first_name || ''} ${result.last_name || ''}`.trim(),
+              type: result.type || (result.player_id ? 'player' : 'scout'),
+              id: result.id || result.user_id,
+              user_id: result.user_id || result.id,
+              scout_id: result.scout_id,
+              membership: result.membership || 'free'
+            };
 
-        if (response.data.filter_options) {
-          this.feedData.filter_options = response.data.filter_options;
+            // Add type-specific fields
+            if (processedResult.type === 'player') {
+              processedResult.position = result.position || 'N/A';
+              processedResult.nationality = result.nationality || 'N/A';
+              processedResult.current_city = result.current_city || 'N/A';
+              processedResult.age = result.age || 'N/A';
+              processedResult.preferred_foot = result.preferred_foot || 'N/A';
+              processedResult.region = result.region || 'N/A';
+            } else if (processedResult.type === 'scout') {
+              processedResult.position_title = result.position_title || 'Scout';
+              processedResult.organization = result.organization || 'N/A';
+              processedResult.city = result.city || 'N/A';
+              processedResult.country = result.country || 'N/A';
+            }
+
+            console.log('Processed result:', processedResult);
+            return processedResult;
+          });
+
+          console.log('Final processed search results:', this.searchResults);
+
+          // Update filter options if available
+          if (response.data.filter_options) {
+            this.feedData.filter_options = response.data.filter_options;
+          }
+        } else {
+          console.warn('No data in search response:', response);
+          this.searchResults = [];
         }
         this.loading = false;
       },
       error: (error) => {
-        console.error('Search error:', error);
+        console.error('Search error details:', {
+          status: error.status,
+          statusText: error.statusText,
+          error: error.error,
+          message: error.message,
+          fullError: error
+        });
         this.loading = false;
-        this.showNotification('Failed to perform search');
+        this.searchResults = [];
+        this.showNotification(error.error?.message || 'Failed to perform search');
       }
     });
   }

@@ -585,130 +585,201 @@ class FeedController extends Controller
      */
     public function search(Request $request)
     {
-        $user = Auth::user();
-        $query = $request->get('query', '');
-        $filters = $request->get('filters', []);
+        try {
+            $user = Auth::user();
+            $query = $request->get('search_query', '');
+            $filters = $request->get('filters', []);
+            $userType = $request->get('user_type', $user->user_type);
 
-        // Search in players table
-        $playersQuery = Player::select('players.*')
-            ->join('users', 'players.user_id', '=', 'users.id')
-            ->where(function($q) use ($query) {
-                $q->where('players.first_name', 'LIKE', "%{$query}%")
-                  ->orWhere('players.last_name', 'LIKE', "%{$query}%")
-                  ->orWhere('players.position', 'LIKE', "%{$query}%");
-            });
+            Log::info('Search request:', [
+                'query' => $query,
+                'filters' => $filters,
+                'user_type' => $userType
+            ]);
 
-        // Search in scouts table
-        $scoutsQuery = Scout::select('scouts.*')
-            ->join('users', 'scouts.user_id', '=', 'users.id')
-            ->where(function($q) use ($query) {
-                $q->where('scouts.first_name', 'LIKE', "%{$query}%")
-                  ->orWhere('scouts.last_name', 'LIKE', "%{$query}%")
-                  ->orWhere('scouts.organization', 'LIKE', "%{$query}%")
-                  ->orWhere('scouts.position_title', 'LIKE', "%{$query}%");
-            });
+            // Search in players table
+            $playersQuery = Player::select('players.*')
+                ->join('users', 'players.user_id', '=', 'users.id')
+                ->where(function($q) use ($query) {
+                    $q->where('players.first_name', 'LIKE', "%{$query}%")
+                      ->orWhere('players.last_name', 'LIKE', "%{$query}%")
+                      ->orWhere('players.position', 'LIKE', "%{$query}%")
+                      ->orWhere('players.nationality', 'LIKE', "%{$query}%")
+                      ->orWhere('players.current_city', 'LIKE', "%{$query}%");
+                });
 
-        // Apply filters for players if user is a scout
-        if ($user->user_type === 'scout' && !empty($filters)) {
-            if (!empty($filters['age_range'])) {
-                $ages = explode('-', $filters['age_range']);
-                if (count($ages) === 2) {
-                    $minDate = now()->subYears($ages[1])->format('Y-m-d');
-                    $maxDate = now()->subYears($ages[0])->format('Y-m-d');
-                    $playersQuery->whereBetween('players.DateofBirth', [$minDate, $maxDate]);
+            // Search in scouts table
+            $scoutsQuery = Scout::select('scouts.*')
+                ->join('users', 'scouts.user_id', '=', 'users.id')
+                ->where(function($q) use ($query) {
+                    $q->where('scouts.first_name', 'LIKE', "%{$query}%")
+                      ->orWhere('scouts.last_name', 'LIKE', "%{$query}%")
+                      ->orWhere('scouts.organization', 'LIKE', "%{$query}%")
+                      ->orWhere('scouts.position_title', 'LIKE', "%{$query}%");
+                });
+
+            // Apply filters for players if user is a scout and filters are provided
+            if ($userType === 'scout' && !empty($filters)) {
+                Log::info('Applying scout filters:', $filters);
+
+                if (!empty($filters['age_range'])) {
+                    $ages = explode('-', $filters['age_range']);
+                    if (count($ages) === 2) {
+                        $minAge = (int)$ages[0];
+                        $maxAge = (int)$ages[1];
+                        $minDate = now()->subYears($maxAge)->format('Y-m-d');
+                        $maxDate = now()->subYears($minAge)->format('Y-m-d');
+                        $playersQuery->whereBetween('players.DateofBirth', [$minDate, $maxDate]);
+                    }
+                }
+
+                if (!empty($filters['preferred_foot'])) {
+                    $playersQuery->where('players.preferred_foot', $filters['preferred_foot']);
+                }
+
+                if (!empty($filters['region'])) {
+                    $playersQuery->where(function($q) use ($filters) {
+                        $q->where('players.current_city', 'LIKE', "%{$filters['region']}%")
+                          ->orWhere('players.nationality', 'LIKE', "%{$filters['region']}%");
+                    });
+                }
+
+                if (!empty($filters['position'])) {
+                    $playersQuery->where('players.position', 'LIKE', "%{$filters['position']}%");
+                }
+
+                if (!empty($filters['transfer_status'])) {
+                    $playersQuery->where('players.transfer_status', $filters['transfer_status']);
                 }
             }
 
-            if (!empty($filters['preferred_foot'])) {
-                $playersQuery->where('players.preferred_foot', $filters['preferred_foot']);
-            }
-
-            if (!empty($filters['region'])) {
-                $playersQuery->where(function($q) use ($filters) {
-                    $q->where('players.current_city', 'LIKE', "%{$filters['region']}%")
-                      ->orWhere('players.nationality', 'LIKE', "%{$filters['region']}%");
+            // Get results based on user type
+            $results = [];
+            if ($userType === 'scout') {
+                // Scouts only search for players
+                $results = $playersQuery->get()->map(function($player) {
+                    return [
+                        'id' => $player->id,
+                        'user_id' => $player->user_id,
+                        'first_name' => $player->first_name,
+                        'last_name' => $player->last_name,
+                        'profile_image' => $player->profile_image,
+                        'position' => $player->position,
+                        'nationality' => $player->nationality,
+                        'current_city' => $player->current_city,
+                        'age' => abs($this->calculateAge($player->DateofBirth)),
+                        'preferred_foot' => $player->preferred_foot,
+                        'transfer_status' => $player->transfer_status,
+                        'type' => 'player',
+                        'membership' => $player->membership
+                    ];
                 });
+            } else {
+                // Players can search for both players and scouts
+                $players = $playersQuery->get()->map(function($player) {
+                    return [
+                        'id' => $player->id,
+                        'user_id' => $player->user_id,
+                        'first_name' => $player->first_name,
+                        'last_name' => $player->last_name,
+                        'profile_image' => $player->profile_image,
+                        'position' => $player->position,
+                        'nationality' => $player->nationality,
+                        'current_city' => $player->current_city,
+                        'type' => 'player'
+                    ];
+                });
+
+                $scouts = $scoutsQuery->get()->map(function($scout) {
+                    return [
+                        'id' => $scout->id,
+                        'user_id' => $scout->user_id,
+                        'first_name' => $scout->first_name,
+                        'last_name' => $scout->last_name,
+                        'profile_image' => $scout->profile_image,
+                        'organization' => $scout->organization,
+                        'position_title' => $scout->position_title,
+                        'city' => $scout->city,
+                        'country' => $scout->country,
+                        'type' => 'scout',
+                        'scout_id' => $scout->user_id
+                    ];
+                });
+
+                $results = $players->concat($scouts);
             }
 
-            if (!empty($filters['transfer_status'])) {
-                $playersQuery->where('players.transfer_status', $filters['transfer_status']);
+            // Get filter options for scouts
+            $filterOptions = [];
+            if ($userType === 'scout') {
+                $scout = Scout::where('user_id', $user->id)->first();
+
+                // Handle preferred roles safely
+                $preferredRoles = [];
+                if ($scout && $scout->preferred_roles) {
+                    if (is_string($scout->preferred_roles)) {
+                        try {
+                            $preferredRoles = json_decode($scout->preferred_roles, true) ?? [];
+                        } catch (\Exception $e) {
+                            Log::warning('Failed to decode preferred roles:', ['error' => $e->getMessage()]);
+                        }
+                    } else if (is_array($scout->preferred_roles)) {
+                        $preferredRoles = $scout->preferred_roles;
+                    }
+                }
+
+                $filterOptions = [
+                    'age_ranges' => [
+                        ['label' => '15-18', 'value' => '15-18'],
+                        ['label' => '19-23', 'value' => '19-23'],
+                        ['label' => '24-30', 'value' => '24-30'],
+                        ['label' => '31+', 'value' => '31+']
+                    ],
+                    'preferred_foot' => [
+                        ['label' => 'Right', 'value' => 'right'],
+                        ['label' => 'Left', 'value' => 'left'],
+                        ['label' => 'Both', 'value' => 'both']
+                    ],
+                    'regions' => $this->getUniqueRegions(),
+                    'transfer_status' => [
+                        ['label' => 'Available', 'value' => 'available'],
+                        ['label' => 'Not Available', 'value' => 'not_available'],
+                        ['label' => 'Loan', 'value' => 'loan']
+                    ],
+                    'suggested_roles' => $preferredRoles
+                ];
             }
+
+            // Save search to recent searches
+            if ($query) {
+                $this->saveRecentSearch($user->id, $query);
+            }
+
+            Log::info('Search results:', [
+                'count' => count($results),
+                'filter_options' => $filterOptions
+            ]);
+
+            return response()->json([
+                'status' => 'success',
+                'data' => [
+                    'results' => $results,
+                    'filter_options' => $filterOptions,
+                    'recent_searches' => $this->getRecentSearches($user->id)
+                ]
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Search error:', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'status' => 'error',
+                'message' => 'An error occurred while performing the search',
+                'debug_message' => config('app.debug') ? $e->getMessage() : null
+            ], 500);
         }
-
-        // Get results
-        $players = $playersQuery->get()->map(function($player) {
-            return [
-                'id' => $player->id,
-                'user_id' => $player->user_id,
-                'first_name' => $player->first_name,
-                'last_name' => $player->last_name,
-                'profile_image' => $player->profile_image,
-                'position' => $player->position,
-                'nationality' => $player->nationality,
-                'current_city' => $player->current_city,
-                'type' => 'player'
-            ];
-        });
-
-        $scouts = $scoutsQuery->get()->map(function($scout) {
-            return [
-                'id' => $scout->id,
-                'user_id' => $scout->user_id,
-                'first_name' => $scout->first_name,
-                'last_name' => $scout->last_name,
-                'profile_image' => $scout->profile_image,
-                'organization' => $scout->organization,
-                'position_title' => $scout->position_title,
-                'city' => $scout->city,
-                'country' => $scout->country,
-                'type' => 'scout',
-                'scout_id' => $scout->user_id
-            ];
-        });
-
-        // Merge results
-        $results = $players->concat($scouts);
-
-        // Get filter options for scouts
-        $filterOptions = [];
-        if ($user->user_type === 'scout') {
-            $scout = Scout::where('user_id', $user->id)->first();
-
-            $filterOptions = [
-                'age_ranges' => [
-                    ['label' => '15-18', 'value' => '15-18'],
-                    ['label' => '19-23', 'value' => '19-23'],
-                    ['label' => '24-30', 'value' => '24-30'],
-                    ['label' => '31+', 'value' => '31+']
-                ],
-                'preferred_foot' => [
-                    ['label' => 'Right', 'value' => 'right'],
-                    ['label' => 'Left', 'value' => 'left'],
-                    ['label' => 'Both', 'value' => 'both']
-                ],
-                'regions' => $this->getUniqueRegions(),
-                'transfer_status' => [
-                    ['label' => 'Available', 'value' => 'available'],
-                    ['label' => 'Not Available', 'value' => 'not_available'],
-                    ['label' => 'Loan', 'value' => 'loan']
-                ],
-                'suggested_roles' => $scout ? json_decode($scout->preferred_roles) : []
-            ];
-        }
-
-        // Save search to recent searches
-        if ($query) {
-            $this->saveRecentSearch($user->id, $query);
-        }
-
-        return response()->json([
-            'status' => 'success',
-            'data' => [
-                'results' => $results,
-                'filter_options' => $filterOptions,
-                'recent_searches' => $this->getRecentSearches($user->id)
-            ]
-        ]);
     }
 
     /**
@@ -727,7 +798,7 @@ class FeedController extends Controller
             });
 
         return $regions;
-            }
+    }
 
     /**
      * Save recent search

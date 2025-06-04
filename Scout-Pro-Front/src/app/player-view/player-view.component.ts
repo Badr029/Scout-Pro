@@ -103,6 +103,7 @@ export class PlayerViewComponent implements OnInit, OnDestroy {
   userProfile: any = null;
   post: any = null;
   comments: any[] = [];
+  isPlayer: boolean = false;
 
   private readonly BASE_API_URL = 'http://localhost:8000';
 
@@ -157,6 +158,7 @@ export class PlayerViewComponent implements OnInit, OnDestroy {
       next: (response: any) => {
         if (response.data) {
           this.userProfile = response.data;
+          this.isPlayer = this.userProfile.user_type === 'player';
         }
       },
       error: (error) => {

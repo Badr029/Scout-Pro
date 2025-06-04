@@ -465,15 +465,15 @@ class VideoController extends Controller
         return response()->json([
             'status' => 'success',
             'data' => [
-                'id' => $comment->id,
-                'content' => $comment->content,
-                'created_at' => $comment->created_at,
-                'user' => [
-                    'id' => $comment->user->id,
-                    'first_name' => $comment->user->first_name,
-                    'last_name' => $comment->user->last_name,
+            'id' => $comment->id,
+            'content' => $comment->content,
+            'created_at' => $comment->created_at,
+            'user' => [
+                'id' => $comment->user->id,
+                'first_name' => $comment->user->first_name,
+                'last_name' => $comment->user->last_name,
                     'profile_image' => $comment->user->player ? $comment->user->player->profile_image : null,
-                ]
+            ]
             ]
         ]);
     }

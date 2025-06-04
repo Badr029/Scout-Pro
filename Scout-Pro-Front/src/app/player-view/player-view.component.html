@@ -25,7 +25,7 @@
       <div class="profile-picture">
         <img *ngIf="playerData.profile_image"
              [src]="'http://localhost:8000/storage/' + playerData.profile_image"
-             [alt]="playerData.first_name"
+             [alt]="playerData.first_name + ' ' + playerData.last_name"
              (error)="handleImageError($event, playerData.first_name, playerData.last_name)">
         <div *ngIf="!playerData.profile_image" class="no-avatar">
           {{ getFirstInitial() }}{{ getLastInitial() }}
@@ -36,22 +36,19 @@
     <!-- Action Buttons -->
     <div class="action-buttons" style="justify-content: center;">
       <button class="btn btn-primary">Follow</button>
-      <button class="btn btn-primary">Contact Player</button>
+      <button class="btn btn-primary" *ngIf="!isPlayer">Contact Player</button>
     </div>
 
     <!-- Player Info -->
     <div class="player-info">
       <h1 class="player-name">
-        {{ playerData.first_name || '' }} {{ playerData.last_name || '' }}
-        <span class="username">{{ "@" + (playerData.username || '') }}</span>
+        {{ playerData.first_name }} {{ playerData.last_name }}
+        <span class="username">{{"@"+playerData.username}}</span>
       </h1>
-      <div class="detail-item1">
-        <span class="detail-label1"></span>
-                   <span class="detail-value1">{{ playerData.position }} | {{ playerData.current_club }}</span>
-      </div>
-      <div class="detail-item1">
-          <span class="detail-label1"></span>
-          </div>
+      <p class="player-title">{{ playerData.position }} | {{ playerData.current_club }}</p>
+      <span class="subscription-badge premium" *ngIf="playerData?.membership === 'premium'">
+        Premium Player
+      </span>
     </div>
 
     <!-- Key Stats -->

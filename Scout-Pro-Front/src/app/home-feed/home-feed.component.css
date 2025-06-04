@@ -2983,3 +2983,44 @@ input[type="file"].form-control::file-selector-button:hover {
   transform: translateY(-1px);
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
 }
+
+.player-header {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  margin-bottom: 0.5rem;
+}
+
+.user-header {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.subscription-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 8px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.subscription-badge.premium {
+  background: linear-gradient(135deg, #6b46c1 0%, #9f7aea 100%);
+  color: white;
+  box-shadow: 0 2px 8px rgba(107, 70, 193, 0.3);
+}
+
+.subscription-badge.premium::before {
+  content: "⭐";
+  margin-right: 4px;
+}
+
+/* Hover effects */
+.subscription-badge.premium:hover {
+  background: linear-gradient(135deg, #553c9a 0%, #805ad5 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(107, 70, 193, 0.4);
+}

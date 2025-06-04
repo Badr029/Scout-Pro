@@ -41,7 +41,7 @@ body {
   margin-bottom: 1.5rem;
 }
 
-.avatar-container .profile-picture {
+.profile-picture {
  width: 150px;
     height: 150px;
     border-radius: 50%;
@@ -50,35 +50,34 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  border: 3px solid var(--primary);
 }
 
-.avatar-container .profile-picture {
-  width: 150px;
-  height: 150px;
-  border-radius: 50%;
+.profile-picture img {
+  width: 100%;
+  height: 100%;
   object-fit: cover;
-
 }
+
+.no-avatar {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary);
+  font-size: 50px;
+  font-weight: 600;
+  background-color: #2d2d2d;
+}
+
 .stat-line .arrow {
   color: #2667cc;
   font-weight: bold;
   margin: 0 0.3rem;
 }
 
-.avatar-container .no-avatar {
- width: 150px;
-    height: 150px;
-    border-radius: 50%;
-    overflow: hidden;
-    background-color: #2d2d2d;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color:#2667cc;
-    font-size:50px;
-    font-weight: 600;
-
-}
 .player-physical-stats {
   margin-top: 2px;
   line-height: 1.8;
@@ -403,21 +402,21 @@ body {
 
 /* Video Section */
 .video-container {
-    position: relative;
-    padding-bottom: 56.25%;
-    height: 0;
-    overflow: hidden;
+  position: relative;
+  padding-bottom: 56.25%;
+  height: 0;
+  overflow: hidden;
     margin-bottom: 2rem;
     border-radius: 8px;
     background: var(--darker);
 }
 
 .video-container iframe {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
     border: none;
 }
 
@@ -608,7 +607,7 @@ body {
 /* Responsive Adjustments */
 @media (max-width: 768px) {
     .videos-container {
-        grid-template-columns: 1fr;
+    grid-template-columns: 1fr;
         padding: 1rem;
     }
 }
@@ -1119,4 +1118,33 @@ body {
 .video-card .btn-upgrade:hover {
   background: var(--primary-dark);
   transform: translateY(-1px);
+}
+
+.subscription-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin: 8px 0;
+  transition: all 0.2s ease;
+}
+
+.subscription-badge.premium {
+  background: linear-gradient(135deg, #6b46c1 0%, #9f7aea 100%);
+  color: white;
+  box-shadow: 0 2px 8px rgba(107, 70, 193, 0.3);
+}
+
+.subscription-badge.premium::before {
+  content: "⭐";
+  margin-right: 6px;
+}
+
+/* Hover effects */
+.subscription-badge.premium:hover {
+  background: linear-gradient(135deg, #553c9a 0%, #805ad5 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(107, 70, 193, 0.4);
 }

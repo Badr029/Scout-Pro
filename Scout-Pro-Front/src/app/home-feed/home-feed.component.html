@@ -181,9 +181,14 @@
              class="player-avatar"
              (error)="handleImageError($event, result.first_name, result.last_name)">
         <div class="player-info">
-          <h3 class="clickable" (click)="result.id === currentUser?.id ? goToProfile() : (result.type === 'scout' ? goToScoutProfile(result.scout_id) : goToPlayerProfile(result.user_id))">
+          <div class="player-header">
+            <h3 class="clickable" (click)="result.id === currentUser?.id ? goToProfile() : (result.type === 'scout' ? goToScoutProfile(result.scout_id) : goToPlayerProfile(result.user_id))">
             {{ result.first_name }} {{ result.last_name }}
           </h3>
+            <span class="subscription-badge premium" *ngIf="result.membership === 'premium'">
+              Premium
+            </span>
+          </div>
           <div class="type-badge" [ngClass]="result.type">{{ result.type | titlecase }}</div>
 
           <!-- Player-specific info -->
@@ -319,14 +324,18 @@
 
         <div *ngFor="let post of feedData?.posts?.data" class="reel-card">
           <div class="reel-header">
-
             <div class="reel-user" (click)="post?.user?.isCurrentUser ? goToProfile() : goToPlayerProfile(post?.user?.id)">
               <img [src]="getProfileImageUrl(post?.user?.profile_image)"
                    class="avatar-sm"
                    [alt]="post?.user?.full_name"
                    (error)="handleImageError($event, post?.user?.first_name, post?.user?.last_name)">
               <div class="reel-user-info">
+                <div class="user-header">
                 <span class="username">{{ post?.user?.isCurrentUser ? 'You' : post?.user?.full_name }}</span>
+                  <span class="subscription-badge premium" *ngIf="post?.user?.membership === 'premium'">
+                    Premium
+                  </span>
+                </div>
                 <span class="user-meta" *ngIf="post?.user?.player">{{ post?.user?.player?.position || 'No Position' }} • {{ post?.user?.player?.region || post?.user?.player?.nationality || 'No Region' }}</span>
               </div>
             </div>
@@ -369,8 +378,8 @@
               <i class="bi bi-person"></i>
             </button>
             <div class="video-stats" *ngIf="userProfile?.membership === 'premium' || isScout">
-              <div class="views-count">
-                <i class="bi bi-eye"></i> {{ post?.views || 0 }}
+            <div class="views-count">
+              <i class="bi bi-eye"></i> {{ post?.views || 0 }}
               </div>
             </div>
             <div class="upgrade-prompt" *ngIf="userProfile?.membership === 'free' && !isScout">
@@ -402,7 +411,7 @@
                      (error)="handleImageError($event, comment.user?.first_name, comment.user?.last_name)">
                 <span class="comment-user" (click)="comment.user?.isCurrentUser ? goToProfile() : goToUserProfile(comment.user?.id)">
                   {{ comment.user?.isCurrentUser ? 'You' : comment.user?.full_name }}
-                </span>
+              </span>
               </div>
               <span class="comment-text">{{ comment.content }}</span>
               <span class="comment-time">{{ comment.created_at | date:'short' }}</span>
