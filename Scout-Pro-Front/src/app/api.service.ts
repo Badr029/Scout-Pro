@@ -1,15 +1,19 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
-import { Observable, catchError, throwError, tap } from 'rxjs';
+import { Observable, catchError, throwError, tap, Subject } from 'rxjs';
 import { environment } from '../environments/environment';
+import { Router } from '@angular/router';
 
 @Injectable({
   providedIn: 'root'
 })
 export class ApiService {
   private apiUrl = environment.apiUrl;
+  private followStatusChanged = new Subject<{userId: string | number, following: boolean}>();
 
-  constructor(private http: HttpClient) { }
+  followStatusChanged$ = this.followStatusChanged.asObservable();
+
+  constructor(private http: HttpClient, private router: Router) { }
 
   private getHeaders(): HttpHeaders {
     const token = localStorage.getItem('auth_token');
@@ -59,12 +63,16 @@ export class ApiService {
     return this.http.get(`${this.apiUrl}/players/${playerId}`, { headers: this.getHeaders() });
   }
 
-  followPlayer(playerId: number): Observable<any> {
-    return this.http.post(`${this.apiUrl}/players/${playerId}/follow`, {}, { headers: this.getHeaders() });
+  followPlayer(userId: number): Observable<any> {
+    return this.http.post(`${this.apiUrl}/users/${userId}/follow`, {}, { headers: this.getHeaders() });
   }
 
-  unfollowPlayer(playerId: number): Observable<any> {
-    return this.http.post(`${this.apiUrl}/players/${playerId}/unfollow`, {}, { headers: this.getHeaders() });
+  unfollowPlayer(userId: number): Observable<any> {
+    return this.http.post(`${this.apiUrl}/users/${userId}/unfollow`, {}, { headers: this.getHeaders() });
+  }
+
+  getFollowStatus(userId: number): Observable<any> {
+    return this.http.get(`${this.apiUrl}/users/${userId}/follow-status`, { headers: this.getHeaders() });
   }
 
   getContactedPlayers(): Observable<any> {
@@ -342,6 +350,10 @@ export class ApiService {
           return throwError(() => error);
         })
       );
+  }
+
+  emitFollowStatusChanged(data: {userId: string | number, following: boolean}) {
+    this.followStatusChanged.next(data);
   }
 
   // Add more methods as needed for PUT, DELETE, etc.

@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
-use App\Models\Post;
 use App\Models\Like;
 use App\Models\Follow;
 use App\Models\Event;
@@ -1107,22 +1106,66 @@ class FeedController extends Controller
      return $age;
  }
 public function playerviewprofile($user_id) {
+    // First find the user
+    $user = User::where('id', $user_id)->where('user_type', 'player')->first();
+
+    if (!$user) {
+        return response()->json(['message' => 'User not found'], 404);
+    }
+
     $player = Player::with('user')->where('user_id', $user_id)->first();
 
     if (!$player) {
-        return response()->json(['message' => 'No player profile found for this user'], 404);
+        // Create a basic response with user data if player profile is not complete
+        return response()->json([
+            'data' => [
+                'user_id' => $user->id,
+                'first_name' => $user->first_name,
+                'last_name' => $user->last_name,
+                'username' => $user->username,
+                'email' => $user->email,
+            ],
+            'age' => null,
+            'videos' => []
+        ]);
     }
 
     $age = $this->calculateAge($player->DateofBirth);
-    $videos = Video::where('user_id', $user_id)->get();
+    $videos = Video::where('user_id', $user_id)
+        ->with(['likes', 'comments'])
+        ->get()
+        ->map(function($video) {
+            return [
+                'id' => $video->id,
+                'title' => $video->title,
+                'description' => $video->description,
+                'file_path' => $video->file_path,
+                'thumbnail_url' => $video->thumbnail,
+                'views' => $video->views,
+                'likes_count' => $video->likes->count(),
+                'comments_count' => $video->comments->count(),
+                'created_at' => $video->created_at,
+                'has_liked' => false // This will be updated in the frontend
+            ];
+        });
 
     $playerData = $player->toArray();
-    $userData = $player->user ? $player->user->only(['first_name', 'last_name', 'username', 'email']) : [];
+    $userData = $user->only(['first_name', 'last_name', 'username', 'email']);
+
+    // Check if the authenticated user is following this player
+    $isFollowing = false;
+    $currentUser = Auth::user();
+    if ($currentUser) {
+        $isFollowing = Follow::where('follower_id', $currentUser->id)
+            ->where('following_id', $user_id)
+            ->exists();
+    }
 
     return response()->json([
         'data' => array_merge($playerData, $userData),
         'age' => $age,
         'videos' => $videos,
+        'following' => $isFollowing
     ]);
 }
 

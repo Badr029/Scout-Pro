@@ -89,6 +89,20 @@ export class AuthService {
         this.setToken(response.access_token);
         this.setUserType(response.user_type);
         this.setSetupCompleted(response.setup_completed);
+
+        // Store user data if available
+        if (response.user_data) {
+          localStorage.setItem('user_data', JSON.stringify({
+            id: response.user_data.id,
+            first_name: response.user_data.first_name,
+            last_name: response.user_data.last_name,
+            email: response.user_data.email,
+            user_type: response.user_type,
+            membership: response.user_data.membership,
+            profile_image: response.user_data.profile_image
+          }));
+        }
+
         this.handleLoginRedirect(response.user_type, response.setup_completed);
       })
     );
@@ -105,7 +119,15 @@ export class AuthService {
 
           // Store additional user data if available
           if (response.user_data) {
-            localStorage.setItem('user_data', JSON.stringify(response.user_data));
+            localStorage.setItem('user_data', JSON.stringify({
+              id: response.user_data.id,
+              first_name: response.user_data.first_name,
+              last_name: response.user_data.last_name,
+              email: response.user_data.email,
+              user_type: response.user_type,
+              membership: response.user_data.membership,
+              profile_image: response.user_data.profile_image
+            }));
           }
 
           // Handle redirection after successful login
@@ -206,5 +228,21 @@ export class AuthService {
     } else {
       this.router.navigate(['/home-feed']);
     }
+  }
+
+  getCurrentUser(): any {
+    const userType = this.getUserType();
+    const userData = localStorage.getItem('user_data');
+    const parsedUserData = userData ? JSON.parse(userData) : null;
+
+    if (!parsedUserData) {
+      return null;
+    }
+
+    return {
+      id: parsedUserData.id,
+      user_type: userType,
+      ...parsedUserData
+    };
   }
 }

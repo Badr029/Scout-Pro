@@ -35,8 +35,16 @@
 
     <!-- Action Buttons -->
     <div class="action-buttons" style="justify-content: center;">
-      <button class="btn btn-primary">Follow</button>
-      <button class="btn btn-primary" *ngIf="!isPlayer">Contact Player</button>
+      <button class="btn btn-primary"
+              *ngIf="playerData?.user_id !== currentUser?.id"
+              (click)="toggleFollow()">
+        <i class="bi" [ngClass]="isFollowing ? 'bi-person-check-fill' : 'bi-person-plus-fill'"></i>
+        {{ isFollowing ? 'Following' : 'Follow' }}
+      </button>
+      <button class="btn btn-primary"
+              *ngIf="!isPlayer && playerData?.user_id !== currentUser?.id">
+        Contact Player
+      </button>
     </div>
 
     <!-- Player Info -->
@@ -252,22 +260,22 @@
         <div class="reel-actions">
           <button (click)="likeVideo(selectedVideo.id)" class="action-btn like-btn">
             <i class="fas fa-heart"></i>
-            <span class="action-count" *ngIf="userProfile?.membership === 'premium' || isScout" (click)="showLikesList(selectedVideo?.id, $event)">
+            <span class="action-count" *ngIf="userProfile.membership === 'premium' || isScout" (click)="showLikesList(selectedVideo.id, $event)">
               {{ selectedVideo.likes_count || 0 }}
             </span>
           </button>
           <button class="action-btn">
             <i class="fas fa-comment"></i>
-            <span class="action-count" *ngIf="userProfile?.membership === 'premium' || isScout">
+            <span class="action-count" *ngIf="userProfile.membership === 'premium' || isScout">
               {{ selectedVideo.comments_count || 0 }}
             </span>
           </button>
-          <div class="video-stats" *ngIf="userProfile?.membership === 'premium' || isScout">
+          <div class="video-stats" *ngIf="userProfile.membership === 'premium' || isScout">
             <div class="views-count">
-              <i class="fas fa-eye"></i> {{ selectedVideo?.views || 0 }}
+              <i class="fas fa-eye"></i> {{ selectedVideo.views || 0 }}
             </div>
           </div>
-          <div class="upgrade-prompt" *ngIf="userProfile?.membership === 'free' && !isScout">
+          <div class="upgrade-prompt" *ngIf="userProfile.membership === 'free' && !isScout">
             <button class="btn btn-upgrade" (click)="goToSubscription()">
               Upgrade to Premium to view analytics
             </button>

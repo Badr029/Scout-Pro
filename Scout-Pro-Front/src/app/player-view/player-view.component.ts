@@ -7,6 +7,7 @@ import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { FormsModule } from '@angular/forms';
 import { forkJoin, interval, Subscription } from 'rxjs';
 import { map, takeWhile } from 'rxjs/operators';
+import { ApiService } from '../api.service';
 
 export interface Player {
   user_id: number;
@@ -104,6 +105,8 @@ export class PlayerViewComponent implements OnInit, OnDestroy {
   post: any = null;
   comments: any[] = [];
   isPlayer: boolean = false;
+  isFollowing = false;
+  currentUser: any = null;
 
   private readonly BASE_API_URL = 'http://localhost:8000';
 
@@ -112,12 +115,20 @@ export class PlayerViewComponent implements OnInit, OnDestroy {
     private router: Router,
     private http: HttpClient,
     private authService: AuthService,
-    private sanitizer: DomSanitizer
+    private sanitizer: DomSanitizer,
+    private apiService: ApiService
   ) {
     this.playerId = this.route.snapshot.paramMap.get('id');
   }
 
   ngOnInit(): void {
+    this.getCurrentUser();
+    this.route.params.subscribe(params => {
+      if (params['id']) {
+        this.fetchPlayerProfile(params['id']);
+        this.checkFollowStatus(params['id']);
+      }
+    });
     // Get user profile first
     this.getUserProfile();
     // Then fetch player profile
@@ -141,6 +152,10 @@ export class PlayerViewComponent implements OnInit, OnDestroy {
     if (this.refreshInterval) {
       this.refreshInterval.unsubscribe();
     }
+  }
+
+  getCurrentUser() {
+    this.currentUser = this.authService.getCurrentUser();
   }
 
   getUserProfile(): void {
@@ -170,7 +185,7 @@ export class PlayerViewComponent implements OnInit, OnDestroy {
     });
   }
 
-  fetchPlayerProfile(): void {
+  fetchPlayerProfile(userId?: string): void {
     this.loading = true;
     this.error = null;
 
@@ -184,32 +199,38 @@ export class PlayerViewComponent implements OnInit, OnDestroy {
       Authorization: `Bearer ${token}`,
     });
 
-    const apiUrl = this.playerId
-      ? `${this.BASE_API_URL}/api/player/${this.playerId}`
+    const apiUrl = userId
+      ? `${this.BASE_API_URL}/api/player/${userId}`
       : `${this.BASE_API_URL}/api/player/profile`;
 
     this.http.get<PlayerApiResponse>(apiUrl, { headers }).subscribe({
       next: (response) => {
-        this.playerData = {
-          ...response.data,
-          age: response.age
-        };
+        // If we have data, update the component state
+        if (response.data) {
+          this.playerData = {
+            ...response.data,
+            age: response.age
+          };
 
-        // Initialize comments array for each video
-        this.playerVideos = (response.videos || []).map(video => ({
-          ...video,
-          comments: video.comments || []
-        }));
+          // Initialize comments array for each video
+          this.playerVideos = (response.videos || []).map(video => ({
+            ...video,
+            comments: video.comments || []
+          }));
 
-        // After getting videos, fetch their like status
-        if (this.playerVideos.length > 0) {
-          this.fetchVideoLikeStatus();
+          // After getting videos, fetch their like status
+          if (this.playerVideos.length > 0) {
+            this.fetchVideoLikeStatus();
+          }
         }
         this.loading = false;
       },
       error: (error) => {
         console.error('Error fetching player profile:', error);
-        this.error = error.error?.message || 'Failed to load player profile';
+        // Only set error if we don't have any player data
+        if (!this.playerData) {
+          this.error = error.error?.message || 'Failed to load player profile';
+        }
         this.loading = false;
       }
     });
@@ -529,5 +550,40 @@ export class PlayerViewComponent implements OnInit, OnDestroy {
 
   goToSubscription(): void {
     this.router.navigate(['/subscription']);
+  }
+
+  checkFollowStatus(userId: string) {
+    if (this.currentUser?.id === userId) return;
+
+    this.apiService.getData(`users/${userId}/follow-status`).subscribe({
+      next: (response: any) => {
+        if (response.status === 'success') {
+          this.isFollowing = response.following;
+        }
+      },
+      error: (error: any) => {
+        console.error('Error checking follow status:', error);
+      }
+    });
+  }
+
+  toggleFollow() {
+    if (!this.playerData) return;
+
+    const userId = this.playerData.user_id;
+    const endpoint = this.isFollowing ? `users/${userId}/unfollow` : `users/${userId}/follow`;
+
+    this.apiService.postData(endpoint, {}).subscribe({
+      next: (response: any) => {
+        if (response.status === 'success') {
+          this.isFollowing = response.following;
+          // Emit an event to update other components
+          this.apiService.emitFollowStatusChanged({ userId, following: this.isFollowing });
+        }
+      },
+      error: (error: any) => {
+        console.error('Error toggling follow status:', error);
+      }
+    });
   }
 }

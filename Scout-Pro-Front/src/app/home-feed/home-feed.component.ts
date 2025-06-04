@@ -1,4 +1,4 @@
-import { Component, OnInit, HostListener } from '@angular/core';
+import { Component, OnInit, OnDestroy, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -6,6 +6,7 @@ import { ApiService } from '../api.service';
 import { NgForm } from '@angular/forms';
 import { HttpClient, HttpHeaders, HttpEventType } from '@angular/common/http';
 import { AuthService } from '../auth.service';
+import { Subscription } from 'rxjs';
 
 const API_URL = 'http://localhost:8000';
 
@@ -33,6 +34,50 @@ interface FilteredLists {
   transferStatus: FilterOption[];
 }
 
+interface VideoPost {
+  id: number;
+  title: string;
+  description: string;
+  file_path: string | null;
+  thumbnail: string | null;
+  user: UserInfo;
+  likes_count: number;
+  comments_count: number;
+  views: number;
+  has_liked: boolean;
+  likes: any[];
+  comments: any[];
+  created_at: string;
+}
+
+interface UserInfo {
+  id: number;
+  player_id?: number;
+  first_name: string;
+  last_name: string;
+  profile_image: string | null;
+  full_name: string;
+  user_type: string;
+  player: any;
+  isCurrentUser: boolean;
+  following: boolean;
+  is_following?: boolean;
+}
+
+interface PremiumPlayer {
+  user_id: number;
+  following: boolean;
+  is_following?: boolean;
+  [key: string]: any;
+}
+
+interface TrendingPlayer {
+  id: number;
+  following: boolean;
+  is_following?: boolean;
+  [key: string]: any;
+}
+
 @Component({
   selector: 'app-home-feed',
   standalone: true,
@@ -40,7 +85,7 @@ interface FilteredLists {
   templateUrl: './home-feed.component.html',
   styleUrl: './home-feed.component.css'
 })
-export class HomeFeedComponent implements OnInit {
+export class HomeFeedComponent implements OnInit, OnDestroy {
   feedData: any = {
     posts: {
       data: []
@@ -93,6 +138,7 @@ export class HomeFeedComponent implements OnInit {
   isMobile = false;
   showRightPanel = false;
   premiumPlayers: any[] = [];
+  private followStatusSubscription: Subscription;
 
   // Filter Options
   ageRanges = [
@@ -213,6 +259,40 @@ export class HomeFeedComponent implements OnInit {
     this._isInitialScout = this.authService.getUserType() === 'scout';
     this.checkMobileView();
     window.addEventListener('resize', () => this.checkMobileView());
+    this.followStatusSubscription = this.apiService.followStatusChanged$.subscribe(
+      ({ userId, following }) => {
+        // Update premium players
+        this.premiumPlayers = this.premiumPlayers.map((player: { user_id: string | number }) => {
+          if (player.user_id === userId) {
+            return { ...player, following };
+          }
+          return player;
+        });
+
+        // Update trending players
+        if (this.feedData?.trending_players) {
+          this.feedData.trending_players = this.feedData.trending_players.map((player: { id: string | number }) => {
+            if (player.id === userId) {
+              return { ...player, following };
+            }
+            return player;
+          });
+        }
+
+        // Update feed posts
+        if (this.feedData?.posts?.data) {
+          this.feedData.posts.data = this.feedData.posts.data.map((post: { user: { id: string | number } }) => {
+            if (post.user.id === userId) {
+              return {
+                ...post,
+                user: { ...post.user, following }
+              };
+            }
+            return post;
+          });
+        }
+      }
+    );
   }
 
   ngOnInit() {
@@ -228,6 +308,9 @@ export class HomeFeedComponent implements OnInit {
 
   ngOnDestroy() {
     window.removeEventListener('resize', () => this.checkMobileView());
+    if (this.followStatusSubscription) {
+      this.followStatusSubscription.unsubscribe();
+    }
   }
 
   private checkMobileView() {
@@ -308,9 +391,10 @@ export class HomeFeedComponent implements OnInit {
             // Debug logs
             console.log('Processing video user:', video.user);
             console.log('Video user ID (users table):', video.user.id);
-            console.log('Video user ID (players table):', video.user.player?.id);
-            console.log('Current user ID (users table):', this.currentUser?.id);
+            console.log('Video user player ID:', video.user.player?.id);
+            console.log('Current user ID:', this.currentUser?.id);
             console.log('Current user player ID:', this.userProfile?.id);
+            console.log('Follow status:', video.user.following);
 
             return {
               id: video.id,
@@ -318,7 +402,7 @@ export class HomeFeedComponent implements OnInit {
               description: video.description,
               file_path: video.file_path ? `${API_URL}/storage/${video.file_path}` : null,
               thumbnail: video.thumbnail ? `${API_URL}/storage/${video.thumbnail}` : null,
-                user: {
+              user: {
                 id: video.user.id,
                 player_id: video.user.player?.id,
                 first_name: video.user.first_name,
@@ -327,7 +411,9 @@ export class HomeFeedComponent implements OnInit {
                 full_name: video.user.full_name,
                 user_type: video.user.user_type,
                 player: video.user.player,
-                isCurrentUser: video.user.id === this.currentUser?.id
+                isCurrentUser: video.user.id === this.currentUser?.id,
+                following: video.user.following || false,
+                membership: video.user.membership
               },
               likes_count: video.likes_count || 0,
               comments_count: video.comments?.length || 0,
@@ -347,6 +433,9 @@ export class HomeFeedComponent implements OnInit {
               last_page: response.last_page || 1
             }
           };
+
+          // Debug log processed videos
+          console.log('Processed videos with follow status:', processedVideos);
         }
         this.loading = false;
       },
@@ -367,7 +456,8 @@ export class HomeFeedComponent implements OnInit {
             name: `${player.first_name || ''} ${player.last_name || ''}`.trim(),
             position: player.position || 'No Position',
             region: player.region || 'No Region',
-            profile_image: player.profile_image // Already includes full URL from backend
+            profile_image: player.profile_image, // Already includes full URL from backend
+            following: player.following || false
           }));
         }
       },
@@ -426,7 +516,7 @@ export class HomeFeedComponent implements OnInit {
 
     if (playerId === this.currentUser?.id) {
       this.goToProfile(); // Use the existing goToProfile method for current user
-    } else {
+          } else {
       // For premium players section
       const premiumPlayer = this.premiumPlayers.find((p: { id: number; user_id: number }) => p.id === playerId);
       if (premiumPlayer) {
@@ -465,6 +555,19 @@ export class HomeFeedComponent implements OnInit {
         return post.user;
       }
     }
+
+    // Check in premium players
+    const premiumPlayer = this.premiumPlayers.find((player: PremiumPlayer) => player.user_id === userId);
+    if (premiumPlayer) {
+      return premiumPlayer;
+    }
+
+    // Check in trending players
+    const trendingPlayer = this.feedData?.trending_players?.find((player: TrendingPlayer) => player.id === userId);
+    if (trendingPlayer) {
+      return trendingPlayer;
+    }
+
     // Check in likes if modal is open
     if (this.selectedPostLikes) {
       const like = this.selectedPostLikes.find(like => like.user.id === userId);
@@ -472,99 +575,101 @@ export class HomeFeedComponent implements OnInit {
         return like.user;
       }
     }
+
     return null;
   }
 
-  followPlayer(playerId: number) {
-    if (!playerId || playerId === this.currentUser?.id) return;
+  followPlayer(userId: number) {
+    if (!userId) return;
 
-    this.apiService.postData(`users/${playerId}/follow`, {}).subscribe({
+    const user = this.findUserInFeed(userId);
+    if (!user) return;
+
+    const method = user.following ? this.apiService.unfollowPlayer(userId) : this.apiService.followPlayer(userId);
+
+    method.subscribe({
       next: (response: any) => {
         if (response.status === 'success') {
-          // Update following status in posts
-          this.feedData.posts.data = this.feedData.posts.data.map((post: any) => {
-            if (post.user.id === playerId) {
-              return {
-                ...post,
-                user: {
-                  ...post.user,
-                  following: true
-                }
-              };
-            }
-            return post;
-          });
+          // Update all instances of this user in the feed
+          this.updateFollowStateInFeed(userId, !user.following);
 
-          // Update following status in likes if modal is open
-          if (this.selectedPostLikes) {
-            this.selectedPostLikes = this.selectedPostLikes.map((like: any) => {
-              if (like.user.id === playerId) {
-                return {
-                  ...like,
-                  user: {
-                    ...like.user,
-                    following: true
-                  }
-                };
-              }
-              return like;
-            });
-          }
+          // Emit event to update other components
+          this.apiService.emitFollowStatusChanged({ userId, following: !user.following });
 
-          this.showNotification('Successfully followed user');
+          // Show success message
+          this.showNotification(response.message);
         }
       },
       error: (error: any) => {
-        console.error('Error following user:', error);
-        this.showNotification('Failed to follow user');
+        console.error('Error toggling follow status:', error);
+        this.showNotification('Failed to update follow status');
+
+        // Revert the UI state in case of error
+        this.updateFollowStateInFeed(userId, user.following);
       }
     });
   }
 
-  unfollowPlayer(playerId: number) {
-    if (!playerId || playerId === this.currentUser?.id) return;
-
-    this.apiService.postData(`users/${playerId}/unfollow`, {}).subscribe({
-      next: (response: any) => {
-        if (response.status === 'success') {
-          // Update following status in posts
-          this.feedData.posts.data = this.feedData.posts.data.map((post: any) => {
-            if (post.user.id === playerId) {
-              return {
-                ...post,
-                user: {
-                  ...post.user,
-                  following: false
-                }
-              };
+  private updateFollowStateInFeed(userId: number, following: boolean) {
+    // Update in posts
+    if (this.feedData?.posts?.data) {
+      this.feedData.posts.data = this.feedData.posts.data.map((post: VideoPost) => {
+        if (post.user.id === userId) {
+          return {
+            ...post,
+            user: {
+              ...post.user,
+              following,
+              is_following: following
             }
-            return post;
-          });
-
-          // Update following status in likes if modal is open
-          if (this.selectedPostLikes) {
-            this.selectedPostLikes = this.selectedPostLikes.map((like: any) => {
-              if (like.user.id === playerId) {
-                return {
-                  ...like,
-                  user: {
-                    ...like.user,
-                    following: false
-                  }
-                };
-              }
-              return like;
-            });
-          }
-
-          this.showNotification('Successfully unfollowed user');
+          };
         }
-      },
-      error: (error: any) => {
-        console.error('Error unfollowing user:', error);
-        this.showNotification('Failed to unfollow user');
+        return post;
+      });
+    }
+
+    // Update in premium players
+    this.premiumPlayers = this.premiumPlayers.map((player: PremiumPlayer) => {
+      if (player.user_id === userId) {
+        return {
+          ...player,
+          following,
+          is_following: following
+        };
       }
+      return player;
     });
+
+    // Update in trending players
+    if (this.feedData?.trending_players) {
+      this.feedData.trending_players = this.feedData.trending_players.map((player: TrendingPlayer) => {
+        if (player.id === userId) {
+          return {
+            ...player,
+            following,
+            is_following: following
+          };
+        }
+        return player;
+      });
+    }
+
+    // Update in selected post likes
+    if (this.selectedPostLikes) {
+      this.selectedPostLikes = this.selectedPostLikes.map(like => {
+        if (like.user.id === userId) {
+          return {
+            ...like,
+            user: {
+              ...like.user,
+              following,
+              is_following: following
+            }
+          };
+        }
+        return like;
+      });
+    }
   }
 
   likePost(postId: number) {
@@ -1017,8 +1122,8 @@ export class HomeFeedComponent implements OnInit {
 
             // Base result object with common properties
             const processedResult = {
-              ...result,
-              profile_image: result.profile_image ? this.getProfileImageUrl(result.profile_image) : null,
+          ...result,
+          profile_image: result.profile_image ? this.getProfileImageUrl(result.profile_image) : null,
               first_name: result.first_name || '',
               last_name: result.last_name || '',
               full_name: `${result.first_name || ''} ${result.last_name || ''}`.trim(),
@@ -1051,8 +1156,8 @@ export class HomeFeedComponent implements OnInit {
           console.log('Final processed search results:', this.searchResults);
 
           // Update filter options if available
-          if (response.data.filter_options) {
-            this.feedData.filter_options = response.data.filter_options;
+        if (response.data.filter_options) {
+          this.feedData.filter_options = response.data.filter_options;
           }
         } else {
           console.warn('No data in search response:', response);

@@ -8,6 +8,7 @@ use App\Models\Comment;
 use App\Models\User;
 use App\Models\Like;
 use App\Models\View;
+use App\Models\Follow;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -46,6 +47,15 @@ class VideoController extends Controller
                 $hasLiked = $video->likes->contains(function ($like) use ($user) {
                     return $like->user_id === $user->id;
                 });
+
+                // Add following status to the video owner
+                if ($video->user) {
+                    $isFollowing = Follow::where('follower_id', $user->id)
+                        ->where('following_id', $video->user->id)
+                        ->exists();
+                    $video->user->is_following = $isFollowing;
+                    $video->user->following = $isFollowing;
+                }
 
                 return [
                     'id' => $video->id,
@@ -96,7 +106,12 @@ class VideoController extends Controller
                         'full_name' => $video->user->first_name . ' ' . $video->user->last_name,
                         'user_type' => $video->user->user_type,
                         'profile_image' => $playerInfo ? url('storage/' . $playerInfo->profile_image) : null,
+                        'membership' => $playerInfo ? $playerInfo->membership : 'free',
+                        'following' => Follow::where('follower_id', $user->id)
+                            ->where('following_id', $video->user->id)
+                            ->exists(),
                         'player' => $playerInfo ? [
+                            'id' => $playerInfo->id,
                             'position' => $playerInfo->position,
                             'secondary_position' => $playerInfo->secondary_position,
                             'nationality' => $playerInfo->nationality,

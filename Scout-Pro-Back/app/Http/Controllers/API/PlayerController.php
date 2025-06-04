@@ -4,58 +4,123 @@ namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Models\Follow;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class PlayerController extends Controller
 {
     /**
-     * Follow a player.
+     * Follow a user.
+     * @param int $userId
      */
-    public function follow(Request $request, $playerId)
+    public function follow(int $userId)
     {
-        $user = Auth::user();
-        $player = User::findOrFail($playerId);
+        try {
+            $follower = Auth::user();
+            $following = User::findOrFail($userId);
 
-        // Check if player exists and is a player
-        if ($player->user_type !== 'player') {
+            // Prevent self-following
+            if ($follower->id === $following->id) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'You cannot follow yourself'
+                ], 400);
+            }
+
+            // Check if already following
+            $existingFollow = Follow::where('follower_id', $follower->id)
+                ->where('following_id', $following->id)
+                ->first();
+
+            if ($existingFollow) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Already following this user'
+                ], 400);
+            }
+
+            // Create new follow relationship
+            Follow::create([
+                'follower_id' => $follower->id,
+                'following_id' => $following->id
+            ]);
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Successfully followed user',
+                'following' => true
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Follow error: ' . $e->getMessage());
             return response()->json([
                 'status' => 'error',
-                'message' => 'User is not a player'
-            ], 400);
+                'message' => 'Failed to follow user'
+            ], 500);
         }
-
-        // Check if already following
-        if ($user->following()->where('followed_id', $playerId)->exists()) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'You are already following this player'
-            ], 400);
-        }
-
-        // Add follow relationship
-        $user->following()->attach($playerId);
-
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Player followed successfully'
-        ]);
     }
 
     /**
-     * Unfollow a player.
+     * Unfollow a user.
+     * @param int $userId
      */
-    public function unfollow(Request $request, $playerId)
+    public function unfollow(int $userId)
     {
-        $user = Auth::user();
+        try {
+            $follower = Auth::user();
+            $following = User::findOrFail($userId);
 
-        // Remove follow relationship
-        $user->following()->detach($playerId);
+            $follow = Follow::where('follower_id', $follower->id)
+                ->where('following_id', $following->id)
+                ->first();
 
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Player unfollowed successfully'
-        ]);
+            if (!$follow) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Not following this user'
+                ], 400);
+            }
+
+            $follow->delete();
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Successfully unfollowed user',
+                'following' => false
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Unfollow error: ' . $e->getMessage());
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to unfollow user'
+            ], 500);
+        }
+    }
+
+    /**
+     * Get follow status for a user.
+     * @param int $userId
+     */
+    public function getFollowStatus(int $userId)
+    {
+        try {
+            $follower = Auth::user();
+            $isFollowing = Follow::where('follower_id', $follower->id)
+                ->where('following_id', $userId)
+                ->exists();
+
+            return response()->json([
+                'status' => 'success',
+                'following' => $isFollowing
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Get follow status error: ' . $e->getMessage());
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to get follow status'
+            ], 500);
+        }
     }
 
     /**

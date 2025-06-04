@@ -331,7 +331,7 @@
                    (error)="handleImageError($event, post?.user?.first_name, post?.user?.last_name)">
               <div class="reel-user-info">
                 <div class="user-header">
-                <span class="username">{{ post?.user?.isCurrentUser ? 'You' : post?.user?.full_name }}</span>
+                  <span class="username">{{ post?.user?.isCurrentUser ? 'You' : post?.user?.full_name }}</span>
                   <span class="subscription-badge premium" *ngIf="post?.user?.membership === 'premium'">
                     Premium
                   </span>
@@ -342,16 +342,12 @@
             <button
               class="follow-btn"
               *ngIf="!post?.user?.isCurrentUser &&
-                     post?.user?.user_type === 'player' &&
-                     !post?.user?.following"
-              (click)="followPlayer(post?.user?.player_id)"
-            >Follow</button>
-            <span class="following-label"
-                  *ngIf="!post?.user?.isCurrentUser &&
-                         post?.user?.user_type === 'player' &&
-                         post?.user?.following">
-              <i class="bi bi-check2"></i> Following
-            </span>
+                     post?.user?.user_type === 'player'"
+              (click)="followPlayer(post?.user?.id)"
+              [class.following]="post?.user?.following">
+              <i class="bi bi-check2" *ngIf="post?.user?.following"></i>
+              {{ post?.user?.following ? 'Following' : 'Follow' }}
+            </button>
           </div>
 
           <div class="reel-video">
@@ -524,13 +520,13 @@
         <div class="trending-list">
           <div *ngFor="let player of feedData?.trending_players"
                class="trending-item"
-               (click)="player?.id === currentUser?.player_id ? goToProfile() : goToPlayerProfile(player?.id)">
+               (click)="player?.id === currentUser?.id ? goToProfile() : goToPlayerProfile(player?.id)">
             <img [src]="getProfileImageUrl(player?.profile_image)"
                  class="avatar-sm"
                  [alt]="player?.name"
                  (error)="handleImageError($event, player?.name?.split(' ')[0], player?.name?.split(' ')[1])">
             <div class="trending-info">
-              <span class="trending-name">{{ player?.id === currentUser?.player_id ? 'You' : player?.name }}</span>
+              <span class="trending-name">{{ player?.id === currentUser?.id ? 'You' : player?.name }}</span>
               <span class="trending-meta">{{ player?.position || 'No Position' }} • {{ player?.region || 'No Region' }}</span>
             </div>
           </div>
@@ -691,10 +687,10 @@
           </div>
           <div class="action-buttons" *ngIf="like?.user?.id !== currentUser?.id">
             <button class="follow-btn"
-                    (click)="like?.user?.following ? unfollowPlayer(like?.user?.id) : followPlayer(like?.user?.id)"
+                    (click)="followPlayer(like?.user?.id)"
                     [class.following]="like?.user?.following">
-            {{ like?.user?.following ? 'Following' : 'Follow' }}
-          </button>
+                    {{ like?.user?.following ? 'Following' : 'Follow' }}
+            </button>
           </div>
         </div>
       </div>
