@@ -715,6 +715,11 @@
 
       <!-- Right panel events section -->
       <div class="right-panel-events">
+        <div class="right-panel-events-header">
+          <h4>Upcoming Events</h4>
+          <button class="btn btn-outline" (click)="switchView('events'); $event.preventDefault()">See all</button>
+        </div>
+
         <div *ngFor="let event of feedData.upcoming_events?.slice(0, 3)"
              class="event-card-small"
              [class.event-pending]="event.status === 'pending'"
