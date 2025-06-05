@@ -14,7 +14,6 @@ class PlanSeeder extends Seeder
             ['name' => 'Scout Yearly', 'duration' => 365, 'price' => 100],
             ['name' => 'Player Monthly', 'duration' => 30, 'price' => 50],
             ['name' => 'Player Yearly', 'duration' => 365, 'price' => 100],
-            ['name' => 'Player Free', 'duration' => null, 'price' => 0],
         ]);
     }
 }

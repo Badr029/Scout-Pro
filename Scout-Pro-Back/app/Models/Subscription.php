@@ -19,6 +19,7 @@ class Subscription extends Model
         'plan_id',
         'payment_id',
         'active',
+        'plan',
         'trial_ends_at',
         'expires_at',
         'canceled_at'

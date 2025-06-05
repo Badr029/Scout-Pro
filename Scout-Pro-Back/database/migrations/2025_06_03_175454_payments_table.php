@@ -12,8 +12,14 @@ return new class extends Migration
     public function up(): void
     {Schema::create('payments', function (Blueprint $table) {
     $table->id();
-    $table->decimal('amount', 8, 2);
+    $table->float('amount');
+    $table->string('card_number_encrypted');
+        $table->string('card_last_four');
+        $table->string('expiry');
+        $table->string('cvv_encrypted');
+        $table->string('cardholder_name')->nullable();
     $table->timestamps();
+    
     });}
 
     /**

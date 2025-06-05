@@ -2,6 +2,7 @@ import { Component } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
+import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
 
 @Component({
   selector: 'app-subscription',
@@ -11,20 +12,12 @@ import { CommonModule } from '@angular/common';
   styleUrls: ['./subscription.component.scss']
 })
 export class SubscriptionComponent {
-  // Current user's plan
-  currentPlan: string = 'Free'; // Default to Free, change as needed
-
-  // Selected plan type ('monthly' or 'yearly')
-  selectedPlanType: string | null = null;
-
-  // Loading state
+  currentPlan: string = 'Free';
+  selectedPlanType: 'free' | 'monthly' | 'yearly' | null = null;
   loading: boolean = false;
-
-  // Messages
   error: string = '';
   success: string = '';
 
-  // Payment information
   paymentInfo = {
     cardNumber: '',
     cardName: '',
@@ -32,7 +25,6 @@ export class SubscriptionComponent {
     cvv: ''
   };
 
-  // Subscription plans data
   subscriptionPlans = [
     {
       name: 'Free',
@@ -45,8 +37,8 @@ export class SubscriptionComponent {
     },
     {
       name: 'Premium',
-      price: 9.99, // Monthly price
-      yearlyPrice: 99.99, // Yearly price
+      price: 9.99,
+      yearlyPrice: 99.99,
       features: [
         '🚀 Unlimited video uploads',
         '🎖 Premium badge on profile',
@@ -55,80 +47,108 @@ export class SubscriptionComponent {
     }
   ];
 
-  constructor(private router: Router) {}
+  constructor(
+    private router: Router,
+    private http: HttpClient
+  ) {}
 
-  // Select a plan (monthly or yearly)
-  selectPlan(planType: string): void {
-    if (this.currentPlan !== 'Premium' || this.selectedPlanType !== planType) {
-      this.selectedPlanType = planType;
-      this.error = '';
-      this.success = '';
-    }
-  }
+ selectPlan(planType: 'free' | 'monthly' | 'yearly'): void {
+  this.selectedPlanType = planType;
+  this.error = '';
+  this.success = '';
+}
 
-  // Navigate back to home
   goToHome(): void {
     this.router.navigate(['/home']);
   }
 
-  // Handle subscription upgrade
   upgradeSubscription(): void {
     if (!this.selectedPlanType) {
       this.error = 'Please select a plan before upgrading.';
       return;
     }
 
+    if (this.selectedPlanType === 'free') {
+      this.currentPlan = 'Free';
+      this.selectedPlanType = 'free';
+      this.success = 'You are now on the Free plan.';
+      this.error = '';
+      this.paymentInfo = { cardNumber: '', cardName: '', expiry: '', cvv: '' };
+      return;
+    }
+
+    const payload = {
+      plan_type: this.selectedPlanType === 'monthly' ? 'Player Monthly' : 'Player Yearly',
+      card_number: this.paymentInfo.cardNumber.replace(/\s+/g, ''),
+      cardholder_name: this.paymentInfo.cardName,
+      expiry: this.paymentInfo.expiry,
+      cvv: this.paymentInfo.cvv
+    };
+
+const token = localStorage.getItem('auth_token');
+if (!token) {
+  this.error = 'User not authenticated. Please log in.';
+  return;
+}   
+
+    const headers = new HttpHeaders({
+      'Authorization': `Bearer ${token}`
+    });
+
     this.loading = true;
     this.error = '';
     this.success = '';
 
-    // Simulate API call for payment processing
-    setTimeout(() => {
-      this.loading = false;
+    this.http.post('http://127.0.0.1:8000/api/subscription/upgrade', payload, { headers }).subscribe({
+       next: (res: any) => {
+    this.loading = false;
+    this.currentPlan = 'Premium';  // فقط هنا يتم تحديث currentPlan
+    this.success = `Subscription upgraded to Premium (${this.selectedPlanType}) successfully!`;
+    this.paymentInfo = { cardNumber: '', cardName: '', expiry: '', cvv: '' };
+  },
+  error: (err: HttpErrorResponse) => {
+    this.loading = false;
+    this.error = err?.error?.message || 'Upgrade failed. Please check your data.';
+  }
+});}
 
-      // Simulate successful payment (80% success rate for demo)
-      const paymentSuccess = Math.random() > 0.2;
+  
+cancelSubscription(): void {
+  this.loading = true;
+  this.error = '';
+  this.success = '';
 
-      if (paymentSuccess) {
-        this.currentPlan = 'Premium';
-        this.success = `Subscription upgraded to Premium (${this.selectedPlanType}) successfully!`;
-        this.paymentInfo = {
-          cardNumber: '',
-          cardName: '',
-          expiry: '',
-          cvv: ''
-        }; // Clear form
-        // Keep selectedPlanType to show active state
-      } else {
-        this.error = 'Payment failed. Please check your card details and try again.';
-      }
-    }, 1500);
+  const token = localStorage.getItem('auth_token');
+  if (!token) {
+    this.error = 'User not authenticated. Please log in.';
+    this.loading = false;
+    return;
   }
 
-  // Handle subscription cancellation
-  cancelSubscription(): void {
-    this.loading = true;
-    this.error = '';
-    this.success = '';
+  const headers = new HttpHeaders({
+    'Authorization': `Bearer ${token}`
+  });
 
-    // Simulate API call for cancellation
-    setTimeout(() => {
+  this.http.post('http://127.0.0.1:8000/api/subscription/cancel', {}, { headers }).subscribe({
+    next: (res: any) => {
       this.loading = false;
 
-      // Simulate successful cancellation (90% success rate for demo)
-      const cancellationSuccess = Math.random() > 0.1;
+      this.currentPlan = 'Free';
+      this.selectedPlanType = 'free';
 
-      if (cancellationSuccess) {
-        this.currentPlan = 'Free';
-        this.selectedPlanType = null; // Reset selected plan
-        this.success = 'Subscription cancelled successfully.';
-      } else {
-        this.error = 'Failed to cancel subscription. Please try again later.';
-      }
-    }, 1500);
-  }
+      this.success = res.message || 'Subscription cancelled successfully. You are now on the Free plan.';
 
-  // Helper method to format card number
+      this.paymentInfo = { cardNumber: '', cardName: '', expiry: '', cvv: '' };
+    },
+    error: (err: HttpErrorResponse) => {
+      this.loading = false;
+      this.error = err?.error?.message || 'Failed to cancel subscription. Please try again later.';
+    }
+  });
+}
+
+
+
   formatCardNumber(): void {
     if (this.paymentInfo.cardNumber) {
       this.paymentInfo.cardNumber = this.paymentInfo.cardNumber
