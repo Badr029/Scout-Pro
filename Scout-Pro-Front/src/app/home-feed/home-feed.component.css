@@ -3660,5 +3660,33 @@ textarea {
 
 }
 
+.pending-events-section {
+  margin-bottom: 30px;
+
+}
+
+.approved-events-section {
+  margin-bottom: 30px;
+
+}
+
+.pending-events-section h3 {
+  color: var(--text-primary);
+  margin-bottom: 20px;
+  font-size: 1.2rem;
+  font-weight: 600;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 10px;
+}
+
+.approved-events-section h3 {
+  color: var(--text-primary);
+  margin-bottom: 20px;
+  font-size: 1.2rem;
+  font-weight: 600;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+}
+
 
 /* ... existing styles ... */

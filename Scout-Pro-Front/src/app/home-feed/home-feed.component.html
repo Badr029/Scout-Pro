@@ -455,16 +455,13 @@
       </div>
 
       <!-- Events View -->
-      <div *ngIf="activeView === 'events'" class="events-container">
-        <!-- Premium Users Content -->
-        <div *ngIf="userProfile?.membership === 'premium' || isScout">
-          <!-- Event Request Button -->
-          <div class="event-request-section" *ngIf="userProfile?.membership === 'scout' || isScout">
-            <button class="request-event-btn" (click)="toggleEventForm()" *ngIf="!showEventForm">
-              <i class="bi bi-plus-circle"></i>
-              Request Event
-            </button>
-          </div>
+      <div *ngIf="activeView === 'events'" class="events-section">
+        <!-- Request Event Form -->
+        <div class="event-request-section" *ngIf="userProfile?.membership === 'scout' || isScout">
+          <button class="request-event-btn" (click)="toggleEventForm()" *ngIf="!showEventForm">
+            Request New Event
+          </button>
+        </div>
 
           <!-- Event Request Form -->
           <div class="event-form-container" *ngIf="showEventForm" >
@@ -633,20 +630,19 @@
           <div *ngIf="!feedData.upcoming_events?.length" class="empty-feed">
             No upcoming events. Check back later for new opportunities!
           </div>
-
+        <!-- Pending Events Section -->
+        <div class="pending-events-section" *ngIf="hasPendingEvents()">
+          <h3>Your Pending Events</h3>
           <div class="events-grid">
-            <div *ngFor="let event of feedData.upcoming_events"
-                 class="event-card"
-                 [class]="getEventStatusClass(event)"
+            <div *ngFor="let event of getPendingEvents()"
+                 class="event-card event-pending"
                  (click)="goToEvent(event)">
               <div class="event-image">
                 <img [src]="event.image || 'assets/default-event.jpg'" alt="{{ event.title }}">
                 <div class="event-date-badge">
                   {{ event.date | date:'MMM dd' }} {{ getEventDateTime(event.date) }}
                 </div>
-                <div *ngIf="event.status === 'pending'" class="event-status">
-                  Pending
-                </div>
+                <div class="event-status">Pending</div>
               </div>
               <div class="event-details">
                 <h3>{{ event.title }}</h3>
@@ -659,18 +655,27 @@
           </div>
         </div>
 
-        <!-- Free Users Content -->
-        <div *ngIf="userProfile?.membership !== 'premium' && !isScout" class="premium-upgrade-message">
-          <div class="upgrade-card">
-            <h3>Upgrade to Premium</h3>
-            <p>Get access to exclusive features:</p>
-            <ul>
-              <li>View and enroll in upcoming events</li>
-              <li>Connect with top scouts and players</li>
-              <li>Access advanced analytics</li>
-              <li>And much more!</li>
-            </ul>
-            <button class="upgrade-btn" (click)="goToSubscription()">Upgrade Now</button>
+        <!-- Approved Events Section -->
+        <div class="approved-events-section">
+          <h3>Upcoming Events</h3>
+          <div class="events-grid">
+            <div *ngFor="let event of getApprovedEvents()"
+                 class="event-card"
+                 (click)="goToEvent(event)">
+              <div class="event-image">
+                <img [src]="event.image || 'assets/default-event.jpg'" alt="{{ event.title }}">
+                <div class="event-date-badge">
+                  {{ event.date | date:'MMM dd' }} {{ getEventDateTime(event.date) }}
+                </div>
+              </div>
+              <div class="event-details">
+                <h3>{{ event.title }}</h3>
+                <p>{{ event.description }}</p>
+                <p class="event-location">
+                  <i class="bi bi-geo-alt-fill"></i> {{ event.location }}
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -720,17 +725,17 @@
           <button class="btn btn-outline" (click)="switchView('events'); $event.preventDefault()">See all</button>
         </div>
 
-        <div *ngFor="let event of feedData.upcoming_events?.slice(0, 3)"
+        <div *ngIf="!getApprovedEvents()?.length" class="empty-feed">
+          No upcoming events. Check back later for new opportunities!
+        </div>
+
+        <div *ngFor="let event of getApprovedEvents()?.slice(0, 3)"
              class="event-card-small"
-             [class.event-pending]="event.status === 'pending'"
              (click)="goToEvent(event)">
           <div class="event-image">
             <img [src]="event.image || 'assets/default-event.jpg'" alt="{{ event.title }}">
             <div class="event-date-badge">
               {{ event.date | date:'MMM dd' }} {{ getEventDateTime(event.date) }}
-            </div>
-            <div *ngIf="event.status === 'pending'" class="event-status">
-              Pending
             </div>
           </div>
           <div class="event-details">
