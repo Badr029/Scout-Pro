@@ -324,14 +324,14 @@
 
         <div *ngFor="let post of feedData?.posts?.data" class="reel-card">
           <div class="reel-header">
-            <div class="reel-user" (click)="post?.user?.isCurrentUser ? goToProfile() : goToPlayerProfile(post?.user?.id)">
+            <div class="reel-user" (click)="post?.user?.id === currentUser?.id ? goToProfile() : goToPlayerProfile(post?.user?.id)">
               <img [src]="getProfileImageUrl(post?.user?.profile_image)"
                    class="avatar-sm"
                    [alt]="post?.user?.full_name"
                    (error)="handleImageError($event, post?.user?.first_name, post?.user?.last_name)">
               <div class="reel-user-info">
                 <div class="user-header">
-                <span class="username">{{ post?.user?.isCurrentUser ? 'You' : post?.user?.full_name }}</span>
+                  <span class="username">{{ post?.user?.id === currentUser?.id ? 'You' : post?.user?.full_name }}</span>
                   <span class="subscription-badge premium" *ngIf="post?.user?.membership === 'premium'">
                     Premium
                   </span>
@@ -341,8 +341,7 @@
             </div>
             <button
               class="follow-btn"
-              *ngIf="!post?.user?.isCurrentUser &&
-                     post?.user?.user_type === 'player'"
+              *ngIf="!post?.user?.isCurrentUser && post?.user?.user_type === 'player' && post?.user?.id !== currentUser?.id"
               (click)="followPlayer(post?.user?.id)"
               [class.following]="post?.user?.following">
               <i class="bi bi-check2" *ngIf="post?.user?.following"></i>
@@ -351,7 +350,9 @@
           </div>
 
           <div class="reel-video">
-            <video controls
+            <video
+                   #videoPlayer
+                   controls
                    [poster]="post?.thumbnail || ''"
                    preload="metadata"
                    (play)="onVideoPlay($event, post?.id)"
@@ -456,12 +457,33 @@
 
       <!-- Events View -->
       <div *ngIf="activeView === 'events'" class="events-section">
-        <!-- Request Event Form -->
-        <div class="event-request-section" *ngIf="userProfile?.membership === 'scout' || isScout">
-          <button class="request-event-btn" (click)="toggleEventForm()" *ngIf="!showEventForm">
-            Request New Event
-          </button>
+        <!-- Premium Subscription Prompt for Free Members -->
+        <div *ngIf="userProfile?.membership === 'free' && !isScout" class="premium-upgrade-prompt">
+          <div class="upgrade-content">
+            <h2>Upgrade to Premium to Access Events</h2>
+            <div class="premium-benefits">
+              <h3>Premium Membership Benefits:</h3>
+              <ul>
+                <li><i class="bi bi-calendar-check"></i> Access to all scouting events and tryouts</li>
+                <li><i class="bi bi-graph-up"></i> Track your video performance analytics</li>
+                <li><i class="bi bi-camera-video"></i> Unlimited video uploads</li>
+                <li><i class="bi bi-star"></i> Premium badge on your profile</li>
+              </ul>
+            </div>
+            <button class="btn btn-premium" (click)="goToSubscription()">
+              Upgrade to Premium
+            </button>
+          </div>
         </div>
+
+        <!-- Regular Events Content for Premium/Scout Users -->
+        <ng-container *ngIf="userProfile?.membership === 'premium' || isScout">
+          <!-- Request Event Form -->
+          <div class="event-request-section" *ngIf="userProfile?.membership === 'scout' || isScout">
+            <button class="request-event-btn" (click)="toggleEventForm()" *ngIf="!showEventForm">
+              Request New Event
+            </button>
+          </div>
 
           <!-- Event Request Form -->
           <div class="event-form-container" *ngIf="showEventForm" >
@@ -626,59 +648,59 @@
             </form>
           </div>
 
-
-        <!-- Pending Events Section -->
-        <div class="pending-events-section" *ngIf="hasPendingEvents()">
-          <h3>Your Pending Events</h3>
-          <div class="events-grid">
-            <div *ngFor="let event of getPendingEvents()"
-                 class="event-card event-pending"
-                 (click)="goToEvent(event)">
-              <div class="event-image">
-                <img [src]="event.image || 'assets/default-event.jpg'" alt="{{ event.title }}">
-                <div class="event-date-badge">
-                  {{ event.date | date:'MMM dd' }} {{ getEventDateTime(event.date) }}
+          <!-- Pending Events Section -->
+          <div class="pending-events-section" *ngIf="hasPendingEvents()">
+            <h3>Your Pending Events</h3>
+            <div class="events-grid">
+              <div *ngFor="let event of getPendingEvents()"
+                   class="event-card event-pending"
+                   (click)="goToEvent(event)">
+                <div class="event-image">
+                  <img [src]="event.image || 'assets/default-event.jpg'" alt="{{ event.title }}">
+                  <div class="event-date-badge">
+                    {{ event.date | date:'MMM dd' }} {{ getEventDateTime(event.date) }}
+                  </div>
+                  <div class="event-status">Pending</div>
                 </div>
-                <div class="event-status">Pending</div>
-              </div>
-              <div class="event-details">
-                <h3>{{ event.title }}</h3>
-                <p>{{ event.description }}</p>
-                <p class="event-location">
-                  <i class="bi bi-geo-alt-fill"></i> {{ event.location }}
-                </p>
+                <div class="event-details">
+                  <h3>{{ event.title }}</h3>
+                  <p>{{ event.description }}</p>
+                  <p class="event-location">
+                    <i class="bi bi-geo-alt-fill"></i> {{ event.location }}
+                  </p>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        <!-- Approved Events Section -->
-        <div class="approved-events-section">
-          <h3>Upcoming Events</h3>
-                    <!-- Events List -->
-                    <div *ngIf="!feedData.upcoming_events?.length" class="empty-feed">
-                      No upcoming events. Check back later for new opportunities!
-                    </div>
-          <div class="events-grid">
-            <div *ngFor="let event of getApprovedEvents()"
-                 class="event-card"
-                 (click)="goToEvent(event)">
-              <div class="event-image">
-                <img [src]="event.image || 'assets/default-event.jpg'" alt="{{ event.title }}">
-                <div class="event-date-badge">
-                  {{ event.date | date:'MMM dd' }} {{ getEventDateTime(event.date) }}
+          <!-- Approved Events Section -->
+          <div class="approved-events-section">
+            <h3>Upcoming Events</h3>
+            <!-- Events List -->
+            <div *ngIf="!feedData.upcoming_events?.length" class="empty-feed">
+              No upcoming events. Check back later for new opportunities!
+            </div>
+            <div class="events-grid">
+              <div *ngFor="let event of getApprovedEvents()"
+                   class="event-card"
+                   (click)="goToEvent(event)">
+                <div class="event-image">
+                  <img [src]="event.image || 'assets/default-event.jpg'" alt="{{ event.title }}">
+                  <div class="event-date-badge">
+                    {{ event.date | date:'MMM dd' }} {{ getEventDateTime(event.date) }}
+                  </div>
                 </div>
-              </div>
-              <div class="event-details">
-                <h3>{{ event.title }}</h3>
-                <p>{{ event.description }}</p>
-                <p class="event-location">
-                  <i class="bi bi-geo-alt-fill"></i> {{ event.location }}
-                </p>
+                <div class="event-details">
+                  <h3>{{ event.title }}</h3>
+                  <p>{{ event.description }}</p>
+                  <p class="event-location">
+                    <i class="bi bi-geo-alt-fill"></i> {{ event.location }}
+                  </p>
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        </ng-container>
       </div>
     </ng-container>
   </div>
@@ -726,26 +748,40 @@
           <button class="btn btn-outline" (click)="switchView('events'); $event.preventDefault()">See all</button>
         </div>
 
-        <div *ngIf="!getApprovedEvents()?.length" class="empty-feed">
-          No upcoming events. Check back later for new opportunities!
+        <!-- Premium Upgrade Prompt for Free Members -->
+        <div *ngIf="userProfile?.membership === 'free' && !isScout" class="right-panel-premium-prompt">
+          <div class="premium-content">
+            <h4>Upgrade to Premium to Access Events</h4>
+            <p>Upgrade to premium to view upcoming scouting events and tryouts.</p>
+            <button class="btn btn-premium-small" (click)="goToSubscription()">
+              Upgrade Now
+            </button>
+          </div>
         </div>
 
-        <div *ngFor="let event of getApprovedEvents()?.slice(0, 3)"
-             class="event-card-small"
-             (click)="goToEvent(event)">
-          <div class="event-image">
-            <img [src]="event.image || 'assets/default-event.jpg'" alt="{{ event.title }}">
-            <div class="event-date-badge">
-              {{ event.date | date:'MMM dd' }} {{ getEventDateTime(event.date) }}
+        <!-- Events List for Premium/Scout Users -->
+        <ng-container *ngIf="userProfile?.membership === 'premium' || isScout">
+          <div *ngIf="!getApprovedEvents()?.length" class="empty-feed">
+            No upcoming events. Check back later for new opportunities!
+          </div>
+
+          <div *ngFor="let event of getApprovedEvents()?.slice(0, 3)"
+               class="event-card-small"
+               (click)="goToEvent(event)">
+            <div class="event-image">
+              <img [src]="event.image || 'assets/default-event.jpg'" alt="{{ event.title }}">
+              <div class="event-date-badge">
+                {{ event.date | date:'MMM dd' }} {{ getEventDateTime(event.date) }}
+              </div>
+            </div>
+            <div class="event-details">
+              <h4>{{ event.title }}</h4>
+              <p class="event-location">
+                <i class="bi bi-geo-alt-fill"></i> {{ event.location }}
+              </p>
             </div>
           </div>
-          <div class="event-details">
-            <h4>{{ event.title }}</h4>
-            <p class="event-location">
-              <i class="bi bi-geo-alt-fill"></i> {{ event.location }}
-            </p>
-          </div>
-        </div>
+        </ng-container>
       </div>
 
       <!-- Recommendations (Only for Scouts) -->
@@ -878,3 +914,120 @@
 
 <!-- Mobile Overlay -->
 <div class="mobile-overlay" [class.show]="showRightPanel" (click)="closeRightPanel()"></div>
+
+<style>
+.premium-upgrade-prompt {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  border-radius: 12px;
+  padding: 2rem;
+  text-align: center;
+  margin: 2rem auto;
+  max-width: 600px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+
+.upgrade-content {
+  color: #fff;
+}
+
+.upgrade-content h2 {
+  font-size: 2rem;
+  margin-bottom: 1.5rem;
+  color: #fff;
+}
+
+.premium-benefits {
+  text-align: left;
+  margin: 2rem 0;
+}
+
+.premium-benefits h3 {
+  font-size: 1.2rem;
+  margin-bottom: 1rem;
+  color: #ffd700;
+}
+
+.premium-benefits ul {
+  list-style: none;
+  padding: 0;
+}
+
+.premium-benefits li {
+  margin: 1rem 0;
+  font-size: 1.1rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.premium-benefits i {
+  color: #ffd700;
+  font-size: 1.2rem;
+}
+
+.btn-premium {
+  background: linear-gradient(45deg, #ffd700, #ffa500);
+  color: #1a1a2e;
+  border: none;
+  padding: 1rem 2rem;
+  font-size: 1.2rem;
+  border-radius: 30px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 auto;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.btn-premium:hover {
+  transform: translateY(-2px);
+}
+
+.right-panel-premium-prompt {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  border-radius: 8px;
+  padding: 1.5rem;
+  text-align: center;
+  margin: 1rem 0;
+}
+
+.premium-content {
+  color: #fff;
+}
+
+.premium-content i {
+  font-size: 2rem;
+  color: #ffd700;
+  margin-bottom: 1rem;
+}
+
+.premium-content h4 {
+  font-size: 1.2rem;
+  margin-bottom: 0.5rem;
+  color: #fff;
+}
+
+.premium-content p {
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+  color: #ccc;
+}
+
+.btn-premium-small {
+  background: linear-gradient(45deg, #ffd700, #ffa500);
+  color: #1a1a2e;
+  border: none;
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+  border-radius: 20px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.btn-premium-small:hover {
+  transform: translateY(-2px);
+}
+</style>

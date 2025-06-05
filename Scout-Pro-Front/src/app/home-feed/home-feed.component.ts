@@ -1251,7 +1251,9 @@ export class HomeFeedComponent implements OnInit, OnDestroy {
     if (filePath.startsWith('http')) {
       return filePath;
     }
-    return `${API_URL}/storage/${filePath.replace(/^\/+/, '')}`;
+    // Remove api from the API_URL since videos are served from the base URL
+    const baseUrl = API_URL.replace('/api', '');
+    return `${baseUrl}/storage/${filePath.replace(/^\/+/, '')}`;
   }
 
   loadRecentSearches() {
