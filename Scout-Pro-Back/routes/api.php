@@ -104,6 +104,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/subscription', [SubscriptionController::class, 'show']);
     Route::post('/subscription/upgrade', [SubscriptionController::class, 'upgrade']);
     Route::post('/subscription/cancel', [SubscriptionController::class, 'cancel']);
+    Route::get('/player/{id}/subscription-status', [SubscriptionController::class, 'checkSubscriptionStatus']);
+
 
     // Feed related routes
     Route::get('/events', [EventController::class, 'index']);
