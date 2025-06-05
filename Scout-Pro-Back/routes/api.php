@@ -15,6 +15,8 @@ use App\Http\Controllers\API\PlayerController;
 use App\Http\Controllers\API\AccountController;
 use App\Http\Controllers\API\HomeController;
 use App\Http\Controllers\API\ScoutController;
+use App\Http\Controllers\API\AdminController;
+use App\Http\Controllers\API\ContactRequestController;
 
 
 
@@ -115,4 +117,20 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Feed and Search Routes
     Route::post('/search', [FeedController::class, 'search']);
+
+    // Admin routes
+    Route::middleware(['auth:sanctum'])->group(function () {
+        Route::get('/admin/stats', [AdminController::class, 'stats']);
+        Route::get('/admin/user-growth', [AdminController::class, 'userGrowth']);
+        Route::get('/admin/engagement', [AdminController::class, 'engagement']);
+        Route::get('/admin/video-stats', [AdminController::class, 'videoStats']);
+        Route::get('/admin/contact-requests', [AdminController::class, 'getContactRequests']);
+        Route::put('/admin/contact-requests/{id}', [AdminController::class, 'updateContactRequest']);
+    });
+
+    // Contact Request Routes
+    Route::middleware(['auth:sanctum'])->group(function () {
+        Route::post('/contact-requests', [ContactRequestController::class, 'store']);
+        Route::get('/contact-requests/check/{playerId}', [ContactRequestController::class, 'checkStatus']);
+    });
 });

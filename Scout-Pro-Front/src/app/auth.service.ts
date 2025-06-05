@@ -219,7 +219,9 @@ export class AuthService {
   }
 
   handleLoginRedirect(userType: string, setupCompleted: boolean): void {
-    if (!setupCompleted) {
+    if (userType === 'admin') {
+      this.router.navigate(['/admin-dashboard']);
+    } else if (!setupCompleted) {
       if (userType === 'player') {
         this.router.navigate(['/register-player']);
       } else if (userType === 'scout') {

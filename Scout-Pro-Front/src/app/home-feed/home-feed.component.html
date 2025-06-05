@@ -331,7 +331,7 @@
                    (error)="handleImageError($event, post?.user?.first_name, post?.user?.last_name)">
               <div class="reel-user-info">
                 <div class="user-header">
-                  <span class="username">{{ post?.user?.isCurrentUser ? 'You' : post?.user?.full_name }}</span>
+                <span class="username">{{ post?.user?.isCurrentUser ? 'You' : post?.user?.full_name }}</span>
                   <span class="subscription-badge premium" *ngIf="post?.user?.membership === 'premium'">
                     Premium
                   </span>
@@ -689,8 +689,8 @@
             <button class="follow-btn"
                     (click)="followPlayer(like?.user?.id)"
                     [class.following]="like?.user?.following">
-                    {{ like?.user?.following ? 'Following' : 'Follow' }}
-            </button>
+            {{ like?.user?.following ? 'Following' : 'Follow' }}
+          </button>
           </div>
         </div>
       </div>

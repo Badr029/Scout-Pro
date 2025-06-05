@@ -8,6 +8,8 @@ use Illuminate\Support\Facades\Auth;
 use App\Models\Scout;
 use App\Models\Player;
 use App\Models\Follow;
+use App\Models\ContactRequest;
+use App\Models\User;
 
 class ScoutController extends Controller
 {
@@ -22,27 +24,58 @@ class ScoutController extends Controller
             return response()->json(['error' => 'Unauthorized: Only scouts can access this endpoint.'], 403);
         }
 
-        // Get players that the scout has followed/contacted
-        $contactedPlayers = Follow::where('follower_id', $user->id)
-            ->with(['following' => function ($query) {
-                $query->with('player');
-            }])
+        // Get contact requests made by the scout
+        $contactRequests = ContactRequest::where('scout_id', $user->id)
+            ->with(['player.player', 'player']) // Load the user and their player profile
             ->orderBy('created_at', 'desc')
             ->get()
-            ->map(function ($follow) {
-                $player = $follow->following->player;
+            ->map(function ($request) {
+                $player = $request->player;
+                $playerProfile = $player->player;
                 return [
-                    'id' => $player->id,
-                    'player_name' => $follow->following->first_name . ' ' . $follow->following->last_name,
-                    'contact_date' => $follow->created_at->format('Y-m-d'),
-                    'status' => $this->determineContactStatus($follow),
-                    'player_profile_url' => '/player/' . $player->id
+                    'id' => $player->id, // This is the user_id we need for navigation
+                    'first_name' => $player->first_name,
+                    'last_name' => $player->last_name,
+                    'profile_image' => $playerProfile->profile_image,
+                    'position' => $playerProfile->position,
+                    'nationality' => $playerProfile->nationality,
+                    'current_city' => $playerProfile->current_city,
+                    'membership' => $player->membership,
+                    'type' => 'player',
+                    'contact_date' => $request->created_at->format('Y-m-d'),
+                    'contact_status' => $request->status,
+                    'responded_at' => $request->responded_at ? $request->responded_at->format('Y-m-d') : null
                 ];
             });
 
         return response()->json([
             'message' => 'Contacted players fetched successfully.',
-            'data' => $contactedPlayers
+            'data' => $contactRequests
+        ]);
+    }
+
+    /**
+     * Get contact request status for a specific player
+     */
+    public function getContactStatus($playerId)
+    {
+        $user = Auth::user();
+
+        if ($user->user_type !== 'scout') {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        $contactRequest = ContactRequest::where('scout_id', $user->id)
+            ->where('player_id', $playerId)
+            ->first();
+
+        return response()->json([
+            'status' => 'success',
+            'data' => [
+                'has_request' => !is_null($contactRequest),
+                'request_status' => $contactRequest ? $contactRequest->status : null,
+                'responded_at' => $contactRequest && $contactRequest->responded_at ? $contactRequest->responded_at->format('Y-m-d') : null
+            ]
         ]);
     }
 

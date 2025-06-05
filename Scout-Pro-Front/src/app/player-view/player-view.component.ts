@@ -107,6 +107,11 @@ export class PlayerViewComponent implements OnInit, OnDestroy {
   isPlayer: boolean = false;
   isFollowing = false;
   currentUser: any = null;
+  contactRequestStatus: string | null = null;
+  contactRequestInProgress = false;
+  alertMessage: string | null = null;
+  alertType: 'success' | 'error' | null = null;
+  isScout: boolean = false;
 
   private readonly BASE_API_URL = 'http://localhost:8000';
 
@@ -127,19 +132,21 @@ export class PlayerViewComponent implements OnInit, OnDestroy {
       if (params['id']) {
         this.fetchPlayerProfile(params['id']);
         this.checkFollowStatus(params['id']);
+        if (this.isScout) {
+          this.checkContactRequestStatus();
+        }
       }
     });
-    // Get user profile first
-    this.getUserProfile();
-    // Then fetch player profile
-    this.fetchPlayerProfile();
-    // Set up periodic refresh of like status
-    this.refreshInterval = interval(10000) // Refresh every 10 seconds
+    this.getUserProfile().then(() => {
+      if (this.isScout && this.playerId) {
+        this.checkContactRequestStatus();
+      }
+    });
+    this.refreshInterval = interval(10000)
       .pipe(takeWhile(() => this.componentActive))
       .subscribe(() => {
         if (this.playerVideos.length > 0) {
           this.refreshLikeStatus();
-          // Also refresh comments for the currently selected video
           if (this.selectedVideo) {
             this.fetchComments(this.selectedVideo.id);
           }
@@ -158,30 +165,35 @@ export class PlayerViewComponent implements OnInit, OnDestroy {
     this.currentUser = this.authService.getCurrentUser();
   }
 
-  getUserProfile(): void {
+  getUserProfile(): Promise<void> {
     const token = localStorage.getItem('auth_token');
     if (!token) {
       this.router.navigate(['/login']);
-      return;
+      return Promise.reject();
     }
 
     const headers = new HttpHeaders({
       'Authorization': `Bearer ${token}`
     });
 
-    this.http.get(`${this.BASE_API_URL}/api/profile`, { headers }).subscribe({
-      next: (response: any) => {
-        if (response.data) {
-          this.userProfile = response.data;
-          this.isPlayer = this.userProfile.user_type === 'player';
+    return new Promise((resolve, reject) => {
+      this.http.get(`${this.BASE_API_URL}/api/profile`, { headers }).subscribe({
+        next: (response: any) => {
+          if (response.data) {
+            this.userProfile = response.data;
+            this.isPlayer = this.userProfile.user_type === 'player';
+            this.isScout = this.userProfile.user_type === 'scout';
+          }
+          resolve();
+        },
+        error: (error) => {
+          console.error('Error fetching user profile:', error);
+          if (error.status === 401) {
+            this.router.navigate(['/login']);
+          }
+          reject(error);
         }
-      },
-      error: (error) => {
-        console.error('Error fetching user profile:', error);
-        if (error.status === 401) {
-          this.router.navigate(['/login']);
-        }
-      }
+      });
     });
   }
 
@@ -544,10 +556,6 @@ export class PlayerViewComponent implements OnInit, OnDestroy {
     return this.playerData?.membership === 'premium';
   }
 
-  get isScout(): boolean {
-    return this.userProfile?.user_type === 'scout';
-  }
-
   goToSubscription(): void {
     this.router.navigate(['/subscription']);
   }
@@ -585,5 +593,55 @@ export class PlayerViewComponent implements OnInit, OnDestroy {
         console.error('Error toggling follow status:', error);
       }
     });
+  }
+
+  checkContactRequestStatus(): void {
+    if (!this.playerId) return;
+
+    this.apiService.checkContactRequestStatus(Number(this.playerId)).subscribe({
+      next: (response: any) => {
+        if (response.data.has_request) {
+          this.contactRequestStatus = response.data.request_status;
+        } else {
+          this.contactRequestStatus = null;
+        }
+      },
+      error: (error) => {
+        console.error('Error checking contact request status:', error);
+        this.contactRequestStatus = null;
+      }
+    });
+  }
+
+  sendContactRequest(): void {
+    if (!this.playerId || this.contactRequestInProgress) return;
+
+    this.contactRequestInProgress = true;
+    this.apiService.sendContactRequest(Number(this.playerId)).subscribe({
+      next: (response: any) => {
+        this.contactRequestStatus = 'pending';
+        this.showAlert('Your contact request has been sent successfully. You will be notified when the player responds.', 'success');
+      },
+      error: (error) => {
+        let errorMessage = 'Failed to send contact request. Please try again later.';
+        if (error.error?.message) {
+          errorMessage = error.error.message;
+        }
+        this.showAlert(errorMessage, 'error');
+      },
+      complete: () => {
+        this.contactRequestInProgress = false;
+      }
+    });
+  }
+
+  showAlert(message: string, type: 'success' | 'error'): void {
+    this.alertMessage = message;
+    this.alertType = type;
+    // Auto-hide the alert after 5 seconds
+    setTimeout(() => {
+      this.alertMessage = null;
+      this.alertType = null;
+    }, 5000);
   }
 }
