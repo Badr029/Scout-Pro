@@ -176,7 +176,6 @@ export class ScoutRegisterComponent {
     this.errorMessage = '';
     this.successMessage = '';
 
-    // Create FormData and append all fields
     const formData = new FormData();
 
     // Append profile image if exists
@@ -210,34 +209,26 @@ export class ScoutRegisterComponent {
     formData.append('linkedin_url', this.formData.linkedin_url || '');
 
     const headers = new HttpHeaders({
-      'Authorization': `Bearer ${this.authService.getToken()}`
+      'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
     });
 
-    // Send all data in one request
     this.http.post('http://localhost:8000/api/scout/setup', formData, { headers })
       .subscribe({
         next: (response: any) => {
           this.loading = false;
-          this.successMessage = 'Profile setup completed successfully! Redirecting to home feed...';
+          this.successMessage = 'Profile setup completed successfully! Redirecting to subscription page...';
 
-          // Store any necessary user data from the response
           if (response.scout) {
             localStorage.setItem('scout_data', JSON.stringify(response.scout));
           }
 
-          // Set setup completion flag
           localStorage.setItem('setup_completed', 'true');
 
-          // Redirect to home feed after a short delay to show success message
           setTimeout(() => {
-            this.router.navigate(['/home-feed'])
-              .then(() => {
-                // Force reload the page after navigation
-                window.location.reload();
-              })
+            this.router.navigate(['/scout-subscription'])
               .catch(err => {
                 console.error('Navigation failed:', err);
-                this.errorMessage = 'Failed to redirect. Please go to home feed manually.';
+                this.errorMessage = 'Failed to redirect. Please try again.';
               });
           }, 1500);
         },

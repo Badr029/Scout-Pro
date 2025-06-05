@@ -626,10 +626,7 @@
             </form>
           </div>
 
-          <!-- Events List -->
-          <div *ngIf="!feedData.upcoming_events?.length" class="empty-feed">
-            No upcoming events. Check back later for new opportunities!
-          </div>
+
         <!-- Pending Events Section -->
         <div class="pending-events-section" *ngIf="hasPendingEvents()">
           <h3>Your Pending Events</h3>
@@ -658,6 +655,10 @@
         <!-- Approved Events Section -->
         <div class="approved-events-section">
           <h3>Upcoming Events</h3>
+                    <!-- Events List -->
+                    <div *ngIf="!feedData.upcoming_events?.length" class="empty-feed">
+                      No upcoming events. Check back later for new opportunities!
+                    </div>
           <div class="events-grid">
             <div *ngFor="let event of getApprovedEvents()"
                  class="event-card"

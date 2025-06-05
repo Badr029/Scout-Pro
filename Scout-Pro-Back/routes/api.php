@@ -102,10 +102,16 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // New subscription routes
     Route::get('/subscription', [SubscriptionController::class, 'show']);
+    Route::get('/plans', [SubscriptionController::class, 'getPlans']);
     Route::post('/subscription/upgrade', [SubscriptionController::class, 'upgrade']);
     Route::post('/subscription/cancel', [SubscriptionController::class, 'cancel']);
     Route::get('/player/{id}/subscription-status', [SubscriptionController::class, 'checkSubscriptionStatus']);
 
+    // Scout subscription routes
+    Route::post('/subscription/scout/upgrade', [SubscriptionController::class, 'upgradeScout']);
+    Route::post('/subscription/scout/cancel', [SubscriptionController::class, 'cancelScout']);
+    Route::get('/scout/{id}/subscription-status', [SubscriptionController::class, 'checkScoutSubscriptionStatus']);
+    Route::get('/subscription/scout/status', [SubscriptionController::class, 'getScoutSubscriptionStatus']);
 
     // Feed related routes
     Route::get('/events', [EventController::class, 'index']);

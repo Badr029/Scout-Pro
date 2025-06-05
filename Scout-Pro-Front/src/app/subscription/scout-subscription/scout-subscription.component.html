@@ -1,8 +1,8 @@
 <div class="subscription-container">
     <div class="page-header">
-        <button class="btn-back" (click)="goToHome()">
-            <i class="fas fa-arrow-left"></i>
-            Back to Home
+        <button class="btn-logout" (click)="logout()">
+            <i class="fas fa-sign-out-alt"></i>
+            Logout
         </button>
     </div>
     <div>
@@ -31,7 +31,7 @@
             <div class="plan-ribbon">Recommended</div>
             <div class="plan-header">
                 <h2>Premium</h2>
-                <p class="price">${{ subscriptionPlans[1].price }} <span>/month</span></p>
+                <p class="price">EGP {{ subscriptionPlans[1].price }} <span>/month</span></p>
             </div>
             <div class="plan-features">
                 <ul>
@@ -54,7 +54,7 @@
             [class.selected]="selectedPlanType === 'yearly'" (click)="selectPlan('yearly')">
             <div class="plan-header">
                 <h2>Premium</h2>
-                <p class="price">${{ subscriptionPlans[1].yearlyPrice }} <span>/year</span></p>
+                <p class="price">EGP {{ subscriptionPlans[1].yearlyPrice }} <span>/year</span></p>
             </div>
             <div class="plan-features">
                 <ul>
@@ -77,30 +77,74 @@
     <div *ngIf="currentPlan !== 'Premium' && selectedPlanType && selectedPlanType !== 'free'" class="payment-section">
         <h2>Payment Details</h2>
         <div class="card-container">
-            <div class="header-row">
-                <input class="card-name-input" type="text" name="cardName" id="cardName" placeholder="Full Name" />
-                <div class="card-logo-container">
-                    <svg class="card-logo" xmlns="http://www.w3.org/2000/svg" width="30" height="30"
-                        viewBox="0 0 48 48">
-                        <path fill="#ff9800" d="M32 10A14 14 0 1 0 32 38A14 14 0 1 0 32 10Z"></path>
-                        <path fill="#d50000" d="M16 10A14 14 0 1 0 16 38A14 14 0 1 0 16 10Z"></path>
-                        <path fill="#ff3d00"
-                            d="M18,24c0,4.755,2.376,8.95,6,11.48c3.624-2.53,6-6.725,6-11.48s-2.376-8.95-6-11.48 C20.376,15.05,18,19.245,18,24z">
-                        </path>
-                    </svg>
-                </div>
-            </div>
-            <div class="form-container">
-                <input class="card-number-input" type="text" name="cardNumber" id="cardNumber"
-                    placeholder="0000 0000 0000 0000" />
-                <div class="details-row">
-                    <input class="expiry-input" type="text" name="expiryDate" id="expiryDate" placeholder="MM/AA" />
-                    <input class="cvv-input" type="text" name="cvv" id="cvv" placeholder="CVV" />
+            <div class="card-preview">
+                <div class="card-front">
+                    <div class="header-row">
+                        <input class="card-name-input"
+                               type="text"
+                               name="cardName"
+                               id="cardName"
+                               [(ngModel)]="paymentInfo.cardName"
+                               (input)="formatCardholderName($event)"
+                               placeholder="CARDHOLDER NAME"
+                               maxlength="26"
+                               pattern="[A-Za-z\s]+"
+                               [value]="paymentInfo.cardName | uppercase" />
+                        <div class="card-logo-container">
+                            <svg class="card-logo" xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 48 48">
+                                <path fill="#ff9800" d="M32 10A14 14 0 1 0 32 38A14 14 0 1 0 32 10Z"></path>
+                                <path fill="#d50000" d="M16 10A14 14 0 1 0 16 38A14 14 0 1 0 16 10Z"></path>
+                                <path fill="#ff3d00" d="M18,24c0,4.755,2.376,8.95,6,11.48c3.624-2.53,6-6.725,6-11.48s-2.376-8.95-6-11.48 C20.376,15.05,18,19.245,18,24z"></path>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="card-number-row">
+                        <input class="card-number-input"
+                               type="text"
+                               name="cardNumber"
+                               id="cardNumber"
+                               [(ngModel)]="paymentInfo.cardNumber"
+                               (input)="formatCardNumber($event)"
+                               placeholder="0000 0000 0000 0000"
+                               maxlength="19"
+                               pattern="\d*"
+                               inputmode="numeric" />
+                    </div>
+                    <div class="card-details-row">
+                        <div class="expiry-container">
+                            <label>VALID THRU</label>
+                            <input class="expiry-input"
+                                   type="text"
+                                   name="expiry"
+                                   id="expiry"
+                                   [(ngModel)]="paymentInfo.expiry"
+                                   (input)="formatExpiryDate($event)"
+                                   placeholder="MM/YY"
+                                   maxlength="5"
+                                   pattern="\d*"
+                                   inputmode="numeric" />
+                        </div>
+                        <div class="cvv-container">
+                            <label>CVV</label>
+                            <input class="cvv-input"
+                                   type="text"
+                                   name="cvv"
+                                   id="cvv"
+                                   [(ngModel)]="paymentInfo.cvv"
+                                   (input)="formatCVV($event)"
+                                   placeholder="123"
+                                   maxlength="3"
+                                   pattern="\d*"
+                                   inputmode="numeric" />
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
         <div class="payment-button-container">
-            <button class="btn btn-primary wide" (click)="upgradeSubscription()" [disabled]="loading">
+            <button class="btn btn-primary wide"
+                    (click)="upgradeSubscription()"
+                    [disabled]="loading || !paymentInfo.cardNumber || !paymentInfo.cardName || !paymentInfo.expiry || !paymentInfo.cvv">
                 <span *ngIf="!loading">Upgrade to Premium</span>
                 <span *ngIf="loading" class="spinner small"></span>
             </button>

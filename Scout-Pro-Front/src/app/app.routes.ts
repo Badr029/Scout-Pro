@@ -10,7 +10,8 @@ import { PlayerViewComponent } from './player-view/player-view.component';
 import { ForgotPasswordComponent } from './forgot-password/forgot-password.component';
 import { ResetPasswordComponent } from './reset-password/reset-password.component';
 import { EmailVerificationComponent } from './email-verification/email-verification.component';
-import { AuthGuard } from './auth.guard';
+import { AuthGuard } from './guards/auth.guard';
+import { ScoutGuard } from './guards/scout.guard';
 import { ScoutProfileComponent } from './Scout/profile/profile.component';
 import { WelcomeComponent } from './welcome/welcome.component';
 import { ScoutEditComponent } from './Scout/profile/scout-edit/scout-edit.component';
@@ -57,22 +58,22 @@ export const routes: Routes = [
     {
         path: 'profile',
         component: ProfileComponent,
-        canActivate: [AuthGuard]
+        canActivate: [AuthGuard, ScoutGuard]
     },
     {
         path: 'scout/profile',
         component: ScoutProfileComponent,
-        canActivate: [AuthGuard]
+        canActivate: [AuthGuard, ScoutGuard]
     },
     {
         path: 'scout/profile/edit',
         component: ScoutEditComponent,
-        canActivate: [AuthGuard]
+        canActivate: [AuthGuard, ScoutGuard]
     },
     {
         path: 'Edit',
         component: EditProfileComponent,
-        canActivate: [AuthGuard]
+        canActivate: [AuthGuard, ScoutGuard]
     },
     {
         path: 'scout-register',
@@ -86,17 +87,17 @@ export const routes: Routes = [
     {
         path: 'edit-profile',
         component: EditProfileComponent,
-        canActivate: [AuthGuard]
+        canActivate: [AuthGuard, ScoutGuard]
     },
     {
         path: 'home-feed',
         component: HomeFeedComponent,
-        canActivate: [AuthGuard]
+        canActivate: [AuthGuard, ScoutGuard]
     },
     {
         path: 'player/:id',
         component: PlayerViewComponent,
-        canActivate: [AuthGuard]
+        canActivate: [AuthGuard, ScoutGuard]
     },
     {
         path: 'subscription',
@@ -106,22 +107,22 @@ export const routes: Routes = [
     {
         path: 'event/:id',
         component: HomeFeedComponent,
-        canActivate: [AuthGuard]
+        canActivate: [AuthGuard, ScoutGuard]
     },
     {
         path: 'welcome',
         component: WelcomeComponent,
-        canActivate: [AuthGuard]
+        canActivate: [AuthGuard, ScoutGuard]
     },
     {
         path: 'scout-edit',
         component: ScoutEditComponent,
-        canActivate: [AuthGuard]
+        canActivate: [AuthGuard, ScoutGuard]
     },
     {
         path: 'scout/:id',
         component: ScoutViewComponent,
-        canActivate: [AuthGuard]
+        canActivate: [AuthGuard, ScoutGuard]
     },
     {
         path: 'scout-subscription',

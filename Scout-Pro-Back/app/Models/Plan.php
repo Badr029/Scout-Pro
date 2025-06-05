@@ -9,8 +9,6 @@ class Plan extends Model
 {
      use HasFactory;
 
-    protected $primaryKey = 'plan_id';
-
     protected $fillable = [
         'Name',
         'Duration',
@@ -20,6 +18,6 @@ class Plan extends Model
     // Relationships
     public function subscriptions()
     {
-        return $this->hasMany(Subscription::class, 'plan_id', 'plan_id');
+        return $this->hasMany(Subscription::class);
     }
 }

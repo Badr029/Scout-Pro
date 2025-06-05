@@ -163,6 +163,8 @@ class SetupController extends Controller
             'linkedin_url' => $request->linkedin_url,
             'id_proof_path' => $idProofPath,
             'certifications' => $certificationPaths,
+            'registration_completed' => true,
+            'subscription_active' => false
         ]);
 
         // Mark setup as completed

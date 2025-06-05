@@ -203,6 +203,8 @@ export class LoginPageComponent {
 
       if (!response.setup_completed) {
         this.router.navigate([`/${response.user_type}-register`]);
+      } else if (response.user_type === 'scout' && !response.subscription_active) {
+        this.router.navigate(['/scout-subscription']);
       } else {
         this.router.navigate(['/home-feed']);
       }

@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { BehaviorSubject, Observable, throwError, of } from 'rxjs';
-import { catchError, tap } from 'rxjs/operators';
+import { catchError, tap, map } from 'rxjs/operators';
 import { Router } from '@angular/router';
 import { SocialAuthService } from '@abacritt/angularx-social-login';
 
@@ -227,7 +227,29 @@ export class AuthService {
       } else if (userType === 'scout') {
         this.router.navigate(['/scout-register']);
       }
+    } else if (userType === 'scout') {
+      // Check subscription status for scouts
+      const headers = new HttpHeaders({
+        'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+      });
+
+      this.http.get('http://localhost:8000/api/subscription/scout/status', { headers })
+        .subscribe({
+          next: (response: any) => {
+            localStorage.setItem('subscription_active', response.subscription_active.toString());
+            if (response.subscription_active) {
+              this.router.navigate(['/home-feed']);
+            } else {
+              this.router.navigate(['/scout-subscription']);
+            }
+          },
+          error: () => {
+            localStorage.setItem('subscription_active', 'false');
+            this.router.navigate(['/scout-subscription']);
+          }
+        });
     } else {
+      // For players
       this.router.navigate(['/home-feed']);
     }
   }
@@ -246,5 +268,28 @@ export class AuthService {
       user_type: userType,
       ...parsedUserData
     };
+  }
+
+  // Add new method to check subscription status
+  checkScoutSubscriptionStatus(): Observable<boolean> {
+    if (this.getUserType() !== 'scout') {
+      return of(true);
+    }
+
+    const headers = new HttpHeaders({
+      'Authorization': `Bearer ${this.getToken()}`
+    });
+
+    return this.http.get<any>('http://localhost:8000/api/subscription/scout/status', { headers })
+      .pipe(
+        map(response => {
+          localStorage.setItem('subscription_active', response.subscription_active.toString());
+          return response.subscription_active;
+        }),
+        catchError(() => {
+          localStorage.setItem('subscription_active', 'false');
+          return of(false);
+        })
+      );
   }
 }

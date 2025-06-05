@@ -30,6 +30,12 @@ class Scout extends Model
           'linkedin_url',
           'id_proof_path',
           'certifications',
+
+          // Subscription and Registration Status
+          'registration_completed',
+          'subscription_id',
+          'subscription_active',
+          'subscription_expires_at'
     ];
 
     protected $casts = [
@@ -37,6 +43,9 @@ class Scout extends Model
         'age_groups' => 'array',
         'preferred_roles' => 'array',
         'certifications' => 'array',
+        'registration_completed' => 'boolean',
+        'subscription_active' => 'boolean',
+        'subscription_expires_at' => 'datetime'
     ];
     public function user()
     {
