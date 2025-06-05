@@ -18,6 +18,9 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\SubscriptionInvoice;
+use Illuminate\Support\Facades\DB;
+use App\Models\PlayerInvoice;
+use App\Mail\PlayerSubscriptionInvoice;
 
 class SubscriptionController extends Controller
 {
@@ -136,63 +139,113 @@ public function upgrade(Request $request)
         ], 422);
     }
 
-    $expiry = $request->input('expiry');
-    if (!$this->isExpiryValid($expiry)) {
+    try {
+        DB::beginTransaction();
+
+        $expiry = $request->input('expiry');
+        if (!$this->isExpiryValid($expiry)) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Expiry date is invalid or has passed.'
+            ], 422);
+        }
+
+        $plan = Plan::where('name', $request->plan_type)->first();
+        if (!$plan) {
+            return response()->json(['status' => 'error', 'message' => 'Invalid plan selected'], 404);
+        }
+
+        $player = $user->player;
+        if (!$player) {
+            return response()->json(['status' => 'error', 'message' => 'Player profile not found'], 404);
+        }
+
+        $encryptedCard = Crypt::encryptString($request->card_number);
+        $encryptedCVV = Crypt::encryptString($request->cvv);
+        $lastFour = substr($request->card_number, -4);
+
+        // Create payment record
+        $payment = Payment::create([
+            'user_id' => $user->id,
+            'amount' => $plan->Price,
+            'currency' => 'EGP',
+            'payment_method' => 'card',
+            'card_number_encrypted' => $encryptedCard,
+            'card_last_four' => $lastFour,
+            'expiry' => $request->expiry,
+            'cvv_encrypted' => $encryptedCVV,
+            'cardholder_name' => $request->cardholder_name,
+            'status' => 'completed'
+        ]);
+
+        // Create or update subscription
+        $subscription = Subscription::updateOrCreate(
+            ['user_id' => $user->id],
+            [
+                'plan_id' => $plan->id,
+                'payment_id' => $payment->id,
+                'plan' => $plan->Name,
+                'active' => true,
+                'expires_at' => now()->addDays($plan->Duration),
+                'canceled_at' => null
+            ]
+        );
+
+        // Update player membership and subscription fields
+        $player->update([
+            'membership' => 'premium',
+            'subscription_id' => $subscription->id,
+            'subscription_expires_at' => now()->addDays($plan->Duration)
+        ]);
+
+        // Create invoice
+        $invoice = PlayerInvoice::create([
+            'payment_id' => $payment->id,
+            'player_id' => $player->id,
+            'invoice_number' => 'INV-' . date('Y') . '-' . str_pad($payment->id, 6, '0', STR_PAD_LEFT),
+            'amount' => $plan->Price,
+            'currency' => 'EGP',
+            'status' => 'paid',
+            'paid_at' => now()
+        ]);
+
+        // Send invoice email
+        try {
+            Mail::to($user->email)->send(new PlayerSubscriptionInvoice([
+                'player_name' => $user->first_name . ' ' . $user->last_name,
+                'plan_name' => $plan->Name,
+                'amount' => $plan->Price,
+                'invoice_number' => $invoice->invoice_number,
+                'invoice_date' => $invoice->created_at->format('F j, Y'),
+                'card_last_four' => $lastFour,
+                'expiry_date' => $subscription->expires_at->format('F j, Y')
+            ]));
+        } catch (\Exception $e) {
+            Log::error('Failed to send player invoice email: ' . $e->getMessage());
+            // Don't return error to user as subscription was successful
+        }
+
+        DB::commit();
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Subscription upgraded successfully',
+            'data' => [
+                'subscription' => $subscription,
+                'payment_id' => $payment->id,
+                'card_last_four' => $lastFour,
+                'invoice_number' => $invoice->invoice_number
+            ]
+        ]);
+
+    } catch (\Exception $e) {
+        DB::rollBack();
+        Log::error('Player subscription upgrade failed: ' . $e->getMessage());
         return response()->json([
             'status' => 'error',
-            'message' => 'Expiry date is invalid or has passed.'
-        ], 422);
+            'message' => 'Failed to upgrade subscription: ' . $e->getMessage()
+        ], 500);
     }
-    $plan = Plan::where('name', $request->plan_type)->first();
-    if (!$plan) {
-        return response()->json(['status' => 'error', 'message' => 'Invalid plan selected'], 404);
-    }
-
-    $player = $user->player;
-    if (!$player) {
-        return response()->json(['status' => 'error', 'message' => 'Player profile not found'], 404);
-    }
-
-    $encryptedCard = Crypt::encryptString($request->card_number);
-    $encryptedCVV = Crypt::encryptString($request->cvv);
-    $lastFour = substr($request->card_number, -4);
-
-    $payment = Payment::create([
-        'amount' => $plan->Price ?? null,
-        'card_number_encrypted' => $encryptedCard,
-        'card_last_four' => $lastFour,
-        'expiry' => $request->expiry,
-        'cvv_encrypted' => $encryptedCVV,
-        'cardholder_name' => $request->cardholder_name,
-    ]);
-
-
-    $subscription = Subscription::updateOrCreate(
-        ['user_id' => $user->id],
-        [
-            'player_id' => $player->id,
-            'plan_id' => $plan->id,
-            'payment_id' => $payment->id,
-            'plan' => $plan->Name,
-            'active' => $plan->Price > 0,
-            'expires_at' => $plan->Price > 0 ? now()->addDays($plan->duration) : null,
-            'canceled_at' => null
-        ]
-    );
-    //3shan elmembership
-
-    $player->update([
-        'membership' => $plan->Price > 0 ? 'Premium' : 'Free',
-    ]);
-
-    return response()->json([
-        'message' => 'Subscription upgraded and payment saved.',
-        'data' => [
-            'subscription' => $subscription,
-            'payment_id' => $payment->id,
-            'card_last_four' => $lastFour,
-        ]
-    ]);
 }
 
     /**
@@ -200,39 +253,34 @@ public function upgrade(Request $request)
      */
     public function cancel()
     {
+        $user = Auth::user();
+        $subscription = $user->subscription;
+        $player = $user->player;
 
+        if (!$subscription || $subscription->plan === 'Free') {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'No active paid subscription found'
+            ], 400);
+        }
 
-    $user = Auth::user();
-    $subscription = $user->subscription;
-    $player = $user->player;
+        $subscription->update([
+            'plan' => 'Free',
+            'active' => false,
+            'canceled_at' => now(),
+            'expires_at' => now(),
+        ]);
 
-    if (!$subscription || $subscription->plan === 'Free') {
+        if ($player) {
+            $player->membership = 'free';
+            $player->save();
+        }
+
         return response()->json([
-            'status' => 'error',
-            'message' => 'No active paid subscription found'
-        ], 400);
+            'status' => 'success',
+            'message' => 'Subscription canceled successfully. You are now on the Free plan.'
+        ]);
     }
-
-
-    $subscription->update([
-        'plan' => 'Free',
-        'membership' => 'free',
-        'active' => false,
-        'canceled_at' => now(),
-        'expires_at' => now(),
-    ]);
-
-
-    if ($player) {
-        $player->membership = 'free';
-        $player->save();
-    }
-
-    return response()->json([
-        'status' => 'success',
-        'message' => 'Subscription canceled successfully. You are now on the Free plan.'
-    ]);
-}
 
     /**
      * Get all available subscription plans.
@@ -240,16 +288,23 @@ public function upgrade(Request $request)
     public function getPlans()
     {
         try {
+            $user = Auth::user();
+            $userType = $user->player ? 'player' : 'scout';
+
             // Get all plans first to debug
             $allPlans = Plan::all();
             Log::info('All available plans:', ['plans' => $allPlans->toArray()]);
 
-            // Get scout plans
-            $plans = Plan::whereIn('Name', ['Scout Monthly', 'Scout Yearly'])->get();
-            Log::info('Fetched scout plans:', ['plans' => $plans->toArray()]);
+            // Get plans based on user type
+            $planTypes = $userType === 'player'
+                ? ['Player Monthly', 'Player Yearly']
+                : ['Scout Monthly', 'Scout Yearly'];
+
+            $plans = Plan::whereIn('Name', $planTypes)->get();
+            Log::info('Fetched ' . $userType . ' plans:', ['plans' => $plans->toArray()]);
 
             if ($plans->isEmpty()) {
-                Log::warning('No scout plans found in the database');
+                Log::warning('No ' . $userType . ' plans found in the database');
                 return response()->json([
                     'status' => 'error',
                     'message' => 'No subscription plans found'
@@ -493,6 +548,185 @@ public function upgrade(Request $request)
             'expires_at' => $expires_at,
             'plan' => $subscription->plan
         ]);
+    }
+
+    /**
+     * Check player membership status
+     */
+    public function checkPlayerMembership(Request $request)
+    {
+        $user = Auth::user();
+        $player = $user->player;
+
+        if (!$player) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Player not found'
+            ], 404);
+        }
+
+        $subscription = Subscription::where('user_id', $user->id)->latest()->first();
+
+        if (!$subscription || $subscription->plan === 'Free') {
+            return response()->json([
+                'status' => 'success',
+                'data' => [
+                    'membership' => 'free',
+                    'expires_at' => null,
+                    'remaining_uploads' => 2 - ($player->monthly_video_count ?? 0)
+                ]
+            ]);
+        }
+
+        $expiresAt = $subscription->expires_at;
+        $now = now();
+        $daysRemaining = $expiresAt ? $now->diffInDays($expiresAt) : 0;
+
+        return response()->json([
+            'status' => 'success',
+            'data' => [
+                'membership' => $player->membership,
+                'expires_at' => $expiresAt,
+                'days_remaining' => $daysRemaining,
+                'remaining_uploads' => 'unlimited'
+            ]
+        ]);
+    }
+
+    /**
+     * Upgrade player membership
+     */
+    public function upgradePlayerMembership(Request $request)
+    {
+        $user = Auth::user();
+        $player = $user->player;
+
+        if (!$player) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Player not found'
+            ], 404);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'plan_type' => 'required|in:Player Monthly,Player Yearly',
+            'card_number' => 'required|string|size:16',
+            'cardholder_name' => 'required|string|max:255',
+            'expiry' => 'required|string|size:5',
+            'cvv' => 'required|string|size:3'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        // Validate card expiry
+        if (!$this->isExpiryValid($request->expiry)) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Card has expired'
+            ], 422);
+        }
+
+        try {
+            DB::beginTransaction();
+
+            // Get the plan
+            $plan = Plan::where('name', $request->plan_type)->first();
+            if (!$plan) {
+                throw new \Exception('Selected plan not found');
+            }
+
+            // Create payment record
+            $lastFour = substr($request->card_number, -4);
+            $encryptedCard = Crypt::encryptString($request->card_number);
+            $encryptedCVV = Crypt::encryptString($request->cvv);
+
+            $payment = Payment::create([
+                'user_id' => $user->id,
+                'amount' => $plan->Price,
+                'currency' => 'EGP',
+                'payment_method' => 'card',
+                'card_number_encrypted' => $encryptedCard,
+                'card_last_four' => $lastFour,
+                'expiry' => $request->expiry,
+                'cvv_encrypted' => $encryptedCVV,
+                'cardholder_name' => $request->cardholder_name,
+                'status' => 'completed'
+            ]);
+
+            // Create or update subscription
+            $subscription = Subscription::updateOrCreate(
+                ['user_id' => $user->id],
+                [
+                    'player_id' => $player->id,
+                    'plan_id' => $plan->id,
+                    'payment_id' => $payment->id,
+                    'plan' => $plan->Name,
+                    'active' => true,
+                    'expires_at' => now()->addDays($plan->Duration),
+                    'canceled_at' => null
+                ]
+            );
+
+            // Update player membership and subscription fields
+            $player->update([
+                'membership' => 'premium',
+                'subscription_id' => $subscription->id,
+                'subscription_expires_at' => now()->addDays($plan->Duration)
+            ]);
+
+            // Create invoice
+            $invoice = PlayerInvoice::create([
+                'payment_id' => $payment->id,
+                'player_id' => $player->id,
+                'invoice_number' => 'INV-' . date('Y') . '-' . str_pad($payment->id, 6, '0', STR_PAD_LEFT),
+                'amount' => $plan->Price,
+                'currency' => 'EGP',
+                'status' => 'paid',
+                'paid_at' => now()
+            ]);
+
+            // Send invoice email
+            try {
+                Mail::to($user->email)->send(new PlayerSubscriptionInvoice([
+                    'player_name' => $user->first_name . ' ' . $user->last_name,
+                    'plan_name' => $plan->Name,
+                    'amount' => $plan->Price,
+                    'invoice_number' => $invoice->invoice_number,
+                    'invoice_date' => $invoice->created_at->format('F j, Y'),
+                    'card_last_four' => $lastFour,
+                    'expiry_date' => $subscription->expires_at->format('F j, Y')
+                ]));
+            } catch (\Exception $e) {
+                Log::error('Failed to send player invoice email: ' . $e->getMessage());
+                // Don't return error to user as subscription was successful
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Membership upgraded successfully',
+                'data' => [
+                    'subscription' => $subscription,
+                    'payment_id' => $payment->id,
+                    'card_last_four' => $lastFour,
+                    'invoice_number' => $invoice->invoice_number
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Player membership upgrade failed: ' . $e->getMessage());
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to upgrade membership: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
 }
