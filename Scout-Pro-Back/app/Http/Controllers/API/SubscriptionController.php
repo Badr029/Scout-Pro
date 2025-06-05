@@ -186,7 +186,6 @@ public function upgrade(Request $request)
     ]);
 
     return response()->json([
-        'status' => 'success',
         'message' => 'Subscription upgraded and payment saved.',
         'data' => [
             'subscription' => $subscription,
