@@ -212,7 +212,7 @@
 
     <!-- No Results State -->
     <div class="no-results" *ngIf="searchQuery && searchResults.length === 0 && !loading">
-      <i class="fas fa-search"></i>
+      <i class="bi bi-search"></i>
       <p>No players or scouts found matching your search criteria</p>
     </div>
   </div>
@@ -458,22 +458,202 @@
       <div *ngIf="activeView === 'events'" class="events-container">
         <!-- Premium Users Content -->
         <div *ngIf="userProfile?.membership === 'premium' || isScout">
+          <!-- Event Request Button -->
+          <div class="event-request-section" *ngIf="userProfile?.membership === 'scout' || isScout">
+            <button class="request-event-btn" (click)="toggleEventForm()" *ngIf="!showEventForm">
+              <i class="bi bi-plus-circle"></i>
+              Request Event
+            </button>
+          </div>
+
+          <!-- Event Request Form -->
+          <div class="event-form-container" *ngIf="showEventForm" >
+            <div class="form-header">
+              <h2>Request New Event</h2>
+              <button class="close-btn" (click)="toggleEventForm()">
+                <i class="bi bi-x-lg"></i>
+              </button>
+            </div>
+
+            <form [formGroup]="eventForm" (ngSubmit)="onSubmitEvent()" class="event-form">
+              <!-- Event Title -->
+              <div class="form-group">
+                <label for="title">Event Title *</label>
+                <input
+                  type="text"
+                  id="title"
+                  formControlName="title"
+                  placeholder="e.g. Cairo U21 Tryout – July 2025"
+                  [class.is-invalid]="eventForm.get('title')?.invalid && eventForm.get('title')?.touched"
+                >
+                <div class="error-message" *ngIf="eventForm.get('title')?.invalid && eventForm.get('title')?.touched">
+                  <span *ngIf="eventForm.get('title')?.errors?.['required']">Title is required</span>
+                  <span *ngIf="eventForm.get('title')?.errors?.['minlength']">Title must be at least 5 characters</span>
+                </div>
+              </div>
+
+              <!-- Date and Time -->
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="date">Date *</label>
+                  <input
+                    type="date"
+                    id="date"
+                    formControlName="date"
+                    [class.is-invalid]="eventForm.get('date')?.invalid && eventForm.get('date')?.touched"
+                  >
+                  <div class="error-message" *ngIf="eventForm.get('date')?.invalid && eventForm.get('date')?.touched">
+                    Date is required
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label for="time">Time *</label>
+                  <input
+                    type="time"
+                    id="time"
+                    formControlName="time"
+                    [class.is-invalid]="eventForm.get('time')?.invalid && eventForm.get('time')?.touched"
+                  >
+                  <div class="error-message" *ngIf="eventForm.get('time')?.invalid && eventForm.get('time')?.touched">
+                    Time is required
+                  </div>
+                </div>
+              </div>
+
+              <!-- Location -->
+              <div class="form-group">
+                <label for="location">Location *</label>
+                <div class="location-input-group">
+                  <input
+                    type="text"
+                    id="location"
+                    formControlName="location"
+                    placeholder="Enter event location or paste Google Maps link"
+                    [class.is-invalid]="eventForm.get('location')?.invalid && eventForm.get('location')?.touched"
+                  >
+                  <a *ngIf="locationLink" [href]="locationLink" target="_blank" class="maps-link">
+                    <i class="bi bi-map"></i>
+                    Open in Google Maps
+                  </a>
+                </div>
+                <div class="error-message" *ngIf="eventForm.get('location')?.invalid && eventForm.get('location')?.touched">
+                  Location is required
+                </div>
+              </div>
+
+              <!-- Description -->
+              <div class="form-group">
+                <label for="description">Description</label>
+                <textarea
+                  id="description"
+                  formControlName="description"
+                  rows="4"
+                  placeholder="Include event goals, age range, how to register, and other important details"
+                ></textarea>
+              </div>
+
+              <!-- Image Upload -->
+              <div class="form-group">
+                <label for="image">Event Poster</label>
+                <div class="image-upload-container">
+                  <input
+                    type="file"
+                    id="image"
+                    (change)="onEventImageSelected($event)"
+                    accept="image/jpeg,image/png"
+                    class="file-input"
+                  >
+                  <label for="image" class="upload-label">
+                    <i class="bi bi-cloud-upload"></i>
+                    <span>Choose Image</span>
+                    <small>Supported: JPG, PNG (Max 5MB)</small>
+                  </label>
+
+                  <!-- Image Preview -->
+                  <div class="image-preview" *ngIf="eventImagePreview">
+                    <img [src]="eventImagePreview" alt="Event poster preview">
+                    <button type="button" class="remove-image" (click)="selectedEventImage = null; eventImagePreview = null">
+                      <i class="bi bi-x-circle"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Organizer Contact -->
+              <div class="form-group">
+                <label for="organizer_contact">Contact Email *</label>
+                <input
+                  type="email"
+                  id="organizer_contact"
+                  formControlName="organizer_contact"
+                  placeholder="Enter contact email for inquiries"
+                  [class.is-invalid]="eventForm.get('organizer_contact')?.invalid && eventForm.get('organizer_contact')?.touched"
+                >
+                <div class="error-message" *ngIf="eventForm.get('organizer_contact')?.invalid && eventForm.get('organizer_contact')?.touched">
+                  <span *ngIf="eventForm.get('organizer_contact')?.errors?.['required']">Contact email is required</span>
+                  <span *ngIf="eventForm.get('organizer_contact')?.errors?.['email']">Please enter a valid email address</span>
+                </div>
+              </div>
+
+              <!-- Target Audience -->
+              <div class="form-group">
+                <label>Target Audience *</label>
+                <div class="audience-options">
+                  <label class="radio-label">
+                    <input type="radio" formControlName="target_audience" value="players">
+                    <span>Players</span>
+                  </label>
+                  <label class="radio-label">
+                    <input type="radio" formControlName="target_audience" value="scouts">
+                    <span>Scouts</span>
+                  </label>
+                  <label class="radio-label">
+                    <input type="radio" formControlName="target_audience" value="public">
+                    <span>Public</span>
+                  </label>
+                </div>
+              </div>
+
+              <!-- Submit Button -->
+              <div class="form-actions">
+                <button type="button" class="btn btn-secondary" (click)="toggleEventForm()">Cancel</button>
+                <button type="submit" class="btn btn-primary" [disabled]="eventForm.invalid || isSubmittingEvent">
+                  <span *ngIf="!isSubmittingEvent">Submit Request</span>
+                  <span *ngIf="isSubmittingEvent">
+                    <i class="bi bi-spinner spinning"></i>
+                    Submitting...
+                  </span>
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <!-- Events List -->
           <div *ngIf="!feedData.upcoming_events?.length" class="empty-feed">
             No upcoming events. Check back later for new opportunities!
           </div>
 
           <div class="events-grid">
-            <div *ngFor="let event of feedData.upcoming_events" class="event-card" (click)="goToEvent(event.id)">
+            <div *ngFor="let event of feedData.upcoming_events"
+                 class="event-card"
+                 [class]="getEventStatusClass(event)"
+                 (click)="goToEvent(event)">
               <div class="event-image">
                 <img [src]="event.image || 'assets/default-event.jpg'" alt="{{ event.title }}">
                 <div class="event-date-badge">
-                  {{ event.date | date:'MMM dd' }}
+                  {{ event.date | date:'MMM dd' }} {{ getEventDateTime(event.date) }}
+                </div>
+                <div *ngIf="event.status === 'pending'" class="event-status">
+                  Pending
                 </div>
               </div>
               <div class="event-details">
                 <h3>{{ event.title }}</h3>
-                <p class="event-location"><i class="bi bi-geo-alt"></i> {{ event.location }}</p>
-                <p class="event-description">{{ event.desc }}</p>
+                <p>{{ event.description }}</p>
+                <p class="event-location">
+                  <i class="bi bi-geo-alt-fill"></i> {{ event.location }}
+                </p>
               </div>
             </div>
           </div>
@@ -533,42 +713,29 @@
         </div>
       </div>
 
-      <!-- Events Section for Premium Users -->
-      <div class="events" *ngIf="userProfile?.membership === 'premium' || isScout">
-        <div class="section-header">
-          <h4>Upcoming Events</h4>
-          <a href="#" (click)="switchView('events'); $event.preventDefault()" class="see-all">See all</a>
-        </div>
-
-        <div class="event-card" *ngFor="let event of feedData?.upcoming_events" (click)="goToEvent(event.id)">
-          <div class="event-bg" [style.background-image]="'url(' + (event.image || 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=600&q=80') + ')'">
-            <div class="event-overlay">
-              <div class="event-title">{{ event.title }}</div>
-              <div class="event-date">{{ event.date | date }}</div>
-              <div class="event-location"><i class="bi bi-geo-alt"></i> {{ event.location }}</div>
+      <!-- Right panel events section -->
+      <div class="right-panel-events">
+        <div *ngFor="let event of feedData.upcoming_events?.slice(0, 3)"
+             class="event-card-small"
+             [class.event-pending]="event.status === 'pending'"
+             (click)="goToEvent(event)">
+          <div class="event-image">
+            <img [src]="event.image || 'assets/default-event.jpg'" alt="{{ event.title }}">
+            <div class="event-date-badge">
+              {{ event.date | date:'MMM dd' }} {{ getEventDateTime(event.date) }}
+            </div>
+            <div *ngIf="event.status === 'pending'" class="event-status">
+              Pending
             </div>
           </div>
-        </div>
-      </div>
-
-      <!-- Premium Upgrade Message for Free Users -->
-      <div class="events" *ngIf="userProfile?.membership !== 'premium' && !isScout">
-        <div class="premium-upgrade-message">
-          <div class="upgrade-card">
-            <h3>Upgrade to Premium</h3>
-            <p>Get access to exclusive features:</p>
-            <ul>
-              <li>View and enroll in upcoming events</li>
-              <li>Connect with top scouts and players</li>
-              <li>Access advanced analytics</li>
-              <li>And much more!</li>
-            </ul>
-            <button class="upgrade-btn" (click)="goToSubscription()">Upgrade Now</button>
+          <div class="event-details">
+            <h4>{{ event.title }}</h4>
+            <p class="event-location">
+              <i class="bi bi-geo-alt-fill"></i> {{ event.location }}
+            </p>
           </div>
         </div>
       </div>
-
-
 
       <!-- Recommendations (Only for Scouts) -->
       <div class="recommendations" *ngIf="isScout">

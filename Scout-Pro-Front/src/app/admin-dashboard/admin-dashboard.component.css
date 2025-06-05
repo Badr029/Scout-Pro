@@ -442,3 +442,151 @@
   content: '✓';
   font-weight: bold;
 }
+/* Event Requests Styling */
+.event-requests {
+  padding: 2rem;
+}
+
+.event-requests h2 {
+  margin-bottom: 2rem;
+  color: var(--text-primary);
+}
+
+.event-details {
+  padding: 1.5rem;
+  background: var(--surface-light);
+  border-radius: var(--border-radius);
+  margin: 1rem 0;
+}
+
+.event-details h3 {
+  font-size: 1.25rem;
+  color: var(--text-primary);
+  margin-bottom: 1rem;
+}
+
+.event-info {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.event-info p {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--text-secondary);
+}
+
+.event-info i {
+  color: var(--primary);
+  width: 20px;
+}
+
+.organizer-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  background: var(--surface);
+  border-radius: var(--border-radius);
+  margin-bottom: 1.5rem;
+}
+
+.organizer-info .profile-image {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.organizer-info .profile-info h4 {
+  color: var(--text-primary);
+  margin-bottom: 0.5rem;
+}
+
+.organizer-info .profile-info p {
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.25rem 0;
+}
+
+.event-description {
+  margin: 1.5rem 0;
+  padding: 1rem;
+  background: var(--surface);
+  border-radius: var(--border-radius);
+}
+
+.event-description p {
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.event-image {
+  margin: 1.5rem 0;
+  border-radius: var(--border-radius);
+  overflow: hidden;
+}
+
+.event-image img {
+  width: 100%;
+  max-height: 300px;
+  object-fit: cover;
+}
+
+.rejection-reason {
+  margin-top: 0.5rem;
+  color: var(--error);
+  font-style: italic;
+}
+
+/* Status Badge Colors */
+
+
+/* Request Actions */
+.request-actions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.request-actions button {
+  flex: 1;
+  padding: 0.8rem;
+  border-radius: 4px;
+  border: none;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: all 0.3s ease;
+}
+
+.approve-btn {
+  background-color: rgba(74, 108, 247, 0.2);
+  color: #4a6cf7;
+  border: 1px solid #4a6cf7;
+}
+
+.approve-btn:hover {
+  background-color: #4a6cf7;
+  color: #ffffff;
+}
+
+.reject-btn {
+  background-color: rgba(255, 107, 107, 0.2);
+  color: #ff6b6b;
+  border: 1px solid #ff6b6b;
+}
+
+.reject-btn:hover {
+  background-color: #ff6b6b;
+  color: #ffffff;
+}
+

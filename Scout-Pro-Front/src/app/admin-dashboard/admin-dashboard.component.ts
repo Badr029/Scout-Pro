@@ -36,6 +36,31 @@ interface ContactRequest {
   responded_at: string | null;
 }
 
+interface EventRequest {
+  id: number;
+  title: string;
+  description: string | null;
+  date: string;
+  location: string;
+  image: string | null;
+  organizer_contact: string;
+  target_audience: 'players' | 'scouts' | 'public';
+  status: 'pending' | 'approved' | 'rejected';
+  rejection_reason: string | null;
+  responded_at: string | null;
+  created_at: string;
+  organizer: {
+    id: number;
+    name: string;
+    email: string;
+    profile?: {
+      company: string;
+      region: string;
+      profile_image: string | null;
+    };
+  };
+}
+
 @Component({
   selector: 'app-admin-dashboard',
   standalone: true,
@@ -54,11 +79,15 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     totalFollows: 0
   };
 
-  currentSection: 'statistics' | 'contact-requests' = 'statistics';
+  currentSection: 'statistics' | 'contact-requests' | 'event-requests' = 'statistics';
   contactRequests: ContactRequest[] = [];
+  eventRequests: EventRequest[] = [];
   loadingRequests = false;
+  loadingEvents = false;
   requestError: string | null = null;
+  eventError: string | null = null;
   successMessage: string | null = null;
+  eventSuccessMessage: string | null = null;
 
   userGrowthChart: Chart | null = null;
   engagementChart: Chart | null = null;
@@ -78,6 +107,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     this.loadStats();
     this.loadCharts();
     this.loadContactRequests();
+    this.loadEventRequests();
   }
 
   ngOnDestroy() {
@@ -89,7 +119,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     });
   }
 
-  setSection(section: 'statistics' | 'contact-requests') {
+  setSection(section: 'statistics' | 'contact-requests' | 'event-requests') {
     this.currentSection = section;
   }
 
@@ -362,6 +392,65 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
         }
       });
     }
+  }
+
+  loadEventRequests() {
+    this.loadingEvents = true;
+    this.eventError = null;
+
+    this.http.get<any>(`${this.API_URL}/admin/event-requests`, { headers: this.getHeaders() })
+      .subscribe({
+        next: (response) => {
+          this.eventRequests = response.data;
+          this.loadingEvents = false;
+        },
+        error: (error) => {
+          console.error('Error loading event requests:', error);
+          this.eventError = 'Failed to load event requests. Please try again.';
+          this.loadingEvents = false;
+        }
+      });
+  }
+
+  updateEventStatus(eventId: number, status: 'approved' | 'rejected', rejectionReason?: string) {
+    const data = {
+      status,
+      rejection_reason: rejectionReason
+    };
+
+    if (status === 'rejected' && !rejectionReason) {
+      const reason = prompt('Please provide a reason for rejection:');
+      if (!reason) return; // Cancel if no reason provided
+      data.rejection_reason = reason;
+    }
+
+    this.http.put<{status: string; message: string; data: any}>(`${this.API_URL}/admin/event-requests/${eventId}`, data, { headers: this.getHeaders() })
+      .subscribe({
+        next: (response) => {
+          // Update the event in the list
+          this.eventRequests = this.eventRequests.map(event =>
+            event.id === eventId ? { ...event, ...response.data } : event
+          );
+
+          this.eventSuccessMessage = response.message;
+          setTimeout(() => {
+            this.eventSuccessMessage = null;
+          }, 3000);
+
+          // Refresh the list to ensure we have the latest data
+          this.loadEventRequests();
+        },
+        error: (error) => {
+          console.error('Error updating event request:', error);
+          this.eventError = error.error?.message || 'Failed to update event request. Please try again.';
+          if (error.error?.details) {
+            console.error('Error details:', error.error.details);
+          }
+          setTimeout(() => {
+            this.eventError = null;
+          }, 3000);
+        }
+      });
   }
 
   async logout() {

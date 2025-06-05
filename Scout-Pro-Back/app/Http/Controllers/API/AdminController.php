@@ -16,6 +16,8 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\ContactRequestApproved;
 use App\Mail\ContactRequestRejected;
+use App\Mail\EventRequestApproved;
+use App\Mail\EventRequestRejected;
 
 class AdminController extends Controller
 {
@@ -206,6 +208,131 @@ class AdminController extends Controller
 
             return response()->json([
                 'message' => 'Error updating contact request: ' . $e->getMessage(),
+                'details' => [
+                    'request_id' => $id,
+                    'status' => $request->status ?? 'not provided',
+                    'error' => $e->getMessage()
+                ]
+            ], 500);
+        }
+    }
+
+    public function getEventRequests()
+    {
+        try {
+            $requests = \App\Models\Event::with(['organizerWithProfile'])
+                ->orderBy('created_at', 'desc')
+                ->get()
+                ->map(function($event) {
+                    $organizer = $event->organizer;
+                    $scoutProfile = $organizer->scout;
+
+                    return [
+                        'id' => $event->id,
+                        'title' => $event->title,
+                        'description' => $event->description,
+                        'date' => $event->date,
+                        'location' => $event->location,
+                        'image' => $event->image ? url('storage/' . $event->image) : null,
+                        'organizer_contact' => $event->organizer_contact,
+                        'target_audience' => $event->target_audience,
+                        'status' => $event->status,
+                        'rejection_reason' => $event->rejection_reason,
+                        'responded_at' => $event->responded_at,
+                        'created_at' => $event->created_at,
+                        'organizer' => [
+                            'id' => $organizer->id,
+                            'name' => $organizer->first_name . ' ' . $organizer->last_name,
+                            'email' => $organizer->email,
+                            'profile' => $scoutProfile ? [
+                                'company' => $scoutProfile->organization,
+                                'region' => $scoutProfile->scouting_regions,
+                                'profile_image' => $scoutProfile->profile_image ? url('storage/' . $scoutProfile->profile_image) : null
+                            ] : null
+                        ]
+                    ];
+                });
+
+            return response()->json([
+                'status' => 'success',
+                'data' => $requests
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error fetching event requests: ' . $e->getMessage());
+            return response()->json(['message' => 'Error fetching event requests'], 500);
+        }
+    }
+
+    public function updateEventRequest($id, Request $request)
+    {
+        try {
+            $event = \App\Models\Event::with(['organizerWithProfile'])->findOrFail($id);
+
+            // Validate request
+            $request->validate([
+                'status' => 'required|in:approved,rejected',
+                'rejection_reason' => 'required_if:status,rejected|nullable|string'
+            ]);
+
+            $event->status = $request->status;
+            $event->rejection_reason = $request->rejection_reason;
+            $event->responded_at = now();
+            $event->save();
+
+            // Send email notifications
+            $organizer = $event->organizer;
+            if ($request->status === 'approved') {
+                Mail::to($organizer->email)->send(new EventRequestApproved([
+                    'organizer_name' => $organizer->first_name,
+                    'event_title' => $event->title,
+                    'event_date' => $event->date,
+                    'event_location' => $event->location
+                ]));
+            } else {
+                Mail::to($organizer->email)->send(new EventRequestRejected([
+                    'organizer_name' => $organizer->first_name,
+                    'event_title' => $event->title,
+                    'rejection_reason' => $event->rejection_reason
+                ]));
+            }
+
+            // Refresh the event to get updated relationships
+            $event->refresh();
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Event request updated successfully',
+                'data' => [
+                    'id' => $event->id,
+                    'title' => $event->title,
+                    'description' => $event->description,
+                    'date' => $event->date,
+                    'location' => $event->location,
+                    'image' => $event->image ? url('storage/' . $event->image) : null,
+                    'organizer_contact' => $event->organizer_contact,
+                    'target_audience' => $event->target_audience,
+                    'status' => $event->status,
+                    'rejection_reason' => $event->rejection_reason,
+                    'responded_at' => $event->responded_at,
+                    'created_at' => $event->created_at,
+                    'organizer' => [
+                        'id' => $event->organizer->id,
+                        'name' => $event->organizer->first_name . ' ' . $event->organizer->last_name,
+                        'email' => $event->organizer->email,
+                        'profile' => $event->organizer->scout ? [
+                            'company' => $event->organizer->scout->organization,
+                            'region' => $event->organizer->scout->scouting_regions,
+                            'profile_image' => $event->organizer->scout->profile_image ? url('storage/' . $event->organizer->scout->profile_image) : null
+                        ] : null
+                    ]
+                ]
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error updating event request: ' . $e->getMessage());
+            Log::error('Stack trace: ' . $e->getTraceAsString());
+
+            return response()->json([
+                'message' => 'Error updating event request: ' . $e->getMessage(),
                 'details' => [
                     'request_id' => $id,
                     'status' => $request->status ?? 'not provided',

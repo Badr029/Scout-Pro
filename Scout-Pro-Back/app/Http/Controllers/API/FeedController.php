@@ -160,10 +160,43 @@ class FeedController extends Controller
             });
 
         // Get upcoming events
-        $upcomingEvents = Event::where('date', '>=', now())
-            ->orderBy('date')
+        $upcomingEvents = Event::query()
+            ->where('date', '>=', now())
+            ->where(function ($query) use ($user) {
+                // Show approved events to everyone
+                $query->where('status', 'approved');
+
+                // Show pending events only to their organizers
+                if ($user->user_type === 'scout') {
+                    $query->orWhere(function($q) use ($user) {
+                        $q->where('status', 'pending')
+                          ->where('organizer_id', $user->id);
+                    });
+                }
+            })
+            ->with(['organizer' => function($query) {
+                $query->select('id', 'first_name', 'last_name', 'email');
+            }])
+            ->orderBy('date', 'asc')
             ->take(3)
-            ->get();
+            ->get()
+            ->map(function($event) use ($user) {
+                return [
+                    'id' => $event->id,
+                    'title' => $event->title,
+                    'description' => $event->description,
+                    'date' => $event->date,
+                    'location' => $event->location,
+                    'image' => $event->image ? url('storage/' . $event->image) : null,
+                    'status' => $event->status,
+                    'organizer' => [
+                        'id' => $event->organizer->id,
+                        'name' => $event->organizer->first_name . ' ' . $event->organizer->last_name,
+                        'email' => $event->organizer->email
+                    ],
+                    'is_organizer' => $event->organizer_id === $user->id
+                ];
+            });
 
         // Get recommended players based on user's interests
         $recommendedPlayers = [];

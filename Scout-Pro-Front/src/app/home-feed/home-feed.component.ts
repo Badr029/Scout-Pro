@@ -1,14 +1,15 @@
 import { Component, OnInit, OnDestroy, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
-import { FormsModule } from '@angular/forms';
+import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ApiService } from '../api.service';
 import { NgForm } from '@angular/forms';
 import { HttpClient, HttpHeaders, HttpEventType } from '@angular/common/http';
 import { AuthService } from '../auth.service';
 import { Subscription } from 'rxjs';
+import { environment } from '../../environments/environment';
 
-const API_URL = 'http://localhost:8000';
+const API_URL = environment.apiUrl;
 
 interface FeedFilters {
   age_range?: string;
@@ -78,10 +79,22 @@ interface TrendingPlayer {
   [key: string]: any;
 }
 
+interface EventItem {
+  id: number;
+  title: string;
+  description: string;
+  date: string;
+  location: string;
+  image: string | null;
+  status: 'pending' | 'approved' | 'rejected';
+  is_organizer: boolean;
+  target_audience: string;
+}
+
 @Component({
   selector: 'app-home-feed',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule],
   templateUrl: './home-feed.component.html',
   styleUrl: './home-feed.component.css'
 })
@@ -247,11 +260,20 @@ export class HomeFeedComponent implements OnInit, OnDestroy {
     transferStatus: [] as FilterOption[]
   };
 
+  // Event form properties
+  showEventForm = false;
+  eventForm: FormGroup;
+  isSubmittingEvent = false;
+  selectedEventImage: File | null = null;
+  eventImagePreview: string | null = null;
+  locationLink: string = '';
+
   constructor(
     private router: Router,
     private apiService: ApiService,
     private http: HttpClient,
-    private authService: AuthService
+    private authService: AuthService,
+    private fb: FormBuilder
   ) {
     console.log('HomeFeedComponent constructor');
     const userType = localStorage.getItem('user_type');
@@ -293,6 +315,27 @@ export class HomeFeedComponent implements OnInit, OnDestroy {
         }
       }
     );
+
+    // Initialize event form
+    this.eventForm = this.fb.group({
+      title: ['', [Validators.required, Validators.minLength(5)]],
+      date: ['', Validators.required],
+      time: ['', Validators.required],
+      location: ['', Validators.required],
+      description: [''],
+      image: [''],
+      organizer_contact: ['', [Validators.required, Validators.email]],
+      target_audience: ['players', Validators.required]
+    });
+
+    // Listen to location changes to update Google Maps link
+    this.eventForm.get('location')?.valueChanges.subscribe(location => {
+      if (location) {
+        this.locationLink = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(location)}`;
+      } else {
+        this.locationLink = '';
+      }
+    });
   }
 
   ngOnInit() {
@@ -379,89 +422,46 @@ export class HomeFeedComponent implements OnInit, OnDestroy {
     this.loading = true;
     this.error = '';
 
-    // Debug log for current user
-    console.log('Current authenticated user:', this.currentUser);
+    // Load feed data and events simultaneously
+    Promise.all([
+      this.apiService.getFeed().toPromise(),
+      this.apiService.getEvents().toPromise()
+    ]).then(([feedResponse, eventsResponse]) => {
+      if (feedResponse?.status === 'success') {
+        // Process feed data
+        this.feedData = {
+          ...feedResponse,
+          upcoming_events: [] // We'll set this from events response
+        };
 
-    this.apiService.getData('videos').subscribe({
-      next: (response: any) => {
-        console.log('Raw video response:', response);
-        if (response.data) {
-          // Process videos data
-          const processedVideos = response.data.map((video: any) => {
-            // Debug logs
-            console.log('Processing video user:', video.user);
-            console.log('Video user ID (users table):', video.user.id);
-            console.log('Video user player ID:', video.user.player?.id);
-            console.log('Current user ID:', this.currentUser?.id);
-            console.log('Current user player ID:', this.userProfile?.id);
-            console.log('Follow status:', video.user.following);
-
-            return {
-              id: video.id,
-              title: video.title,
-              description: video.description,
-              file_path: video.file_path ? `${API_URL}/storage/${video.file_path}` : null,
-              thumbnail: video.thumbnail ? `${API_URL}/storage/${video.thumbnail}` : null,
-                user: {
-                id: video.user.id,
-                player_id: video.user.player?.id,
-                first_name: video.user.first_name,
-                last_name: video.user.last_name,
-                profile_image: video.user.profile_image,
-                full_name: video.user.full_name,
-                user_type: video.user.user_type,
-                player: video.user.player,
-                isCurrentUser: video.user.id === this.currentUser?.id,
-                following: video.user.following || false,
-                membership: video.user.membership
-              },
-              likes_count: video.likes_count || 0,
-              comments_count: video.comments?.length || 0,
-              views: video.views || 0,
-              has_liked: video.has_liked || false,
-              likes: video.likes || [],
-              comments: video.comments || [],
-              created_at: video.created_at
-            };
-          });
-
-          this.feedData = {
-            ...this.feedData,
-            posts: {
-              data: processedVideos,
-              current_page: response.current_page || 1,
-              last_page: response.last_page || 1
-            }
-          };
-
-          // Debug log processed videos
-          console.log('Processed videos with follow status:', processedVideos);
+        // Load premium players for scouts
+        if (this.isScout) {
+          this.loadPremiumPlayers();
         }
-        this.loading = false;
-      },
-      error: (error: any) => {
-        console.error('Error loading videos:', error);
-        this.error = 'Failed to load feed data';
-        this.loading = false;
       }
-    });
 
-    // Load trending players
-    this.apiService.getData('trending-players').subscribe({
-      next: (response: any) => {
-        console.log('Trending players response:', response); // Debug log
-        if (response.data) {
-          this.feedData.trending_players = response.data.map((player: any) => ({
-            id: player.id,
-            name: `${player.first_name || ''} ${player.last_name || ''}`.trim(),
-            position: player.position || 'No Position',
-            region: player.region || 'No Region',
-            profile_image: player.profile_image, // Already includes full URL from backend
-            following: player.following || false
-          }));
-        }
-      },
-      error: (error) => console.error('Error loading trending players:', error)
+      if (eventsResponse?.status === 'success') {
+        // Filter events based on status and organizer
+        const events = (eventsResponse.data || []).filter((event: EventItem) => {
+          // Show approved events to everyone
+          if (event.status === 'approved') return true;
+
+          // Show pending events only to their organizers
+          if (event.status === 'pending' && event.is_organizer) return true;
+
+          // Don't show rejected events
+          return false;
+        });
+
+        // Update events in feedData
+        this.feedData.upcoming_events = events;
+      }
+
+      this.loading = false;
+    }).catch(error => {
+      console.error('Error loading data:', error);
+      this.error = 'Failed to load feed data';
+      this.loading = false;
     });
   }
 
@@ -915,8 +915,11 @@ export class HomeFeedComponent implements OnInit, OnDestroy {
     this.selectedSuggestionIndex = -1;
   }
 
-  goToEvent(eventId: number) {
-    this.router.navigate(['/event', eventId]);
+  goToEvent(event: EventItem) {
+    // Open Google Maps with the event location
+    const encodedLocation = encodeURIComponent(event.location);
+    const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodedLocation}`;
+    window.open(mapsUrl, '_blank');
   }
 
   @HostListener('window:scroll', [])
@@ -962,7 +965,7 @@ export class HomeFeedComponent implements OnInit, OnDestroy {
     });
   }
 
-  showLikesList(postId: number, event: Event) {
+  showLikesList(postId: number, event: MouseEvent) {
     event.stopPropagation(); // Prevent like action from triggering
     const post = this.feedData.posts.data.find((p: any) => p.id === postId);
     if (post) {
@@ -1036,8 +1039,10 @@ export class HomeFeedComponent implements OnInit, OnDestroy {
     });
   }
 
-  onVideoPlay(event: Event, postId: number) {
-    this.incrementVideoViews(postId);
+  onVideoPlay(event: Event, postId?: number) {
+    if (postId) {
+      this.incrementVideoViews(postId);
+    }
   }
 
   get isPlayer(): boolean {
@@ -1197,7 +1202,7 @@ export class HomeFeedComponent implements OnInit, OnDestroy {
     return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}`;
   }
 
-  handleImageError(event: Event, firstName?: string, lastName?: string): void {
+  handleImageError(event: ErrorEvent, firstName?: string, lastName?: string): void {
     const imgElement = event.target as HTMLImageElement;
     if (imgElement) {
       imgElement.src = this.getAvatarUrl(firstName, lastName);
@@ -1220,6 +1225,16 @@ export class HomeFeedComponent implements OnInit, OnDestroy {
 
   switchView(view: 'feed' | 'events') {
     this.activeView = view;
+    // No need to reload events when switching to events tab
+    // as we already have them loaded
+  }
+
+  // Add method to get event status class
+  getEventStatusClass(event: EventItem): string {
+    if (event.status === 'pending' && event.is_organizer) {
+      return 'event-pending';
+    }
+    return '';
   }
 
   // Add a method to handle video errors
@@ -1550,7 +1565,7 @@ export class HomeFeedComponent implements OnInit, OnDestroy {
     }
   }
 
-  toggleAccountMenu(event: Event) {
+  toggleAccountMenu(event: MouseEvent): void {
     event.preventDefault();
     event.stopPropagation();
     this.showAccountMenu = !this.showAccountMenu;
@@ -1565,7 +1580,7 @@ export class HomeFeedComponent implements OnInit, OnDestroy {
     }
   }
 
-  handleClickOutside = (event: Event) => {
+  handleClickOutside = (event: MouseEvent): void => {
     const accountMenu = document.querySelector('.account-menu');
     if (accountMenu && !accountMenu.contains(event.target as Node)) {
       this.showAccountMenu = false;
@@ -1604,5 +1619,125 @@ export class HomeFeedComponent implements OnInit, OnDestroy {
         console.error('Error loading premium players:', error);
       }
     });
+  }
+
+  toggleEventForm() {
+    this.showEventForm = !this.showEventForm;
+    if (!this.showEventForm) {
+      this.eventForm.reset({
+        target_audience: 'players'
+      });
+      this.selectedEventImage = null;
+      this.eventImagePreview = null;
+    }
+  }
+
+  onEventImageSelected(event: any) {
+    const file = event.target.files[0];
+    if (file) {
+      this.selectedEventImage = file;
+
+      // Create image preview
+      const reader = new FileReader();
+      reader.onload = () => {
+        this.eventImagePreview = reader.result as string;
+      };
+      reader.readAsDataURL(file);
+    }
+  }
+
+  async onSubmitEvent() {
+    if (this.eventForm.valid) {
+      this.isSubmittingEvent = true;
+
+      try {
+        // Create form data
+        const formData = new FormData();
+        const formValue = this.eventForm.value;
+
+        // Combine date and time
+        const dateTime = new Date(formValue.date);
+        const time = formValue.time.split(':');
+        dateTime.setHours(parseInt(time[0]), parseInt(time[1]));
+
+        // Append all form fields except date which we'll handle separately
+        Object.keys(formValue).forEach(key => {
+          if (key !== 'date') {
+            formData.append(key, formValue[key]);
+          }
+        });
+
+        // Append the date and time separately
+        formData.append('date', formValue.date);
+        formData.append('time', formValue.time);
+
+        // Append image if selected
+        if (this.selectedEventImage) {
+          // Validate file size
+          if (this.selectedEventImage.size > environment.maxUploadSize) {
+            throw new Error('Image size exceeds the maximum allowed size (5MB)');
+          }
+
+          // Validate file type
+          if (!environment.supportedImageTypes.includes(this.selectedEventImage.type)) {
+            throw new Error('Unsupported image type. Please use JPG or PNG.');
+          }
+
+          formData.append('image', this.selectedEventImage);
+        }
+
+        // Send request using ApiService
+        await this.apiService.postData('events', formData).toPromise();
+
+        // Reset form
+        this.eventForm.reset({
+          target_audience: 'players'
+        });
+        this.selectedEventImage = null;
+        this.eventImagePreview = null;
+        this.showEventForm = false;
+
+        // Show success message
+        this.notification = 'Event request submitted successfully! It will be reviewed by administrators.';
+        setTimeout(() => {
+          this.notification = '';
+        }, 5000);
+
+        // Reload events
+        this.loadFeedData();
+      } catch (error: any) {
+        console.error('Error submitting event:', error);
+        this.error = error.error?.message || error.message || 'Error submitting event request. Please try again.';
+        setTimeout(() => {
+          this.error = '';
+        }, 5000);
+      } finally {
+        this.isSubmittingEvent = false;
+      }
+    } else {
+      // Mark all fields as touched to trigger validation messages
+      Object.keys(this.eventForm.controls).forEach(key => {
+        const control = this.eventForm.get(key);
+        control?.markAsTouched();
+      });
+    }
+  }
+
+  // Update the event click handler in the template to pass the entire event object
+  getEventDateTime(date: string): string {
+    const eventDate = new Date(date);
+    return eventDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  }
+
+  hasPendingEvents(): boolean {
+    return this.feedData?.upcoming_events?.some((event: EventItem) => event.status === 'pending' && event.is_organizer) || false;
+  }
+
+  getPendingEvents(): EventItem[] {
+    return this.feedData?.upcoming_events?.filter((event: EventItem) => event.status === 'pending' && event.is_organizer) || [];
+  }
+
+  getApprovedEvents(): EventItem[] {
+    return this.feedData?.upcoming_events?.filter((event: EventItem) => event.status === 'approved') || [];
   }
 }

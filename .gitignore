@@ -19,7 +19,6 @@ Thumbs.db
 !.env.example
 
 # Dependencies
-node_modules/
 vendor/
 
 # Build and compiled files

@@ -17,8 +17,15 @@ return new class extends Migration
             $table->text('description');
             $table->timestamp('date');
             $table->string('location');
+            $table->string('latitude')->nullable();
+            $table->string('longitude')->nullable();
             $table->string('image')->nullable();
             $table->foreignId('organizer_id')->constrained('users')->onDelete('cascade');
+            $table->string('organizer_contact');
+            $table->enum('target_audience', ['players', 'scouts', 'public']);
+            $table->enum('status', ['pending', 'approved', 'rejected'])->default('pending');
+            $table->text('rejection_reason')->nullable();
+            $table->timestamp('responded_at')->nullable();
             $table->timestamps();
         });
     }

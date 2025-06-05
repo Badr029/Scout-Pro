@@ -2319,11 +2319,146 @@ input[type="file"].form-control::file-selector-button:hover {
 }
 
 .event-card {
-  margin-bottom: 1rem;
-  height: 160px;
-  border-radius: var(--border-radius);
+  position: relative;
+  border-radius: 8px;
   overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s ease;
   cursor: pointer;
+  background: #fff;
+  margin-bottom: 15px;
+}
+
+.event-card:hover {
+  transform: translateY(-2px);
+}
+
+.event-card .event-image {
+  position: relative;
+  width: 100%;
+  height: 200px;
+  overflow: hidden;
+}
+
+.event-card .event-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.event-card .event-details {
+  padding: 15px;
+}
+
+.event-card .event-date-badge {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+/* Small Event Card Styles */
+.event-card-small {
+  position: relative;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s ease;
+  cursor: pointer;
+  background: #fff;
+  margin-bottom: 10px;
+  height: 120px;
+  display: flex;
+  align-items: stretch;
+}
+
+.event-card-small:hover {
+  transform: translateY(-2px);
+}
+
+.event-card-small .event-image {
+  position: relative;
+  width: 120px;
+  min-width: 120px;
+  height: 100%;
+  overflow: hidden;
+}
+
+.event-card-small .event-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.event-card-small .event-date-badge {
+  position: absolute;
+  top: 5px;
+  left: 5px;
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+}
+
+.event-card-small .event-details {
+  padding: 8px;
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.event-card-small .event-details h4 {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.2;
+  color: #333;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.event-card-small .event-details .event-location {
+  margin: 0;
+  font-size: 12px;
+  color: #666;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.event-card-small .event-details .event-location i {
+  font-size: 12px;
+  color: #666;
+}
+
+/* Status styles for both card types */
+.event-pending {
+  border: 2px solid #ffd700;
+}
+
+.event-status {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: rgba(255, 215, 0, 0.9);
+  color: #000;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.event-organizer {
+  margin-top: 8px;
+  color: #666;
+  font-style: italic;
 }
 
 .event-bg {
@@ -3050,3 +3185,450 @@ input[type="file"].form-control::file-selector-button:hover {
   display: inline-block;
   box-shadow: 0 2px 4px rgba(147, 51, 234, 0.2);
 }
+
+.event-request-section {
+  margin-bottom: 1.5rem;
+}
+
+.request-event-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background-color: var(--primary);
+  color: white;
+  border: none;
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.request-event-btn:hover {
+  background-color: var(--primary-hover);
+}
+
+.event-form-container {
+  background: var(--surface);
+  border-radius: var(--border-radius);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  margin-bottom: 2rem;
+  overflow: hidden;
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.form-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-light);
+}
+
+.form-header h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.close-btn:hover {
+  background: var(--surface-light);
+  color: var(--text-primary);
+}
+
+.event-form {
+  padding: 2rem;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.form-group {
+  margin-bottom: 1.5rem;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.form-row .form-group {
+  margin-bottom: 0;
+}
+
+label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: var(--text-primary);
+  font-weight: 500;
+  font-size: 0.95rem;
+}
+
+input[type="text"],
+input[type="email"],
+input[type="date"],
+input[type="time"],
+textarea {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 2px solid var(--border);
+  border-radius: var(--border-radius);
+  background: var(--surface-light);
+  color: var(--text-primary);
+  font-size: 1rem;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+  margin: 0;
+}
+
+.location-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.location-input-group input {
+  width: 100%;
+}
+
+.maps-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--primary);
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 500;
+  padding: 6px 12px;
+  border-radius: var(--border-radius);
+  background: var(--primary-light);
+  transition: all 0.2s ease;
+  width: fit-content;
+}
+
+.maps-link:hover {
+  background: var(--primary);
+  color: white;
+}
+
+.maps-link i {
+  font-size: 1.1rem;
+}
+
+/* Radio Button (Checkbox) Styling */
+.audience-options {
+  display: flex;
+  gap: 1rem;
+  margin-top: 0.5rem;
+  width: 100%;
+  box-sizing: border-box;
+  flex-wrap: wrap;
+}
+
+.radio-label {
+  flex: 1;
+  min-width: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 12px 16px;
+  border-radius: var(--border-radius);
+  transition: all 0.2s ease;
+  background: var(--surface-light);
+  border: 2px solid var(--border);
+  position: relative;
+}
+
+.radio-label:hover {
+  background: var(--primary-light);
+  border-color: var(--primary);
+}
+
+/* Hide the radio button but keep it accessible */
+.radio-label input[type="radio"] {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  margin: 0;
+}
+
+/* Style for selected state */
+.radio-label input[type="radio"]:checked + span {
+  color: var(--primary);
+  font-weight: 600;
+}
+
+.radio-label input[type="radio"]:checked ~ .radio-background {
+  opacity: 1;
+}
+
+.radio-label span {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  text-align: center;
+  position: relative;
+  z-index: 1;
+}
+
+/* Selected state for the entire label */
+.radio-label input[type="radio"]:checked + span {
+  color: var(--primary);
+}
+
+.radio-label input[type="radio"]:checked {
+  background: var(--primary-light);
+  border-color: var(--primary);
+}
+
+/* Focus state for accessibility */
+.radio-label input[type="radio"]:focus-visible {
+  outline: none;
+}
+
+.radio-label:focus-within {
+  box-shadow: 0 0 0 3px var(--primary-light);
+}
+
+/* Event Poster Styling */
+.image-upload-container {
+  border: 2px dashed var(--border);
+  border-radius: var(--border-radius);
+  padding: 2rem;
+  text-align: center;
+  position: relative;
+  background: var(--surface-light);
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.image-upload-container:hover {
+  border-color: var(--primary);
+  background: var(--primary-light);
+}
+
+.file-input {
+  display: none;
+}
+
+.upload-label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  cursor: pointer;
+  padding: 1rem;
+}
+
+.upload-label i {
+  font-size: 2.5rem;
+  color: var(--primary);
+  transition: transform 0.2s ease;
+}
+
+.image-upload-container:hover .upload-label i {
+  transform: translateY(-2px);
+}
+
+.upload-label span {
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.upload-label small {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+}
+
+/* Image Preview Styling */
+.image-preview {
+  margin-top: 1.5rem;
+  position: relative;
+  display: inline-block;
+  border-radius: var(--border-radius);
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  max-width: 100%;
+}
+
+.image-preview img {
+  display: block;
+  max-width: 100%;
+  max-height: 300px;
+  object-fit: contain;
+  background: white;
+}
+
+.remove-image {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.9);
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--error);
+  font-size: 1.2rem;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.remove-image:hover {
+  background: white;
+  transform: scale(1.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Improve form validation states */
+.ng-invalid.ng-touched {
+  border-color: var(--error);
+}
+
+.ng-valid.ng-touched {
+  border-color: var(--success, #28a745);
+}
+
+/* Fix container sizing */
+.event-form-container {
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto 2rem;
+  box-sizing: border-box;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .event-form {
+    padding: 1rem;
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .audience-options {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .radio-label {
+    width: 100%;
+    justify-content: center;
+    min-width: 0;
+  }
+
+  .radio-label span {
+    text-align: left;
+  }
+
+  .location-input-group {
+    flex-direction: column;
+  }
+
+  .maps-link {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* Additional form states */
+.ng-untouched.ng-pristine {
+  border-color: var(--border);
+}
+
+.form-group.required label::after {
+  content: ' *';
+  color: var(--error);
+}
+
+/* Improve focus states */
+input:focus,
+textarea:focus,
+.radio-label:focus-within {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-light);
+}
+
+/* Fix date and time input appearance */
+input[type="date"],
+input[type="time"] {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 0.75rem;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="time"]::-webkit-calendar-picker-indicator {
+  margin-left: 0.5rem;
+  cursor: pointer;
+  padding: 0.2rem;
+  border-radius: 4px;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator:hover,
+input[type="time"]::-webkit-calendar-picker-indicator:hover {
+  background-color: var(--surface);
+}
+
+/* Improve textarea appearance */
+textarea {
+  line-height: 1.5;
+  min-height: 120px;
+}
+
+/* Add transition for validation states */
+.ng-invalid.ng-touched,
+.ng-valid.ng-touched {
+  transition: border-color 0.2s ease;
+}
+
+/* Style the form error messages */
+.error-message {
+  color: var(--error);
+  font-size: 0.875rem;
+  margin-top: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.error-message::before {
+  content: '⚠';
+  font-size: 1rem;
+}
+
+/* ... existing styles ... */

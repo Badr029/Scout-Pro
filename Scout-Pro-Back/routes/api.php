@@ -107,7 +107,9 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Feed related routes
     Route::get('/events', [EventController::class, 'index']);
+    Route::post('/events', [EventController::class, 'store']);
     Route::get('/events/{event}', [EventController::class, 'show']);
+    Route::put('/events/{event}/status', [EventController::class, 'updateStatus'])->middleware('admin');
     Route::get('/player/{user_id}', [FeedController::class, 'playerviewprofile']);
     Route::get('/scout/{user_id}', [FeedController::class, 'scoutviewprofile']);
     Route::get('/trending-players', [PlayerController::class, 'getTrendingPlayers']);
@@ -126,6 +128,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/admin/video-stats', [AdminController::class, 'videoStats']);
         Route::get('/admin/contact-requests', [AdminController::class, 'getContactRequests']);
         Route::put('/admin/contact-requests/{id}', [AdminController::class, 'updateContactRequest']);
+        Route::get('/admin/event-requests', [AdminController::class, 'getEventRequests']);
+        Route::put('/admin/event-requests/{id}', [AdminController::class, 'updateEventRequest']);
     });
 
     // Contact Request Routes

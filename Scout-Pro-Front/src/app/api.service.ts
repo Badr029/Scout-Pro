@@ -33,10 +33,17 @@ export class ApiService {
 
   postData(endpoint: string, data: any): Observable<any> {
     const token = localStorage.getItem('auth_token');
-    const headers = token ? new HttpHeaders({
+    const headers = new HttpHeaders({
       'Authorization': `Bearer ${token}`
-    }) : undefined;
+    });
 
+    // Remove Content-Type header when sending FormData
+    if (data instanceof FormData) {
+      return this.http.post(`${this.apiUrl}/${endpoint}`, data, { headers });
+    }
+
+    // Add Content-Type for JSON data
+    headers.append('Content-Type', 'application/json');
     return this.http.post(`${this.apiUrl}/${endpoint}`, data, { headers });
   }
 
@@ -369,6 +376,14 @@ export class ApiService {
       'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
     });
     return this.http.get(`${this.apiUrl}/contact-requests/check/${playerId}`, { headers });
+  }
+
+  getFeed(): Observable<any> {
+    return this.getData('feed');
+  }
+
+  getEvents(): Observable<any> {
+    return this.getData('events');
   }
 
   // Add more methods as needed for PUT, DELETE, etc.
