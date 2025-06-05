@@ -23,13 +23,13 @@ class PlayerController extends Controller
 
             // Prevent self-following
             if ($follower->id === $following->id) {
-                return response()->json([
-                    'status' => 'error',
+            return response()->json([
+                'status' => 'error',
                     'message' => 'You cannot follow yourself'
-                ], 400);
-            }
+            ], 400);
+        }
 
-            // Check if already following
+        // Check if already following
             $existingFollow = Follow::where('follower_id', $follower->id)
                 ->where('following_id', $following->id)
                 ->first();
@@ -59,7 +59,7 @@ class PlayerController extends Controller
                 'message' => 'Failed to follow user'
             ], 500);
         }
-    }
+        }
 
     /**
      * Unfollow a user.
@@ -84,8 +84,8 @@ class PlayerController extends Controller
 
             $follow->delete();
 
-            return response()->json([
-                'status' => 'success',
+        return response()->json([
+            'status' => 'success',
                 'message' => 'Successfully unfollowed user',
                 'following' => false
             ]);
@@ -110,8 +110,8 @@ class PlayerController extends Controller
                 ->where('following_id', $userId)
                 ->exists();
 
-            return response()->json([
-                'status' => 'success',
+        return response()->json([
+            'status' => 'success',
                 'following' => $isFollowing
             ]);
         } catch (\Exception $e) {

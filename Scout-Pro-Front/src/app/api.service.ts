@@ -356,5 +356,20 @@ export class ApiService {
     this.followStatusChanged.next(data);
   }
 
+  // Contact Request Methods
+  sendContactRequest(playerId: number, message?: string) {
+    const headers = new HttpHeaders({
+      'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+    });
+    return this.http.post(`${this.apiUrl}/contact-requests`, { player_id: playerId, message }, { headers });
+  }
+
+  checkContactRequestStatus(playerId: number) {
+    const headers = new HttpHeaders({
+      'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+    });
+    return this.http.get(`${this.apiUrl}/contact-requests/check/${playerId}`, { headers });
+  }
+
   // Add more methods as needed for PUT, DELETE, etc.
 }

@@ -402,7 +402,7 @@ export class HomeFeedComponent implements OnInit, OnDestroy {
               description: video.description,
               file_path: video.file_path ? `${API_URL}/storage/${video.file_path}` : null,
               thumbnail: video.thumbnail ? `${API_URL}/storage/${video.thumbnail}` : null,
-              user: {
+                user: {
                 id: video.user.id,
                 player_id: video.user.player?.id,
                 first_name: video.user.first_name,
@@ -615,23 +615,23 @@ export class HomeFeedComponent implements OnInit, OnDestroy {
     if (this.feedData?.posts?.data) {
       this.feedData.posts.data = this.feedData.posts.data.map((post: VideoPost) => {
         if (post.user.id === userId) {
-          return {
-            ...post,
-            user: {
-              ...post.user,
+              return {
+                ...post,
+                user: {
+                  ...post.user,
               following,
               is_following: following
+                }
+              };
             }
-          };
-        }
-        return post;
-      });
+            return post;
+          });
     }
 
     // Update in premium players
     this.premiumPlayers = this.premiumPlayers.map((player: PremiumPlayer) => {
       if (player.user_id === userId) {
-        return {
+                return {
           ...player,
           following,
           is_following: following
@@ -644,32 +644,32 @@ export class HomeFeedComponent implements OnInit, OnDestroy {
     if (this.feedData?.trending_players) {
       this.feedData.trending_players = this.feedData.trending_players.map((player: TrendingPlayer) => {
         if (player.id === userId) {
-          return {
+              return {
             ...player,
             following,
             is_following: following
-          };
-        }
+              };
+            }
         return player;
-      });
+          });
     }
 
     // Update in selected post likes
-    if (this.selectedPostLikes) {
+          if (this.selectedPostLikes) {
       this.selectedPostLikes = this.selectedPostLikes.map(like => {
         if (like.user.id === userId) {
-          return {
-            ...like,
-            user: {
-              ...like.user,
+                return {
+                  ...like,
+                  user: {
+                    ...like.user,
               following,
               is_following: following
-            }
-          };
-        }
-        return like;
-      });
-    }
+                  }
+                };
+              }
+              return like;
+            });
+          }
   }
 
   likePost(postId: number) {

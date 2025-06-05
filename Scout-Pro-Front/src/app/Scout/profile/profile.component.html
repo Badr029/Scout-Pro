@@ -79,7 +79,7 @@
     <!-- Tabs -->
     <div class="tabs">
       <div class="tab" [class.active]="activeTab === 'about'" (click)="switchTab('about')">About</div>
-      <div class="tab" [class.active]="activeTab === 'players'" (click)="switchTab('players')">Contacted Players</div>
+      <div class="tab" [class.active]="activeTab === 'contacted'" (click)="switchTab('contacted')">Contacted Players</div>
       <div class="tab" [class.active]="activeTab === 'credentials'" (click)="switchTab('credentials')">Credentials</div>
     </div>
 
@@ -143,24 +143,40 @@
     </div>
 
     <!-- Contacted Players Tab -->
-    <div class="tab-content" [class.active]="activeTab === 'players'" id="players">
-      <div class="players-container">
-        <!-- Show this when no players are contacted -->
-        <div *ngIf="!contactedPlayers || contactedPlayers.length === 0" class="no-players">
-          <p>No players contacted yet.</p>
-          <button class="btn btn-outline" routerLink="/players">Browse Players</button>
-        </div>
+    <div class="tab-content" [class.active]="activeTab === 'contacted'">
+      <div class="loading-spinner" *ngIf="contactedPlayersLoading">
+        <div class="spinner"></div>
+      </div>
 
-        <!-- Show contacted players list -->
-        <div *ngIf="contactedPlayers && contactedPlayers.length > 0" class="players-list">
-          <div *ngFor="let player of contactedPlayers" class="player-card">
-            <div class="player-status" [ngClass]="player.status">{{ player.status }}</div>
-            <div class="player-info">
-              <h4>{{ player.player_name }}</h4>
-              <p class="contact-date">Contacted on: {{ player.contact_date | date }}</p>
-              <a [href]="player.player_profile_url" class="btn btn-outline btn-sm">View Profile</a>
+      <div class="no-results" *ngIf="!contactedPlayersLoading && contactedPlayers.length === 0">
+        <p>No contacted players yet.</p>
+      </div>
+
+      <div class="search-results" *ngIf="!contactedPlayersLoading && contactedPlayers.length > 0">
+        <div *ngFor="let player of contactedPlayers" class="player-card">
+          <img [src]="player.profile_image ? 'http://localhost:8000/storage/' + player.profile_image : getAvatarUrl(player.first_name, player.last_name)"
+               [alt]="player.first_name + ' ' + player.last_name"
+               class="player-avatar"
+               (error)="handleImageError($event, player.first_name, player.last_name)">
+          <div class="player-info">
+            <div class="player-header">
+              <h3>{{ player.first_name }} {{ player.last_name }}</h3>
+              <span class="subscription-badge premium" *ngIf="player.membership === 'premium'">
+                Premium
+              </span>
+            </div>
+            <div class="meta">{{ player.position }} • {{ player.nationality }} • {{ player.current_city }}</div>
+            <div class="contact-status" [class]="getContactStatusClass(player.contact_status)">
+              {{ getContactStatusText(player.contact_status) }}
+            </div>
+            <div class="contact-date">
+              Contacted on: {{ player.contact_date }}
+              <span *ngIf="player.responded_at">(Responded: {{ player.responded_at }})</span>
             </div>
           </div>
+          <button class="view-profile-btn" (click)="goToPlayerProfile(player.id)">
+            View Profile
+          </button>
         </div>
       </div>
     </div>

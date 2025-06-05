@@ -4,6 +4,7 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../auth.service';
+import { ApiService } from '../../api.service';
 
 interface ScoutProfile {
   username: string;
@@ -28,10 +29,17 @@ interface ScoutProfile {
 
 interface ContactedPlayer {
   id: number;
-  player_name: string;
+  user_id: number;
+  first_name: string;
+  last_name: string;
+  profile_image: string | null;
+  position: string;
+  nationality: string;
+  current_city: string;
+  membership: string;
   contact_date: string;
-  status: string; // 'contacted', 'idle', 'in_discussion', etc.
-  player_profile_url: string;
+  contact_status: 'pending' | 'approved' | 'rejected';
+  responded_at: string | null;
 }
 
 @Component({
@@ -48,6 +56,7 @@ export class ScoutProfileComponent implements OnInit, OnDestroy {
   error = '';
   activeTab = 'about';
   contactedPlayers: ContactedPlayer[] = [];
+  contactedPlayersLoading = false;
   showDeleteConfirm = false;
   deletePassword = '';
   deleteConfirmation = '';
@@ -59,13 +68,16 @@ export class ScoutProfileComponent implements OnInit, OnDestroy {
   constructor(
     private router: Router,
     private http: HttpClient,
-    private authService: AuthService
+    private authService: AuthService,
+    private apiService: ApiService
   ) {}
 
   ngOnInit() {
     console.log('Scout Profile component initialized');
     this.fetchScoutProfile();
-    this.fetchContactedPlayers();
+    if (this.activeTab === 'contacted') {
+      this.fetchContactedPlayers();
+    }
 
     window.addEventListener('DOMContentLoaded', () => {
       console.log('DOM fully loaded - UI will update automatically through Angular bindings');
@@ -125,10 +137,11 @@ export class ScoutProfileComponent implements OnInit, OnDestroy {
       });
   }
 
-  fetchContactedPlayers() {
+  fetchContactedPlayers(): void {
+    this.contactedPlayersLoading = true;
     const token = localStorage.getItem('auth_token');
     if (!token) {
-      this.contactedPlayers = [];
+      this.router.navigate(['/login']);
       return;
     }
 
@@ -136,19 +149,15 @@ export class ScoutProfileComponent implements OnInit, OnDestroy {
       'Authorization': `Bearer ${token}`
     });
 
-    this.http.get<any>('http://localhost:8000/api/scout/contacted-players', { headers })
+    this.http.get<{message: string, data: ContactedPlayer[]}>('http://localhost:8000/api/scout/contacted-players', { headers })
       .subscribe({
         next: (response) => {
-          console.log('Contacted players response:', response);
-          if (response && response.data && Array.isArray(response.data)) {
-            this.contactedPlayers = response.data;
-          } else {
-            this.contactedPlayers = [];
-          }
+          this.contactedPlayers = response.data;
+          this.contactedPlayersLoading = false;
         },
         error: (error) => {
-          console.error('Failed to load contacted players', error);
-          this.contactedPlayers = [];
+          console.error('Error fetching contacted players:', error);
+          this.contactedPlayersLoading = false;
         }
       });
   }
@@ -226,6 +235,9 @@ export class ScoutProfileComponent implements OnInit, OnDestroy {
 
   switchTab(tab: string) {
     this.activeTab = tab;
+    if (tab === 'contacted' && this.contactedPlayers.length === 0) {
+      this.fetchContactedPlayers();
+    }
   }
 
   normalizeProfileData() {
@@ -325,5 +337,43 @@ export class ScoutProfileComponent implements OnInit, OnDestroy {
 
   goToHome() {
     this.router.navigate(['/home-feed']);
+  }
+
+  getAvatarUrl(firstName: string, lastName: string): string {
+    return `https://ui-avatars.com/api/?name=${firstName}+${lastName}&background=random`;
+  }
+
+  handleImageError(event: any, firstName: string, lastName: string): void {
+    event.target.src = this.getAvatarUrl(firstName, lastName);
+  }
+
+  goToPlayerProfile(playerId: number): void {
+    this.router.navigate(['/player', playerId]);
+  }
+
+  getContactStatusClass(status: string): string {
+    switch (status) {
+      case 'pending':
+        return 'status-pending';
+      case 'approved':
+        return 'status-approved';
+      case 'rejected':
+        return 'status-rejected';
+      default:
+        return '';
+    }
+  }
+
+  getContactStatusText(status: string): string {
+    switch (status) {
+      case 'pending':
+        return 'Request Pending';
+      case 'approved':
+        return 'Contact Approved';
+      case 'rejected':
+        return 'Request Rejected';
+      default:
+        return 'Unknown Status';
+    }
   }
 }

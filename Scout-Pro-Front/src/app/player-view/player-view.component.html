@@ -10,7 +10,10 @@
     <p class="error-message">{{ error }}</p>
     <button class="btn btn-primary" (click)="fetchPlayerProfile()">Try Again</button>
   </div>
-
+      <!-- Alert Message -->
+      <div *ngIf="alertMessage" class="alert" [class.alert-success]="alertType === 'success'" [class.alert-error]="alertType === 'error'">
+        {{ alertMessage }}
+      </div>
   <!-- Profile Header -->
   <div class="profile-header" *ngIf="!loading && playerData">
     <div class="page-header">
@@ -41,14 +44,29 @@
         <i class="bi" [ngClass]="isFollowing ? 'bi-person-check-fill' : 'bi-person-plus-fill'"></i>
         {{ isFollowing ? 'Following' : 'Follow' }}
       </button>
-      <button class="btn btn-primary"
-              *ngIf="!isPlayer && playerData?.user_id !== currentUser?.id">
-        Contact Player
-      </button>
+      <!-- Contact Button for Scouts -->
+      <div class="action-buttons" *ngIf="isScout">
+        <button
+          class="contact-btn"
+          [class.pending]="contactRequestStatus === 'pending'"
+          [class.approved]="contactRequestStatus === 'approved'"
+          [class.rejected]="contactRequestStatus === 'rejected'"
+          [disabled]="contactRequestStatus || contactRequestInProgress"
+          (click)="sendContactRequest()"
+        >
+          <span *ngIf="!contactRequestStatus && !contactRequestInProgress">Contact Player</span>
+          <span *ngIf="contactRequestStatus === 'pending'">Request Pending</span>
+          <span *ngIf="contactRequestStatus === 'approved'">Contact Approved</span>
+          <span *ngIf="contactRequestStatus === 'rejected'">Request Rejected</span>
+          <span *ngIf="contactRequestInProgress">Sending Request...</span>
+        </button>
+      </div>
     </div>
 
     <!-- Player Info -->
     <div class="player-info">
+
+
       <h1 class="player-name">
         {{ playerData.first_name }} {{ playerData.last_name }}
         <span class="username">{{"@"+playerData.username}}</span>
@@ -57,6 +75,8 @@
       <span class="subscription-badge premium" *ngIf="playerData?.membership === 'premium'">
         Premium Player
       </span>
+
+
     </div>
 
     <!-- Key Stats -->
