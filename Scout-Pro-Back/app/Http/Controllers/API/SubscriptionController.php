@@ -16,9 +16,8 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Crypt;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
-
-
-
+use Illuminate\Support\Facades\Mail;
+use App\Mail\SubscriptionInvoice;
 
 class SubscriptionController extends Controller
 {
@@ -359,6 +358,22 @@ public function upgrade(Request $request)
             'subscription_active' => true,
             'subscription_expires_at' => now()->addDays($plan->Duration)
         ]);
+
+        // Send invoice email
+        try {
+            Mail::to($user->email)->send(new SubscriptionInvoice([
+                'scout_name' => $user->first_name . ' ' . $user->last_name,
+                'plan_name' => $plan->Name,
+                'amount' => $plan->Price,
+                'invoice_number' => $invoice->id,
+                'invoice_date' => $invoice->IssueDate->format('F j, Y'),
+                'card_last_four' => $lastFour,
+                'expiry_date' => $subscription->expires_at->format('F j, Y')
+            ]));
+        } catch (\Exception $e) {
+            Log::error('Failed to send invoice email: ' . $e->getMessage());
+            // Don't return error to user as subscription was successful
+        }
 
         return response()->json([
             'status' => 'success',

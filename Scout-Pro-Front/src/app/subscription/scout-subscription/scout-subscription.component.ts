@@ -3,6 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { AuthService } from '../../auth.service';
 
 @Component({
   selector: 'app-scout-subscription',
@@ -63,7 +64,8 @@ export class ScoutSubscriptionComponent implements OnInit {
 
   constructor(
     private router: Router,
-    private http: HttpClient
+    private http: HttpClient,
+    private authService: AuthService
   ) {}
 
   ngOnInit() {
@@ -147,11 +149,6 @@ export class ScoutSubscriptionComponent implements OnInit {
     }
   }
 
-  // Navigate back to home
-  goToHome(): void {
-    this.checkSubscriptionStatus();
-  }
-
   // Handle subscription upgrade
   upgradeSubscription(): void {
     if (!this.selectedPlanType) {
@@ -180,19 +177,33 @@ export class ScoutSubscriptionComponent implements OnInit {
     this.http.post('http://localhost:8000/api/subscription/scout/upgrade', payload, { headers })
       .subscribe({
         next: (response: any) => {
-          this.loading = false;
+      this.loading = false;
           if (response.status === 'success') {
-            this.currentPlan = 'Premium';
-            this.success = `Subscription upgraded to Premium (${this.selectedPlanType}) successfully!`;
-            this.paymentInfo = { cardNumber: '', cardName: '', expiry: '', cvv: '' }; // Clear form
-            // Redirect to feed after successful subscription
-            setTimeout(() => this.router.navigate(['/feed']), 1500);
-          } else {
+        this.currentPlan = 'Premium';
+        this.success = `Subscription upgraded to Premium (${this.selectedPlanType}) successfully!`;
+
+            // Clear payment form
+            this.paymentInfo = { cardNumber: '', cardName: '', expiry: '', cvv: '' };
+
+            // Update localStorage to reflect subscription status
+            localStorage.setItem('subscription_active', 'true');
+
+            // Show success message and navigate after a short delay
+            setTimeout(() => {
+              this.router.navigate(['/home-feed'])
+                .then(() => console.log('Navigation to home-feed successful'))
+                .catch(err => {
+                  console.error('Navigation failed:', err);
+                  this.error = 'Failed to redirect. Please try again.';
+                });
+            }, 1500);
+      } else {
             this.error = response.message || 'Subscription upgrade failed. Please try again.';
-          }
+      }
         },
         error: (error) => {
           this.loading = false;
+          console.error('Payment error:', error);
           this.error = error.error?.message || 'Failed to process payment. Please try again later.';
         }
       });
@@ -211,19 +222,19 @@ export class ScoutSubscriptionComponent implements OnInit {
     this.http.post('http://localhost:8000/api/subscription/scout/cancel', {}, { headers })
       .subscribe({
         next: (response: any) => {
-          this.loading = false;
+      this.loading = false;
           if (response.status === 'success') {
-            this.currentPlan = 'Free';
-            this.selectedPlanType = null;
-            this.success = 'Subscription cancelled successfully.';
-          } else {
+        this.currentPlan = 'Free';
+        this.selectedPlanType = null;
+        this.success = 'Subscription cancelled successfully.';
+      } else {
             this.error = response.message || 'Failed to cancel subscription.';
           }
         },
         error: (error) => {
           this.loading = false;
           this.error = error.error?.message || 'Failed to cancel subscription. Please try again later.';
-        }
+      }
       });
   }
 
@@ -312,5 +323,18 @@ export class ScoutSubscriptionComponent implements OnInit {
     }
 
     return sum % 10 === 0;
+  }
+
+  // Logout method
+  logout(): void {
+    this.loading = true;
+    this.authService.logout().then(() => {
+      this.loading = false;
+      // Navigation will be handled by the AuthService
+    }).catch(error => {
+      this.loading = false;
+      console.error('Logout error:', error);
+      this.error = 'Failed to logout. Please try again.';
+    });
   }
 }
