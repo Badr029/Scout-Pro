@@ -343,9 +343,9 @@
               class="follow-btn"
               *ngIf="!post?.user?.isCurrentUser && post?.user?.user_type === 'player' && post?.user?.id !== currentUser?.id"
               (click)="followPlayer(post?.user?.id)"
-              [class.following]="post?.user?.following">
-              <i class="bi bi-check2" *ngIf="post?.user?.following"></i>
-              {{ post?.user?.following ? 'Following' : 'Follow' }}
+              [class.following]="post?.user?.following || post?.user?.is_following">
+              <i class="bi bi-check2" *ngIf="post?.user?.following || post?.user?.is_following"></i>
+              {{ (post?.user?.following || post?.user?.is_following) ? 'Following' : 'Follow' }}
             </button>
           </div>
 

@@ -600,91 +600,55 @@ export class HomeFeedComponent implements OnInit, OnDestroy {
     const user = this.findUserInFeed(userId);
     if (!user) return;
 
-    const method = user.following ? this.apiService.unfollowPlayer(userId) : this.apiService.followPlayer(userId);
+    // Determine if we're following or unfollowing
+    const isCurrentlyFollowing = user.following || user.is_following;
+    const endpoint = `users/${userId}/${isCurrentlyFollowing ? 'unfollow' : 'follow'}`;
 
-    method.subscribe({
+    // Optimistically update UI
+    this.updateFollowStateInFeed(userId, !isCurrentlyFollowing);
+
+    // Make API call
+    this.apiService.postData(endpoint, {}).subscribe({
       next: (response: any) => {
         if (response.status === 'success') {
-          // Update all instances of this user in the feed
-          this.updateFollowStateInFeed(userId, !user.following);
-
-          // Emit event to update other components
-          this.apiService.emitFollowStatusChanged({ userId, following: !user.following });
-
-          // Show success message
+          // Keep the optimistic update
+          this.apiService.emitFollowStatusChanged({ userId, following: !isCurrentlyFollowing });
           this.showNotification(response.message);
+        } else {
+          // Revert the optimistic update on error
+          this.updateFollowStateInFeed(userId, isCurrentlyFollowing);
+          this.showNotification('Failed to update follow status');
         }
       },
       error: (error: any) => {
         console.error('Error toggling follow status:', error);
+        // Revert the optimistic update on error
+        this.updateFollowStateInFeed(userId, isCurrentlyFollowing);
         this.showNotification('Failed to update follow status');
-
-        // Revert the UI state in case of error
-        this.updateFollowStateInFeed(userId, user.following);
       }
     });
   }
 
   private updateFollowStateInFeed(userId: number, following: boolean) {
-    // Update in posts
+    // Update in feed posts
     if (this.feedData?.posts?.data) {
-      this.feedData.posts.data = this.feedData.posts.data.map((post: VideoPost) => {
+      this.feedData.posts.data = this.feedData.posts.data.map((post: any) => {
         if (post.user.id === userId) {
-              return {
-                ...post,
-                user: {
-                  ...post.user,
+          return {
+            ...post,
+            user: {
+              ...post.user,
               following,
               is_following: following
-                }
-              };
             }
-            return post;
-          });
+          };
+        }
+        return post;
+      });
     }
 
-    // Update in premium players
-    this.premiumPlayers = this.premiumPlayers.map((player: PremiumPlayer) => {
-      if (player.user_id === userId) {
-                return {
-          ...player,
-          following,
-          is_following: following
-        };
-      }
-      return player;
-    });
-
-    // Update in trending players
-    if (this.feedData?.trending_players) {
-      this.feedData.trending_players = this.feedData.trending_players.map((player: TrendingPlayer) => {
-        if (player.id === userId) {
-              return {
-            ...player,
-            following,
-            is_following: following
-              };
-            }
-        return player;
-          });
-    }
-
-    // Update in selected post likes
-          if (this.selectedPostLikes) {
-      this.selectedPostLikes = this.selectedPostLikes.map(like => {
-        if (like.user.id === userId) {
-                return {
-                  ...like,
-                  user: {
-                    ...like.user,
-              following,
-              is_following: following
-                  }
-                };
-              }
-              return like;
-            });
-          }
+    // Force immediate UI update
+    this.feedData = { ...this.feedData };
   }
 
   likePost(postId: number) {

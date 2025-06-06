@@ -23,294 +23,39 @@ class FeedController extends Controller
      */
     public function index(Request $request)
     {
-        $user = Auth::user();
-        $userType = $user->user_type;
+        try {
+            $currentUser = Auth::user();
 
-        // Get filter parameters
-        $position = $request->input('position');
-        $secondary_position = $request->input('secondary_position');
-        $region = $request->input('region');
-        $age = $request->input('age');
-        $height = $request->input('height');
-        $preferred_foot = $request->input('preferred_foot');
-        $playing_style = $request->input('playing_style');
-        $transfer_status = $request->input('transfer_status');
+            // Get the list of users that the current user is following
+            $followingIds = Follow::where('follower_id', $currentUser->id)
+                ->pluck('following_id')
+                ->toArray();
 
-        // Build query for videos
-        $videosQuery = Video::with([
-            'user.player',
-            'comments.user.player',
-            'likes.user.player',
-            'likes' => function ($query) use ($user) {
-                $query->where('user_id', $user->id);
-            }
-        ])
-        ->whereHas('user', function ($query) {
-            $query->where('user_type', 'player');
-        })
-        ->orderBy('created_at', 'desc');
+            // Get videos with user and player information
+            $videos = Video::with(['user.player', 'likes', 'comments'])
+                ->orderBy('created_at', 'desc')
+                ->paginate(10);
 
-        // Apply filters if user is a scout
-        if ($userType === 'scout') {
-            if ($position) {
-            $videosQuery->whereHas('user.player', function ($query) use ($position) {
-                $query->where('position', $position);
+            // Process videos and add follow status
+            $processedVideos = $videos->through(function ($video) use ($followingIds, $currentUser) {
+                // Add follow status to user
+                $video->user->following = in_array($video->user->id, $followingIds);
+                $video->user->is_following = in_array($video->user->id, $followingIds);
+                $video->user->isCurrentUser = $video->user->id === $currentUser->id;
+                return $video;
             });
+
+            return response()->json([
+                'status' => 'success',
+                'posts' => $processedVideos
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Feed error: ' . $e->getMessage());
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to load feed'
+            ], 500);
         }
-            if ($region) {
-            $videosQuery->whereHas('user.player', function ($query) use ($region) {
-                    $query->where('current_city', $region);
-            });
-        }
-            if ($preferred_foot) {
-            $videosQuery->whereHas('user.player', function ($query) use ($preferred_foot) {
-                $query->where('preferred_foot', $preferred_foot);
-            });
-        }
-            if ($age) {
-                $videosQuery->whereHas('user.player', function ($query) use ($age) {
-                    // Since age is stored as a negative number, we use abs() to compare
-                    $query->whereRaw('ABS(age) = ?', [abs((int)$age)]);
-            });
-        }
-            if ($transfer_status) {
-            $videosQuery->whereHas('user.player', function ($query) use ($transfer_status) {
-                $query->where('transfer_status', $transfer_status);
-            });
-                Log::info('Applying transfer status filter:', [
-                    'transfer_status' => $transfer_status,
-                    'sql' => $videosQuery->toSql(),
-                    'bindings' => $videosQuery->getBindings()
-                ]);
-            }
-        }
-
-        // Get videos with pagination
-        $videos = $videosQuery->paginate(10);
-
-        // Transform the videos to include user-specific data
-        $videos->through(function ($video) use ($user) {
-            // Add has_liked flag
-            $video->has_liked = $video->likes->where('user_id', $user->id)->count() > 0;
-
-            // Format the likes data
-            $video->likes_data = $video->likes->map(function ($like) {
-                return [
-                    'id' => $like->id,
-                    'user_id' => $like->user_id,
-                    'user' => [
-                        'id' => $like->user->id,
-                        'first_name' => $like->user->first_name,
-                        'last_name' => $like->user->last_name,
-                        'profile_image' => $like->user->player ? $like->user->player->profile_image : null
-                    ]
-                ];
-            });
-
-            // Format the comments data
-            $video->comments_data = $video->comments->map(function ($comment) {
-                return [
-                    'id' => $comment->id,
-                    'content' => $comment->content,
-                    'created_at' => $comment->created_at,
-                    'user_id' => $comment->user_id,
-                    'user' => [
-                        'id' => $comment->user->id,
-                        'first_name' => $comment->user->first_name,
-                        'last_name' => $comment->user->last_name,
-                        'profile_image' => $comment->user->player ? $comment->user->player->profile_image : null
-                    ]
-                ];
-            });
-
-            // Add user data with proper profile image path and player info
-            if ($video->user && $video->user->player) {
-                $video->user->profile_image = $video->user->player->profile_image;
-                $video->user->player_info = [
-                    'position' => $video->user->player->position,
-                    'region' => $video->user->player->current_city,
-                    'age' => abs($video->user->player->getAge()),
-                    'preferred_foot' => $video->user->player->preferred_foot,
-                    'transfer_status' => $video->user->player->transfer_status
-                ];
-            }
-
-            return $video;
-        });
-
-        // Get trending players (based on video views and likes)
-        $trendingPlayers = User::where('user_type', 'player')
-            ->whereHas('videos', function ($query) {
-                $query->orderByDesc('views')
-                    ->orderByDesc('created_at');
-            })
-            ->with('player')
-            ->take(5)
-            ->get()
-            ->map(function ($user) {
-                return [
-                    'id' => $user->id,
-                    'name' => $user->first_name . ' ' . $user->last_name,
-                    'position' => $user->player ? $user->player->position : null,
-                    'region' => $user->player ? $user->player->nationality : null,
-                    'image' => $user->player && $user->player->profile_image
-                        ? url('storage/' . $user->player->profile_image)
-                        : null,
-                ];
-            });
-
-        // Get upcoming events
-        $upcomingEvents = Event::query()
-            ->where('date', '>=', now())
-            ->where(function ($query) use ($user) {
-                // Show approved events to everyone
-                $query->where('status', 'approved');
-
-                // Show pending events only to their organizers
-                if ($user->user_type === 'scout') {
-                    $query->orWhere(function($q) use ($user) {
-                        $q->where('status', 'pending')
-                          ->where('organizer_id', $user->id);
-                    });
-                }
-            })
-            ->with(['organizer' => function($query) {
-                $query->select('id', 'first_name', 'last_name', 'email');
-            }])
-            ->orderBy('date', 'asc')
-            ->take(3)
-            ->get()
-            ->map(function($event) use ($user) {
-                return [
-                    'id' => $event->id,
-                    'title' => $event->title,
-                    'description' => $event->description,
-                    'date' => $event->date,
-                    'location' => $event->location,
-                    'image' => $event->image ? url('storage/' . $event->image) : null,
-                    'status' => $event->status,
-                    'organizer' => [
-                        'id' => $event->organizer->id,
-                        'name' => $event->organizer->first_name . ' ' . $event->organizer->last_name,
-                        'email' => $event->organizer->email
-                    ],
-                    'is_organizer' => $event->organizer_id === $user->id
-                ];
-            });
-
-        // Get recommended players based on user's interests
-        $recommendedPlayers = [];
-        if ($userType === 'scout' && $user->scout) {
-            $recommendedPlayers = User::where('user_type', 'player')
-                ->whereHas('player', function ($query) use ($user) {
-                    if ($user->scout->preferred_positions) {
-                        $positions = explode(',', $user->scout->preferred_positions);
-                        $query->whereIn('position', $positions);
-                    }
-                })
-                ->with('player')
-                ->take(5)
-                ->get()
-                ->map(function ($user) {
-                    return [
-                        'id' => $user->id,
-                        'name' => $user->first_name . ' ' . $user->last_name,
-                        'position' => $user->player ? $user->player->position : null,
-                        'region' => $user->player ? $user->player->nationality : null,
-                        'image' => $user->player && $user->player->profile_image
-                            ? url('storage/' . $user->player->profile_image)
-                            : null,
-                    ];
-                });
-        }
-
-        // Get filter options
-        $filterOptions = [
-            [
-                'label' => 'Position',
-                'key' => 'position',
-                'options' => [
-                    ['label' => 'All', 'value' => ''],
-                    ['label' => 'Forward', 'value' => 'forward'],
-                    ['label' => 'Midfielder', 'value' => 'midfielder'],
-                    ['label' => 'Defender', 'value' => 'defender'],
-                    ['label' => 'Goalkeeper', 'value' => 'goalkeeper']
-                ]
-            ],
-            [
-                'label' => 'Secondary Position',
-                'key' => 'secondary_position',
-                'options' => [
-                    ['label' => 'All', 'value' => ''],
-                    ['label' => 'Forward', 'value' => 'forward'],
-                    ['label' => 'Midfielder', 'value' => 'midfielder'],
-                    ['label' => 'Defender', 'value' => 'defender'],
-                    ['label' => 'Goalkeeper', 'value' => 'goalkeeper']
-                ]
-            ],
-            [
-                'label' => 'Region',
-                'key' => 'region',
-                'options' => [
-                    ['label' => 'All', 'value' => ''],
-                    ['label' => 'Europe', 'value' => 'europe'],
-                    ['label' => 'Africa', 'value' => 'africa'],
-                    ['label' => 'Asia', 'value' => 'asia'],
-                    ['label' => 'North America', 'value' => 'north america'],
-                    ['label' => 'South America', 'value' => 'south america'],
-                    ['label' => 'Oceania', 'value' => 'oceania']
-                ]
-            ],
-            [
-                'label' => 'Preferred Foot',
-                'key' => 'preferred_foot',
-                'options' => [
-                    ['label' => 'All', 'value' => ''],
-                    ['label' => 'Right', 'value' => 'right'],
-                    ['label' => 'Left', 'value' => 'left'],
-                    ['label' => 'Both', 'value' => 'both']
-                ]
-            ],
-            [
-                'label' => 'Playing Style',
-                'key' => 'playing_style',
-                'options' => [
-                    ['label' => 'All', 'value' => ''],
-                    ['label' => 'Attacker', 'value' => 'attacker'],
-                    ['label' => 'Playmaker', 'value' => 'playmaker'],
-                    ['label' => 'Defender', 'value' => 'defender'],
-                    ['label' => 'Box-to-Box', 'value' => 'box-to-box']
-                ]
-            ],
-            [
-                'label' => 'Transfer Status',
-                'key' => 'transfer_status',
-                'options' => [
-                    ['label' => 'All', 'value' => ''],
-                    ['label' => 'Available', 'value' => 'available'],
-                    ['label' => 'Not Available', 'value' => 'not_available']
-                ]
-            ]
-        ];
-
-        // Get suggested searches
-        $suggestedSearches = [
-            'Forward',
-            'Under 18',
-            'London',
-            'Available for transfer'
-        ];
-
-        return response()->json([
-            'status' => 'success',
-            'user_type' => $userType,
-            'filter_options' => $filterOptions,
-            'posts' => $videos,
-            'trending_players' => $trendingPlayers,
-            'upcoming_events' => $upcomingEvents,
-            'recommendations' => $recommendedPlayers,
-            'suggested_searches' => $suggestedSearches
-        ]);
     }
 
     /**
