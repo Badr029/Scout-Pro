@@ -142,64 +142,71 @@ public function upgrade(Request $request)
     try {
         DB::beginTransaction();
 
-    $expiry = $request->input('expiry');
-    if (!$this->isExpiryValid($expiry)) {
-        return response()->json([
-            'status' => 'error',
-            'message' => 'Expiry date is invalid or has passed.'
-        ], 422);
-    }
+        $expiry = $request->input('expiry');
+        if (!$this->isExpiryValid($expiry)) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Expiry date is invalid or has passed.'
+            ], 422);
+        }
 
-    $plan = Plan::where('name', $request->plan_type)->first();
-    if (!$plan) {
-        return response()->json(['status' => 'error', 'message' => 'Invalid plan selected'], 404);
-    }
+        $plan = Plan::where('name', $request->plan_type)->first();
+        if (!$plan) {
+            return response()->json(['status' => 'error', 'message' => 'Invalid plan selected'], 404);
+        }
 
-    $player = $user->player;
-    if (!$player) {
-        return response()->json(['status' => 'error', 'message' => 'Player profile not found'], 404);
-    }
+        $player = $user->player;
+        if (!$player) {
+            return response()->json(['status' => 'error', 'message' => 'Player profile not found'], 404);
+        }
 
-    $encryptedCard = Crypt::encryptString($request->card_number);
-    $encryptedCVV = Crypt::encryptString($request->cvv);
-    $lastFour = substr($request->card_number, -4);
+        $encryptedCard = Crypt::encryptString($request->card_number);
+        $encryptedCVV = Crypt::encryptString($request->cvv);
+        $lastFour = substr($request->card_number, -4);
 
         // Create payment record
-    $payment = Payment::create([
+        $payment = Payment::create([
             'user_id' => $user->id,
             'amount' => $plan->Price,
             'currency' => 'EGP',
             'payment_method' => 'card',
-        'card_number_encrypted' => $encryptedCard,
-        'card_last_four' => $lastFour,
-        'expiry' => $request->expiry,
-        'cvv_encrypted' => $encryptedCVV,
-        'cardholder_name' => $request->cardholder_name,
+            'card_number_encrypted' => $encryptedCard,
+            'card_last_four' => $lastFour,
+            'expiry' => $request->expiry,
+            'cvv_encrypted' => $encryptedCVV,
+            'cardholder_name' => $request->cardholder_name,
             'status' => 'completed'
-    ]);
+        ]);
 
         // Create or update subscription
-    $subscription = Subscription::updateOrCreate(
-        ['user_id' => $user->id],
-        [
-            'plan_id' => $plan->id,
-            'payment_id' => $payment->id,
-            'plan' => $plan->Name,
+        $subscription = Subscription::updateOrCreate(
+            ['user_id' => $user->id],
+            [
+                'plan_id' => $plan->id,
+                'payment_id' => $payment->id,
+                'plan' => $plan->Name,
                 'active' => true,
                 'expires_at' => now()->addDays($plan->Duration),
-            'canceled_at' => null
-        ]
-    );
+                'canceled_at' => null
+            ]
+        );
 
         // Update player membership and subscription fields
-    $player->update([
+        $player->update([
             'membership' => 'premium',
             'subscription_id' => $subscription->id,
             'subscription_expires_at' => now()->addDays($plan->Duration)
         ]);
 
-        // Create invoice
-        $invoice = PlayerInvoice::create([
+        // Create regular invoice
+        $invoice = Invoice::create([
+            'payment_id' => $payment->id,
+            'IssueDate' => now(),
+            'Status' => 'Paid'
+        ]);
+
+        // Create player invoice
+        $playerInvoice = PlayerInvoice::create([
             'payment_id' => $payment->id,
             'player_id' => $player->id,
             'invoice_number' => 'INV-' . date('Y') . '-' . str_pad($payment->id, 6, '0', STR_PAD_LEFT),
@@ -215,8 +222,8 @@ public function upgrade(Request $request)
                 'player_name' => $user->first_name . ' ' . $user->last_name,
                 'plan_name' => $plan->Name,
                 'amount' => $plan->Price,
-                'invoice_number' => $invoice->invoice_number,
-                'invoice_date' => $invoice->created_at->format('F j, Y'),
+                'invoice_number' => $playerInvoice->invoice_number,
+                'invoice_date' => $playerInvoice->created_at->format('F j, Y'),
                 'card_last_four' => $lastFour,
                 'expiry_date' => $subscription->expires_at->format('F j, Y')
             ]));
@@ -227,16 +234,16 @@ public function upgrade(Request $request)
 
         DB::commit();
 
-    return response()->json([
+        return response()->json([
             'status' => 'success',
             'message' => 'Subscription upgraded successfully',
-        'data' => [
-            'subscription' => $subscription,
-            'payment_id' => $payment->id,
-            'card_last_four' => $lastFour,
-                'invoice_number' => $invoice->invoice_number
-        ]
-    ]);
+            'data' => [
+                'subscription' => $subscription,
+                'payment_id' => $payment->id,
+                'card_last_four' => $lastFour,
+                'invoice_number' => $playerInvoice->invoice_number
+            ]
+        ]);
 
     } catch (\Exception $e) {
         DB::rollBack();

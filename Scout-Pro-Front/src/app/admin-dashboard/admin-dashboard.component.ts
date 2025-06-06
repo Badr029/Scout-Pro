@@ -81,7 +81,7 @@ interface Subscription {
     email: string;
     type: string;
   };
-  plan: Plan;
+  plan: string;
   status: string;
   expires_at: string;
   created_at: string;
@@ -748,7 +748,14 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     this.http.get<any>(`${this.API_URL}/admin/user-subscriptions`, { headers: this.getHeaders() }).subscribe({
       next: (response: any) => {
         if (response.status === 'success') {
-          this.subscriptions = response.data;
+          console.log('Subscription response:', response.data);
+          this.subscriptions = response.data.map((sub: any) => {
+            console.log('Individual subscription:', sub);
+            return {
+              ...sub,
+              plan: sub.plan || { Name: 'N/A', Price: 0, Duration: 0 }  // Provide default values if plan is missing
+            };
+          });
         }
         this.loadingSubscription.subscriptions = false;
       },
@@ -1288,6 +1295,8 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
         next: (response) => {
           if (response.status === 'success') {
             this.selectedScoutDocuments = response.data;
+            // Open the modal after data is loaded
+            this.modalService.open('scoutDocumentsModal');
           } else {
             this.error = 'Failed to load scout documents';
           }
@@ -1303,6 +1312,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
 
   closeScoutDocuments() {
     this.selectedScoutDocuments = null;
+    this.modalService.close();
   }
 
   getDocumentUrl(path: string): string {
@@ -1318,12 +1328,21 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
       headers: this.getHeaders(),
       params: {
         sort_by: this.videoSortField,
-        order: this.videoSortOrder
+        order: this.videoSortOrder,
+        include_comments: 'true'  // Request to include comments data
       }
     }).subscribe({
       next: (response) => {
         if (response.status === 'success') {
-          this.videos = response.data;
+          // Map the response data to ensure comments_count is present
+          this.videos = response.data.map((video: any) => {
+            // Calculate comments count from either the array or the count field
+            const commentsCount = video.comments?.length ?? video.comments_count ?? 0;
+            return {
+              ...video,
+              comments_count: commentsCount
+            };
+          });
         } else {
           this.videoError = 'Failed to load videos';
         }

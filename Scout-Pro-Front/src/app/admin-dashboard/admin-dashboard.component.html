@@ -572,7 +572,7 @@
                   </div>
                 </td>
                 <td>{{ sub.user.type }}</td>
-                <td>{{ sub.plan.Name }}</td>
+                <td>{{ sub.plan }}</td>
                 <td>
                   <span [class]="'status-badge ' + sub.status.toLowerCase()">
                     {{ sub.status }}
@@ -730,31 +730,34 @@
             <p><strong>Organization:</strong> {{ selectedUser.scout?.organization }}</p>
             <p><strong>Position:</strong> {{ selectedUser.scout?.position_title }}</p>
             <p><strong>Subscription:</strong> {{ selectedUser.scout?.subscription_active ? 'Active' : 'Inactive' }}</p>
-            <button class="btn btn-action mt-2" (click)="viewScoutDocuments(selectedUser)" *ngIf="selectedUser.user_type === 'scout'">
+            <button class="btn btn-secondary mt-2" (click)="viewScoutDocuments(selectedUser)" *ngIf="selectedUser.user_type === 'scout'">
               <i class="fas fa-file-alt mr-2"></i>View Documents
             </button>
           </div>
 
           <div class="activity-info">
             <h6>Activity Information</h6>
-            <p><strong>Videos:</strong> {{ selectedUser.videos_count || 0 }}</p>
+
             <p><strong>Comments:</strong> {{ selectedUser.comments_count || 0 }}</p>
             <p><strong>Likes:</strong> {{ selectedUser.likes_count || 0 }}</p>
           </div>
         </div>
 
         <div class="modal-footer">
-          <button class="btn btn-action" (click)="closeUserDetails()">
+          <button class="btn btn-secondary" (click)="closeUserDetails()">
             <i class="fas fa-times mr-2"></i>Close
           </button>
-          <button class="btn btn-action btn-delete" (click)="deleteUser(selectedUser)">
+          <button class="btn btn-danger btn-delete" (click)="deleteUser(selectedUser)">
             <i class="fas fa-trash mr-2"></i>Delete Account
           </button>
         </div>
       </app-modal>
 
       <!-- Scout Documents Modal -->
-      <app-modal *ngIf="selectedScoutDocuments" [title]="'Scout Documents'" (closeModal)="closeScoutDocuments()">
+      <app-modal *ngIf="selectedScoutDocuments"
+                [title]="'Scout Documents'"
+                (closeModal)="closeScoutDocuments()"
+                id="scoutDocumentsModal">
         <div class="scout-documents">
           <div class="document-section">
             <h6>ID Proof</h6>
