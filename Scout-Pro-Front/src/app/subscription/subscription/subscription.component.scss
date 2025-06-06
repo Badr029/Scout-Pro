@@ -303,10 +303,10 @@ $card-gradient-end: #3a3a3a;
             @include input-base;
             flex-grow: 1;
             margin-right: 0.75rem;
-          }
+    }
 
           .card-logo-container {
-            display: flex;
+      display: flex;
             align-items: center;
             justify-content: center;
             position: relative;
@@ -324,7 +324,7 @@ $card-gradient-end: #3a3a3a;
           .card-number-input {
             @include input-base;
             width: 100%;
-          }
+        }
         }
 
         .card-details-row {
@@ -367,20 +367,20 @@ $card-gradient-end: #3a3a3a;
         padding-left: 0.8rem;
         padding-right: 0.8rem;
         margin-left: 8rem;
-        font-size: 0.8rem;
+      font-size: 0.8rem;
         border-radius: 6px;
         background-color: $primary-color;
-        color: $text-white;
+      color: $text-white;
         font-weight: 600;
         transition: background-color 0.3s ease;
         border: none;
         justify-content: center;
         align-items: center;
-        display: flex;
+    display: flex;
 
         &:hover:not(:disabled) {
           background-color: darken($primary-color, 10%);
-        }
+    }
 
         &:disabled {
           background-color: lighten($primary-color, 20%);

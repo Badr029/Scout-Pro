@@ -17,6 +17,7 @@ use App\Http\Controllers\API\HomeController;
 use App\Http\Controllers\API\ScoutController;
 use App\Http\Controllers\API\AdminController;
 use App\Http\Controllers\API\ContactRequestController;
+use App\Http\Controllers\Admin\StatisticsController;
 
 
 
@@ -133,7 +134,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/search', [FeedController::class, 'search']);
 
     // Admin routes
-    Route::middleware(['auth:sanctum'])->group(function () {
+
         Route::get('/admin/stats', [AdminController::class, 'stats']);
         Route::get('/admin/user-growth', [AdminController::class, 'userGrowth']);
         Route::get('/admin/engagement', [AdminController::class, 'engagement']);
@@ -142,7 +143,25 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('/admin/contact-requests/{id}', [AdminController::class, 'updateContactRequest']);
         Route::get('/admin/event-requests', [AdminController::class, 'getEventRequests']);
         Route::put('/admin/event-requests/{id}', [AdminController::class, 'updateEventRequest']);
-    });
+        Route::post('/admin/events/create', [AdminController::class, 'createEvent']);
+        Route::get('/admin/scout-documents/{id}', [AdminController::class, 'getScoutDocuments']);
+
+        // Subscription Management Routes
+        Route::get('admin/subscription-plans', [AdminController::class, 'getSubscriptionPlans']);
+        Route::put('admin/subscription-plans/{id}', [AdminController::class, 'updatePlan']);
+        Route::get('admin/user-subscriptions', [AdminController::class, 'getUserSubscriptions']);
+        Route::put('admin/user-subscriptions/{userId}', [AdminController::class, 'updateUserSubscription']);
+        Route::put('admin/user-subscriptions/{userId}/deactivate', [AdminController::class, 'deactivateUserSubscription']);
+        Route::get('admin/payment-history', [AdminController::class, 'getPaymentHistory']);
+
+        // User Management Routes
+        Route::get('admin/users', [AdminController::class, 'getUsers']);
+        Route::get('admin/users/{id}', [AdminController::class, 'getUserDetails']);
+        Route::delete('admin/users/{id}', [AdminController::class, 'deleteUser']);
+
+        // Statistics Routes
+        Route::get('/admin/payment-stats', [StatisticsController::class, 'getPaymentStats']);
+        Route::get('/admin/subscription-stats', [StatisticsController::class, 'getSubscriptionStats']);
 
     // Contact Request Routes
     Route::middleware(['auth:sanctum'])->group(function () {

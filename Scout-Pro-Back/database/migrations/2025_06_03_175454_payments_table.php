@@ -10,23 +10,25 @@ return new class extends Migration
      * Run the migrations.
      */
     public function up(): void
-    {Schema::create('payments', function (Blueprint $table) {
-    $table->id();
-    $table->float('amount');
-    $table->string('card_number_encrypted');
-        $table->string('card_last_four');
-        $table->string('expiry');
-        $table->string('cvv_encrypted');
-        $table->string('cardholder_name')->nullable();
-    $table->timestamps();
-    
-    });}
+    {
+        Schema::create('payments', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('user_id')->constrained()->onDelete('cascade');
+            $table->decimal('amount', 10, 2);
+            $table->string('card_number_encrypted');
+            $table->string('card_last_four');
+            $table->string('expiry');
+            $table->string('cvv_encrypted');
+            $table->string('cardholder_name')->nullable();
+            $table->timestamps();
+        });
+    }
 
     /**
      * Reverse the migrations.
      */
     public function down(): void
     {
-        //
+        Schema::dropIfExists('payments');
     }
 };

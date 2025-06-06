@@ -10,20 +10,21 @@ return new class extends Migration
      * Run the migrations.
      */
     public function up(): void
-    {         Schema::create('plans', function (Blueprint $table) {
-
-    $table->id();
-    $table->string('Name');                 
-    $table->integer('Duration')->nullable();           
-    $table->decimal('Price', 8, 2);         
-    $table->timestamps();
-    });}
+    {
+        Schema::create('plans', function (Blueprint $table) {
+            $table->id();
+            $table->string('Name');
+            $table->integer('Duration')->nullable();
+            $table->decimal('Price', 8, 2);
+            $table->timestamps();
+        });
+    }
 
     /**
      * Reverse the migrations.
      */
     public function down(): void
     {
-        //
+        Schema::dropIfExists('plans');
     }
 };

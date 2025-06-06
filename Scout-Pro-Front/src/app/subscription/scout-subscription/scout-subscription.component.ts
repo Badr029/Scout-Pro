@@ -82,8 +82,8 @@ export class ScoutSubscriptionComponent implements OnInit {
       .subscribe({
         next: (response: any) => {
           if (response.subscription_active) {
-            // If subscription is active, redirect to feed
-            this.router.navigate(['/feed']);
+            // If subscription is active, redirect to home-feed
+            this.router.navigate(['/home-feed']);
           } else {
             // Stay on subscription page
             this.currentPlan = 'Free';

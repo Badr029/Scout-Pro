@@ -10,6 +10,7 @@ class Payment extends Model
     use HasFactory;
 
     protected $fillable = [
+        'user_id',
         'amount',
         'card_number_encrypted' ,
         'card_last_four',
@@ -25,5 +26,14 @@ class Payment extends Model
 
     public function invoice() {
         return $this->hasOne(Invoice::class);
+    }
+
+    public function invoices() {
+        return $this->hasMany(Invoice::class);
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
     }
 }

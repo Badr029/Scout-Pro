@@ -1,6 +1,11 @@
 <div class="admin-layout">
+  <!-- Mobile Menu Toggle -->
+  <button class="menu-toggle" (click)="toggleMenu()" *ngIf="isMobile">
+    <i class="fas" [class.fa-bars]="!isMenuOpen" [class.fa-times]="isMenuOpen"></i>
+  </button>
+
   <!-- Left Sidebar -->
-  <div class="sidebar">
+  <div class="sidebar" [class.open]="isMenuOpen">
     <div class="sidebar-header">
       <h2>Scout Pro Admin</h2>
     </div>
@@ -8,22 +13,34 @@
     <div class="sidebar-menu">
       <a class="menu-item" [class.active]="currentSection === 'statistics'" (click)="setSection('statistics')">
         <i class="fas fa-chart-line"></i>
-        Statistics
+        <span>Statistics</span>
       </a>
+
       <a class="menu-item" [class.active]="currentSection === 'contact-requests'" (click)="setSection('contact-requests')">
         <i class="fas fa-envelope"></i>
-        Contact Requests
+        <span>Contact Requests</span>
       </a>
+
       <a class="menu-item" [class.active]="currentSection === 'event-requests'" (click)="setSection('event-requests')">
         <i class="fas fa-calendar-plus"></i>
-        Event Requests
+        <span>Event Management</span>
+      </a>
+
+      <a class="menu-item" [class.active]="currentSection === 'subscriptions'" (click)="setSection('subscriptions')">
+        <i class="fas fa-credit-card"></i>
+        <span>Subscriptions</span>
+      </a>
+
+      <a class="menu-item" [class.active]="currentSection === 'user-management'" (click)="setSection('user-management')">
+        <i class="fas fa-users"></i>
+        <span>User Management</span>
       </a>
     </div>
 
     <div class="sidebar-footer">
       <button class="logout-btn" (click)="logout()">
         <i class="fas fa-sign-out-alt"></i>
-        Logout
+        <span>Logout</span>
       </button>
     </div>
   </div>
@@ -31,7 +48,7 @@
   <!-- Main Content -->
   <div class="main-content">
     <!-- Statistics Section -->
-    <div *ngIf="currentSection === 'statistics'">
+    <div *ngIf="currentSection === 'statistics'" class="dashboard-content">
       <div *ngIf="error" class="error-message">
         {{ error }}
         <button (click)="loadStats(); loadCharts()">Retry</button>
@@ -67,6 +84,88 @@
           </div>
         </div>
 
+        <!-- Subscription Stats Section -->
+        <div class="stats-section">
+          <div class="stat-card">
+            <h3>Total Subscriptions</h3>
+            <div class="stat-value">{{ subscriptionStats.totalSubscriptions }}</div>
+            <div class="stat-breakdown">
+              <div class="stat-item">
+                <span class="label">Active</span>
+                <span class="value success">{{ subscriptionStats.activeSubscriptions }}</span>
+              </div>
+              <div class="stat-item">
+                <span class="label">Total</span>
+                <span class="value">{{ subscriptionStats.totalSubscriptions }}</span>
+              </div>
+              <div class="stat-item">
+                <span class="label">Expired</span>
+                <span class="value danger">{{ subscriptionStats.expiredSubscriptions }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <h3>Upcoming Renewals</h3>
+            <div class="stat-value">{{ subscriptionStats.upcomingRenewals }}</div>
+            <div class="renewals-list" *ngIf="subscriptionStats.nextRenewals?.length">
+              <div class="renewal-item" *ngFor="let renewal of subscriptionStats.nextRenewals">
+                <span class="user">{{ renewal.user }}</span>
+                <span class="date">{{ formatDate(renewal.expires_at) }}</span>
+              </div>
+            </div>
+            <div class="no-renewals" *ngIf="!subscriptionStats.nextRenewals?.length">
+              No upcoming renewals
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <h3>Subscription Health</h3>
+            <div class="stat-value">{{ subscriptionStats.retentionRate }}%</div>
+            <div class="stat-breakdown">
+              <div class="stat-item">
+                <span class="label">New This Month</span>
+                <span class="value success">{{ subscriptionStats.newSubscriptions }}</span>
+              </div>
+              <div class="stat-item">
+                <span class="label">Churned</span>
+                <span class="value danger">{{ subscriptionStats.churnedSubscriptions }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Revenue Stats Section -->
+        <div class="stats-section">
+          <div class="stat-card">
+            <h3>Total Revenue</h3>
+            <div class="stat-value">{{ formatPrice(paymentStats.totalRevenue) }}</div>
+            <div class="stat-growth" [class.positive]="paymentStats.revenueGrowth > 0" [class.negative]="paymentStats.revenueGrowth < 0">
+              {{ paymentStats.revenueGrowth > 0 ? '+' : '' }}{{ paymentStats.revenueGrowth }}% from last month
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <h3>Monthly Revenue</h3>
+            <div class="stat-value">{{ formatPrice(paymentStats.monthlyRevenue) }}</div>
+            <div class="stat-growth" [class.positive]="paymentStats.monthlyGrowth > 0" [class.negative]="paymentStats.monthlyGrowth < 0">
+              {{ paymentStats.monthlyGrowth > 0 ? '+' : '' }}{{ paymentStats.monthlyGrowth }}% from previous month
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <h3>Average Transaction</h3>
+            <div class="stat-value">{{ formatPrice(paymentStats.averageTransaction) }}</div>
+            <div class="stat-note">Based on {{ paymentStats.totalTransactions }} transactions</div>
+          </div>
+        </div>
+
+        <!-- Revenue Chart -->
+        <div class="chart-container">
+          <h3>Revenue Growth</h3>
+          <canvas id="revenueChart"></canvas>
+        </div>
+
         <div class="charts-grid">
           <div class="chart-container">
             <canvas id="userGrowthChart"></canvas>
@@ -84,7 +183,7 @@
     </div>
 
     <!-- Contact Requests Section -->
-    <div *ngIf="currentSection === 'contact-requests'" class="contact-requests">
+    <div *ngIf="currentSection === 'contact-requests'" class="dashboard-content">
       <h2>Contact Requests</h2>
 
       <div *ngIf="loadingRequests" class="loading-spinner">
@@ -158,9 +257,174 @@
     </div>
 
     <!-- Event Requests Section -->
-    <div *ngIf="currentSection === 'event-requests'" class="event-requests">
-      <h2>Event Requests</h2>
+    <div *ngIf="currentSection === 'event-requests'" class="dashboard-content">
+      <div class="section-header">
+        <h2>Event Management</h2>
+        <button class="create-event-btn" (click)="toggleEventForm()">
+          <i class="fas fa-plus"></i>
+          Create New Event
+        </button>
+      </div>
 
+      <!-- Event Creation Form -->
+      <div class="event-form-container" *ngIf="showEventForm">
+        <div class="form-header">
+          <h3>Create New Event</h3>
+          <button class="close-button" (click)="toggleEventForm()">×</button>
+        </div>
+
+        <form [formGroup]="eventForm" (ngSubmit)="onSubmitEvent()" class="event-form">
+          <!-- Event Title -->
+          <div class="form-group">
+            <label for="title">Event Title *</label>
+            <input
+              type="text"
+              id="title"
+              formControlName="title"
+              placeholder="e.g. Cairo U21 Tryout – July 2025"
+              [class.is-invalid]="eventForm.get('title')?.invalid && eventForm.get('title')?.touched"
+            >
+            <div class="error-message" *ngIf="eventForm.get('title')?.invalid && eventForm.get('title')?.touched">
+              <span *ngIf="eventForm.get('title')?.errors?.['required']">Title is required</span>
+              <span *ngIf="eventForm.get('title')?.errors?.['minlength']">Title must be at least 5 characters</span>
+            </div>
+          </div>
+
+          <!-- Date and Time -->
+          <div class="form-row">
+            <div class="form-group">
+              <label for="date">Date *</label>
+              <input
+                type="date"
+                id="date"
+                formControlName="date"
+                [class.is-invalid]="eventForm.get('date')?.invalid && eventForm.get('date')?.touched"
+              >
+              <div class="error-message" *ngIf="eventForm.get('date')?.invalid && eventForm.get('date')?.touched">
+                Date is required
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="time">Time *</label>
+              <input
+                type="time"
+                id="time"
+                formControlName="time"
+                [class.is-invalid]="eventForm.get('time')?.invalid && eventForm.get('time')?.touched"
+              >
+              <div class="error-message" *ngIf="eventForm.get('time')?.invalid && eventForm.get('time')?.touched">
+                Time is required
+              </div>
+            </div>
+          </div>
+
+          <!-- Location -->
+          <div class="form-group">
+            <label for="location">Location *</label>
+            <div class="location-input-group">
+              <input
+                type="text"
+                id="location"
+                formControlName="location"
+                placeholder="Enter event location or paste Google Maps link"
+                [class.is-invalid]="eventForm.get('location')?.invalid && eventForm.get('location')?.touched"
+              >
+            </div>
+            <div class="error-message" *ngIf="eventForm.get('location')?.invalid && eventForm.get('location')?.touched">
+              Location is required
+            </div>
+          </div>
+
+          <!-- Description -->
+          <div class="form-group">
+            <label for="description">Description</label>
+            <textarea
+              id="description"
+              formControlName="description"
+              rows="4"
+              placeholder="Include event goals, age range, how to register, and other important details"
+            ></textarea>
+          </div>
+
+          <!-- Image Upload -->
+          <div class="form-group">
+            <label for="image">Event Poster</label>
+            <div class="image-upload-container">
+              <input
+                type="file"
+                id="image"
+                (change)="onEventImageSelected($event)"
+                accept="image/jpeg,image/png"
+                class="file-input"
+              >
+              <label for="image" class="upload-label">
+                <i class="fas fa-cloud-upload-alt"></i>
+                <span>Choose Image</span>
+                <small>Supported: JPG, PNG (Max 5MB)</small>
+              </label>
+
+              <!-- Image Preview -->
+              <div class="image-preview" *ngIf="eventImagePreview">
+                <img [src]="eventImagePreview" alt="Event poster preview">
+                <button type="button" class="remove-image" (click)="removeEventImage()">
+                  <i class="fas fa-times-circle"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Organizer Contact -->
+          <div class="form-group">
+            <label for="organizer_contact">Contact Email *</label>
+            <input
+              type="email"
+              id="organizer_contact"
+              formControlName="organizer_contact"
+              placeholder="Enter contact email for inquiries"
+              [class.is-invalid]="eventForm.get('organizer_contact')?.invalid && eventForm.get('organizer_contact')?.touched"
+            >
+            <div class="error-message" *ngIf="eventForm.get('organizer_contact')?.invalid && eventForm.get('organizer_contact')?.touched">
+              <span *ngIf="eventForm.get('organizer_contact')?.errors?.['required']">Contact email is required</span>
+              <span *ngIf="eventForm.get('organizer_contact')?.errors?.['email']">Please enter a valid email address</span>
+            </div>
+          </div>
+
+          <!-- Target Audience -->
+          <div class="form-group">
+            <label>Target Audience *</label>
+            <div class="audience-options">
+              <label class="radio-option">
+                <input type="radio" formControlName="target_audience" value="players">
+                <span>Players</span>
+              </label>
+              <label class="radio-option">
+                <input type="radio" formControlName="target_audience" value="scouts">
+                <span>Scouts</span>
+              </label>
+              <label class="radio-option">
+                <input type="radio" formControlName="target_audience" value="public">
+                <span>Public</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Submit Button -->
+          <div class="form-actions">
+            <button type="button" class="btn-secondary" (click)="toggleEventForm()">Cancel</button>
+            <button type="submit" class="btn-primary" [disabled]="eventForm.invalid || isSubmittingEvent">
+              <span *ngIf="!isSubmittingEvent">Create Event</span>
+              <span *ngIf="isSubmittingEvent">
+                <i class="fas fa-spinner fa-spin"></i>
+                Creating...
+              </span>
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Existing Event Requests List -->
+      <div class="event-requests-list">
       <div *ngIf="loadingEvents" class="loading-spinner">
         Loading event requests...
       </div>
@@ -191,13 +455,10 @@
               <p><i class="fas fa-envelope"></i> Contact: {{ event.organizer_contact }}</p>
             </div>
 
-            <div class="organizer-info">
-
-              <div class="profile-info">
-                <h4>Organizer: {{ event.organizer?.name }}</h4>
-                <p><i class="fas fa-building"></i> {{ event.organizer?.profile?.company || 'N/A' }}</p>
-                <p><i class="fas fa-map-marker-alt"></i> {{ event.organizer?.profile?.region || 'N/A' }}</p>
-              </div>
+              <div class="organizer-info" *ngIf="event.organizer">
+                <h4>Organizer: {{ event.organizer.name }}</h4>
+                <p><i class="fas fa-building"></i> {{ event.organizer.profile && event.organizer.profile.company || 'N/A' }}</p>
+                <p><i class="fas fa-map-marker-alt"></i> {{ event.organizer.profile && event.organizer.profile.region || 'N/A' }}</p>
             </div>
 
             <div class="event-description" *ngIf="event.description">
@@ -231,6 +492,294 @@
           </div>
         </div>
       </div>
+      </div>
+    </div>
+
+    <!-- Subscription Management Section -->
+    <div *ngIf="currentSection === 'subscriptions'" class="dashboard-content">
+      <!-- Subscription Plans Section -->
+      <div class="stats-grid">
+        <div class="error-message" *ngIf="subscriptionError.plans">{{ subscriptionError.plans }}</div>
+        <div class="loading-spinner" *ngIf="loadingSubscription.plans">Loading plans...</div>
+
+        <div class="plans-grid" *ngIf="!loadingSubscription.plans">
+          <div class="stat-card" *ngFor="let plan of plans">
+            <div class="plan-header">
+              <h3>{{ plan.Name }}</h3>
+              <button class="edit-btn" (click)="startEditingPlan(plan)" *ngIf="plan.id !== editingPlan?.id">
+                <i class="fas fa-pencil-alt"></i> Edit
+              </button>
+            </div>
+
+            <!-- View Mode -->
+            <div class="plan-details" *ngIf="plan.id !== editingPlan?.id">
+              <p class="stat-number">{{ formatPrice(plan.Price) }}</p>
+              <p class="stat-breakdown">{{ getDurationText(plan.Duration) }}</p>
+            </div>
+
+            <!-- Edit Mode -->
+            <div class="plan-edit" *ngIf="plan.id === editingPlan?.id">
+              <div class="form-group">
+                <label>Name:</label>
+                <input type="text" [(ngModel)]="editingPlan!.Name" class="form-control">
+              </div>
+              <div class="form-group">
+                <label>Price (EGP):</label>
+                <input type="number" [(ngModel)]="editingPlan!.Price" class="form-control">
+              </div>
+              <div class="form-group">
+                <label>Duration (days):</label>
+                <input type="number" [(ngModel)]="editingPlan!.Duration" class="form-control">
+              </div>
+              <div class="button-group">
+                <button class="save-btn" (click)="savePlan()">Save</button>
+                <button class="cancel-btn" (click)="cancelEditingPlan()">Cancel</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- User Subscriptions Section -->
+      <div class="chart-container">
+        <h3>User Subscriptions</h3>
+        <div class="error-message" *ngIf="subscriptionError.subscriptions">{{ subscriptionError.subscriptions }}</div>
+        <div class="loading-spinner" *ngIf="loadingSubscription.subscriptions">Loading subscriptions...</div>
+
+        <div class="table-responsive" *ngIf="!loadingSubscription.subscriptions">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>User</th>
+                <th>Type</th>
+                <th>Plan</th>
+                <th>Status</th>
+                <th>Expires</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let sub of subscriptions">
+                <td>
+                  <div class="user-info">
+                    <span class="user-name">{{ sub.user.name }}</span>
+                    <span class="user-email">{{ sub.user.email }}</span>
+                  </div>
+                </td>
+                <td>{{ sub.user.type }}</td>
+                <td>{{ sub.plan.Name }}</td>
+                <td>
+                  <span [class]="'status-badge ' + sub.status.toLowerCase()">
+                    {{ sub.status }}
+                  </span>
+                </td>
+                <td>{{ formatDate(sub.expires_at) }}</td>
+                <td>
+                  <button
+                    class="deactivate-btn"
+                    (click)="deactivateSubscription(sub.user.id, sub.user.type)"
+                    *ngIf="sub.status.toLowerCase() === 'active'">
+                    Deactivate Plan
+                  </button>
+                  <span *ngIf="sub.status.toLowerCase() !== 'active'" class="status-badge inactive">
+                    Deactivated
+                  </span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Payment History Section -->
+      <div class="chart-container">
+        <h3>Payment History</h3>
+        <div class="error-message" *ngIf="subscriptionError.payments">{{ subscriptionError.payments }}</div>
+        <div class="loading-spinner" *ngIf="loadingSubscription.payments">Loading payments...</div>
+
+        <div class="table-responsive" *ngIf="!loadingSubscription.payments">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>User</th>
+                <th>Amount</th>
+                <th>Card</th>
+                <th>Cardholder</th>
+                <th>Invoices</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let payment of payments">
+                <td>{{ formatDate(payment.created_at) }}</td>
+                <td>
+                  <div class="user-info" *ngIf="payment.user">
+                    <span class="user-name">{{ payment.user.name }}</span>
+                    <span class="user-email">{{ payment.user.email }}</span>
+                  </div>
+                  <span *ngIf="!payment.user" class="text-muted">User not found</span>
+                </td>
+                <td>{{ formatPrice(payment.amount) }}</td>
+                <td>**** {{ payment.card_last_four }}</td>
+                <td>{{ payment.cardholder_name }}</td>
+                <td>
+                  <div class="invoices-list">
+                    <div *ngFor="let invoice of payment.invoices" class="invoice-item">
+                      <span class="invoice-id">#{{ invoice.id }}</span>
+                      <span class="invoice-date">{{ formatDate(invoice.issue_date) }}</span>
+                      <span class="invoice-status">{{ invoice.status }}</span>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- User Management Section -->
+    <div class="user-management-section" *ngIf="currentSection === 'user-management'">
+      <div class="section-header">
+        <h2>User Management</h2>
+        <div class="search-filters">
+          <input type="text" [(ngModel)]="userSearchQuery" placeholder="Search by name, email, or ID" class="form-control">
+          <select [(ngModel)]="userTypeFilter" class="form-control">
+            <option value="">All Types</option>
+            <option value="player">Players</option>
+            <option value="scout">Scouts</option>
+          </select>
+          <button class="btn btn-primary" (click)="searchUsers()">Search</button>
+        </div>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Type</th>
+              <th>Status</th>
+              <th>Joined Date</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let user of users">
+              <td>{{ user.id }}</td>
+              <td>{{ user.first_name }} {{ user.last_name }}</td>
+              <td>{{ user.email }}</td>
+              <td>
+                <span [class.badge-primary]="user.user_type === 'player'"
+                      [class.badge-success]="user.user_type === 'scout'"
+                      class="badge">
+                  {{ user.user_type | titlecase }}
+                </span>
+              </td>
+              <td>
+                <span [class.badge-success]="user.email_verified_at"
+                      [class.badge-warning]="!user.email_verified_at"
+                      class="badge">
+                  {{ user.email_verified_at ? 'Verified' : 'Pending' }}
+                </span>
+              </td>
+              <td>{{ user.created_at | date }}</td>
+              <td class="action-buttons">
+                <button class="btn btn-sm btn-action" (click)="viewUserDetails(user)" title="View Details">
+                  <i class="fas fa-eye"></i>
+                </button>
+                <button *ngIf="user.user_type === 'scout'" class="btn btn-sm btn-action" (click)="viewScoutDocuments(user)" title="View Documents">
+                  <i class="fas fa-file-alt"></i>
+                </button>
+                <button class="btn btn-sm btn-action btn-delete" (click)="deleteUser(user)" title="Delete User">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- User Details Modal -->
+      <app-modal *ngIf="selectedUser" [title]="'User Details'" (closeModal)="closeUserDetails()" id="userDetailsModal">
+        <div class="user-profile">
+          <div class="basic-info">
+            <h6>Basic Information</h6>
+            <p><strong>Name:</strong> {{ selectedUser.first_name }} {{ selectedUser.last_name }}</p>
+            <p><strong>Email:</strong> {{ selectedUser.email }}</p>
+            <p><strong>Type:</strong> {{ selectedUser.user_type | titlecase }}</p>
+            <p><strong>Joined:</strong> {{ selectedUser.created_at | date }}</p>
+          </div>
+
+          <div class="profile-info" *ngIf="selectedUser.user_type === 'player'">
+            <h6>Player Profile</h6>
+            <p><strong>Position:</strong> {{ selectedUser.player?.position }}</p>
+            <p><strong>Club:</strong> {{ selectedUser.player?.current_club }}</p>
+            <p><strong>Membership:</strong> {{ selectedUser.player?.membership | titlecase }}</p>
+          </div>
+
+          <div class="profile-info" *ngIf="selectedUser.user_type === 'scout'">
+            <h6>Scout Profile</h6>
+            <p><strong>Organization:</strong> {{ selectedUser.scout?.organization }}</p>
+            <p><strong>Position:</strong> {{ selectedUser.scout?.position_title }}</p>
+            <p><strong>Subscription:</strong> {{ selectedUser.scout?.subscription_active ? 'Active' : 'Inactive' }}</p>
+            <button class="btn btn-action mt-2" (click)="viewScoutDocuments(selectedUser)" *ngIf="selectedUser.user_type === 'scout'">
+              <i class="fas fa-file-alt mr-2"></i>View Documents
+            </button>
+          </div>
+
+          <div class="activity-info">
+            <h6>Activity Information</h6>
+            <p><strong>Videos:</strong> {{ selectedUser.videos_count || 0 }}</p>
+            <p><strong>Comments:</strong> {{ selectedUser.comments_count || 0 }}</p>
+            <p><strong>Likes:</strong> {{ selectedUser.likes_count || 0 }}</p>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn btn-action" (click)="closeUserDetails()">
+            <i class="fas fa-times mr-2"></i>Close
+          </button>
+          <button class="btn btn-action btn-delete" (click)="deleteUser(selectedUser)">
+            <i class="fas fa-trash mr-2"></i>Delete Account
+          </button>
+        </div>
+      </app-modal>
+
+      <!-- Scout Documents Modal -->
+      <app-modal *ngIf="selectedScoutDocuments" [title]="'Scout Documents'" (closeModal)="closeScoutDocuments()">
+        <div class="scout-documents">
+          <div class="document-section">
+            <h6>ID Proof</h6>
+            <div class="document-preview" *ngIf="selectedScoutDocuments.id_proof_path">
+              <img [src]="getDocumentUrl(selectedScoutDocuments.id_proof_path)" alt="ID Proof" class="document-image">
+              <a [href]="getDocumentUrl(selectedScoutDocuments.id_proof_path)" target="_blank" class="btn btn-primary mt-2">
+                <i class="fas fa-external-link-alt mr-2"></i>Open Full Size
+              </a>
+            </div>
+            <p *ngIf="!selectedScoutDocuments.id_proof_path" class="text-muted">No ID proof uploaded</p>
+          </div>
+
+          <div class="document-section">
+            <h6>Certifications</h6>
+            <div class="certifications-grid" *ngIf="selectedScoutDocuments.certifications?.length">
+              <div class="certification-item" *ngFor="let cert of selectedScoutDocuments.certifications">
+                <img [src]="getDocumentUrl(cert)" alt="Certification" class="document-image">
+                <a [href]="getDocumentUrl(cert)" target="_blank" class="btn btn-primary mt-2">
+                  <i class="fas fa-external-link-alt mr-2"></i>Open Full Size
+                </a>
+              </div>
+            </div>
+            <p *ngIf="!selectedScoutDocuments.certifications?.length" class="text-muted">No certifications uploaded</p>
+          </div>
+        </div>
+
+        <div footer>
+          <button class="btn-secondary" (click)="closeScoutDocuments()">Close</button>
+        </div>
+      </app-modal>
     </div>
   </div>
 </div>

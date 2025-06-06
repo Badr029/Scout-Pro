@@ -10,10 +10,10 @@ class PlanSeeder extends Seeder
     public function run()
     {
         Plan::insert([
-            ['name' => 'Scout Monthly', 'duration' => 30, 'price' => 1399],
-            ['name' => 'Scout Yearly', 'duration' => 365, 'price' => 14279],
-            ['name' => 'Player Monthly', 'duration' => 30, 'price' => 149],
-            ['name' => 'Player Yearly', 'duration' => 365, 'price' => 1529],
+            ['Name' => 'Scout Monthly', 'Duration' => 30, 'Price' => 1399],
+            ['Name' => 'Scout Yearly', 'Duration' => 365, 'Price' => 14279],
+            ['Name' => 'Player Monthly', 'Duration' => 30, 'Price' => 149],
+            ['Name' => 'Player Yearly', 'Duration' => 365, 'Price' => 1529],
         ]);
 
     }

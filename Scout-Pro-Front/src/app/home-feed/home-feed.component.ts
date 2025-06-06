@@ -1423,7 +1423,7 @@ export class HomeFeedComponent implements OnInit, OnDestroy {
               if (minAge === 29) {
                 if (playerAge < 29) {
                   console.log('Age below minimum for 29+ category:', playerAge);
-                  return false;
+                return false;
                 }
               } else {
                 // Normal range check for other age ranges

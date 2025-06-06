@@ -181,27 +181,27 @@ class ProfileController extends Controller
 
 
 
-    //     public function delete(Request $request) {
-    //         $user = auth()->user();
+        public function delete(Request $request) {
+            $user = auth()->user();
 
-    //         $request->validate([
-    //             'password' => 'required|string',
-    //         ]);
+            $request->validate([
+                'password' => 'required|string',
+            ]);
 
-    //         if (!Hash::check($request->password, $user->password)) {
-    //             return response()->json(['message' => 'Incorrect password'], 403);
-    //         }
-    //         if ($user->user_type=='player') {
-    //             $user->player()->delete();
-    //             $user->delete();
-    //             return response()->json(['message' => 'Player account deactivated permanently'],200);
-    //         }
+            if (!Hash::check($request->password, $user->password)) {
+                return response()->json(['message' => 'Incorrect password'], 403);
+            }
+            if ($user->user_type=='player') {
+                $user->player()->delete();
+                $user->delete();
+                return response()->json(['message' => 'Player account deactivated permanently'],200);
+            }
 
-    //         if ($user->user_type=='scout') {
-    //             $user->scout()->delete();
-    //             $user->delete();
-    //             return response()->json(['message' => 'Scout account deactivated permanently'],200);
-    //         }
-    //     }
+            if ($user->user_type=='scout') {
+                $user->scout()->delete();
+                $user->delete();
+                return response()->json(['message' => 'Scout account deactivated permanently'],200);
+            }
+        }
 }
 

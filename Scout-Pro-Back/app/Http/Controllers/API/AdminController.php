@@ -18,6 +18,11 @@ use App\Mail\ContactRequestApproved;
 use App\Mail\ContactRequestRejected;
 use App\Mail\EventRequestApproved;
 use App\Mail\EventRequestRejected;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Validator;
+use App\Models\Event;
+use App\Models\Payment;
+use App\Models\Subscription;
 
 class AdminController extends Controller
 {
@@ -338,6 +343,500 @@ class AdminController extends Controller
                     'status' => $request->status ?? 'not provided',
                     'error' => $e->getMessage()
                 ]
+            ], 500);
+        }
+    }
+
+    // Subscription Management Methods
+    public function getSubscriptionPlans()
+    {
+        try {
+            $plans = \App\Models\Plan::all();
+            return response()->json([
+                'status' => 'success',
+                'data' => $plans
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error fetching subscription plans: ' . $e->getMessage());
+            return response()->json(['message' => 'Error fetching subscription plans'], 500);
+        }
+    }
+
+    public function updatePlan(Request $request, $id)
+    {
+        try {
+            $plan = \App\Models\Plan::findOrFail($id);
+            $request->validate([
+                'Name' => 'required|string',
+                'Duration' => 'required|integer',
+                'Price' => 'required|numeric'
+            ]);
+
+            $plan->update($request->all());
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Plan updated successfully',
+                'data' => $plan
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error updating plan: ' . $e->getMessage());
+            return response()->json(['message' => 'Error updating plan'], 500);
+        }
+    }
+
+    public function getUserSubscriptions()
+    {
+        try {
+            $subscriptions = \App\Models\Subscription::with(['user', 'plan', 'payment'])
+                ->orderBy('created_at', 'desc')
+                ->get()
+                ->map(function($subscription) {
+                    $user = $subscription->user;
+                    return [
+                        'id' => $subscription->id,
+                        'user' => [
+                            'id' => $user->id,
+                            'name' => $user->first_name . ' ' . $user->last_name,
+                            'email' => $user->email,
+                            'type' => $user->user_type
+                        ],
+                        'plan' => $subscription->plan,
+                        'status' => $subscription->active ? 'Active' : 'Inactive',
+                        'expires_at' => $subscription->expires_at,
+                        'created_at' => $subscription->created_at,
+                        'payment' => $subscription->payment ? [
+                            'amount' => $subscription->payment->amount,
+                            'card_last_four' => $subscription->payment->card_last_four,
+                            'created_at' => $subscription->payment->created_at
+                        ] : null
+                    ];
+                });
+
+            return response()->json([
+                'status' => 'success',
+                'data' => $subscriptions
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error fetching user subscriptions: ' . $e->getMessage());
+            return response()->json(['message' => 'Error fetching user subscriptions'], 500);
+        }
+    }
+
+    public function updateUserSubscription(Request $request, $userId)
+    {
+        try {
+            DB::beginTransaction();
+
+            $user = \App\Models\User::findOrFail($userId);
+            $newPlan = \App\Models\Plan::findOrFail($request->plan_id);
+
+            // Update subscription record
+            $subscription = \App\Models\Subscription::where('user_id', $userId)->first();
+            if (!$subscription) {
+                $subscription = new \App\Models\Subscription();
+                $subscription->user_id = $userId;
+            }
+
+            $subscription->plan_id = $newPlan->id;
+            $subscription->active = true;
+            $subscription->expires_at = now()->addDays($newPlan->Duration);
+            $subscription->save();
+
+            // Update user-specific subscription fields
+            if ($user->user_type === 'scout') {
+                $user->scout->update([
+                    'subscription_id' => $subscription->id,
+                    'subscription_active' => true,
+                    'subscription_expires_at' => $subscription->expires_at
+                ]);
+            } else {
+                $user->player->update([
+                    'subscription_id' => $subscription->id,
+                    'subscription_expires_at' => $subscription->expires_at,
+                    'membership' => $newPlan->Name === 'Player Monthly' || $newPlan->Name === 'Player Yearly' ? 'premium' : 'free'
+                ]);
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Subscription updated successfully',
+                'data' => $subscription
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error updating user subscription: ' . $e->getMessage());
+            return response()->json(['message' => 'Error updating user subscription'], 500);
+        }
+    }
+
+    public function getPaymentHistory()
+    {
+        try {
+            Log::info('Fetching payment history');
+
+            $payments = \App\Models\Payment::with(['invoices', 'user'])
+                ->orderBy('created_at', 'desc')
+                ->get();
+
+            Log::info('Raw payments data:', [
+                'count' => $payments->count(),
+                'first_payment' => $payments->first()
+            ]);
+
+            $formattedPayments = $payments->map(function($payment) {
+                $data = [
+                    'id' => $payment->id,
+                    'amount' => $payment->amount,
+                    'card_last_four' => $payment->card_last_four,
+                    'cardholder_name' => $payment->cardholder_name,
+                    'created_at' => $payment->created_at,
+                    'user' => null,
+                    'invoices' => []
+                ];
+
+                if ($payment->user) {
+                    $data['user'] = [
+                        'name' => $payment->user->first_name . ' ' . $payment->user->last_name,
+                        'email' => $payment->user->email
+                    ];
+                }
+
+                if ($payment->invoices) {
+                    $data['invoices'] = $payment->invoices->map(function($invoice) {
+                        return [
+                            'id' => $invoice->id,
+                            'issue_date' => $invoice->IssueDate,
+                            'status' => $invoice->Status
+                        ];
+                    })->toArray();
+                }
+
+                return $data;
+            });
+
+            Log::info('Formatted payments data:', [
+                'count' => $formattedPayments->count(),
+                'first_payment' => $formattedPayments->first()
+            ]);
+
+            return response()->json([
+                'status' => 'success',
+                'data' => $formattedPayments
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error fetching payment history: ' . $e->getMessage());
+            Log::error('Stack trace: ' . $e->getTraceAsString());
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Error fetching payment history: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function deactivateUserSubscription(Request $request, $userId)
+    {
+        try {
+            DB::beginTransaction();
+
+            $user = \App\Models\User::findOrFail($userId);
+            $subscription = \App\Models\Subscription::where('user_id', $userId)->first();
+
+            if (!$subscription) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'No subscription found for this user'
+                ], 404);
+            }
+
+            // Update subscription record
+            $subscription->update([
+                'active' => false,
+                'expires_at' => now()
+            ]);
+
+            // Update user-specific subscription fields
+            if ($user->user_type === 'scout') {
+                $user->scout->update([
+                    'subscription_active' => false,
+                    'subscription_expires_at' => now()
+                ]);
+            } else {
+                $user->player->update([
+                    'membership' => 'free',
+                    'subscription_expires_at' => now()
+                ]);
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Subscription deactivated successfully'
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error deactivating subscription: ' . $e->getMessage());
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Error deactivating subscription'
+            ], 500);
+        }
+    }
+
+    // User Management Methods
+    public function getUsers(Request $request)
+    {
+        try {
+            $query = User::with(['player', 'scout'])
+                ->where('user_type', '!=', 'admin');
+
+            // Apply search filters
+            if ($request->has('search')) {
+                $search = $request->search;
+                $query->where(function($q) use ($search) {
+                    $q->where('first_name', 'like', "%{$search}%")
+                      ->orWhere('last_name', 'like', "%{$search}%")
+                      ->orWhere('email', 'like', "%{$search}%")
+                      ->orWhere('id', 'like', "%{$search}%");
+                });
+            }
+
+            // Filter by user type
+            if ($request->has('type') && in_array($request->type, ['player', 'scout'])) {
+                $query->where('user_type', $request->type);
+            }
+
+            $users = $query->orderBy('created_at', 'desc')->get()
+                ->map(function($user) {
+                    return [
+                        'id' => $user->id,
+                        'first_name' => $user->first_name,
+                        'last_name' => $user->last_name,
+                        'email' => $user->email,
+                        'user_type' => $user->user_type,
+                        'email_verified_at' => $user->email_verified_at,
+                        'created_at' => $user->created_at,
+                        'setup_completed' => $user->setup_completed
+                    ];
+                });
+
+            return response()->json([
+                'status' => 'success',
+                'data' => $users
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error fetching users: ' . $e->getMessage());
+            return response()->json(['message' => 'Error fetching users'], 500);
+        }
+    }
+
+    public function getUserDetails($id)
+    {
+        try {
+            $user = User::with(['player', 'scout', 'videos', 'comments', 'likes'])
+                ->where('id', $id)
+                ->where('user_type', '!=', 'admin')
+                ->firstOrFail();
+
+            $data = [
+                'id' => $user->id,
+                'first_name' => $user->first_name,
+                'last_name' => $user->last_name,
+                'email' => $user->email,
+                'user_type' => $user->user_type,
+                'email_verified_at' => $user->email_verified_at,
+                'created_at' => $user->created_at,
+                'setup_completed' => $user->setup_completed,
+                'videos_count' => $user->videos->count(),
+                'comments_count' => $user->comments->count(),
+                'likes_count' => $user->likes->count()
+            ];
+
+            if ($user->user_type === 'player') {
+                $data['player'] = $user->player ? [
+                    'position' => $user->player->position,
+                    'current_club' => $user->player->current_club,
+                    'membership' => $user->player->membership,
+                    'subscription_expires_at' => $user->player->subscription_expires_at
+                ] : null;
+            } else {
+                $data['scout'] = $user->scout ? [
+                    'organization' => $user->scout->organization,
+                    'position_title' => $user->scout->position_title,
+                    'subscription_active' => $user->scout->subscription_active,
+                    'subscription_expires_at' => $user->scout->subscription_expires_at
+                ] : null;
+            }
+
+            return response()->json([
+                'status' => 'success',
+                'data' => $data
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error fetching user details: ' . $e->getMessage());
+            return response()->json(['message' => 'Error fetching user details'], 500);
+        }
+    }
+
+    public function deleteUser($id)
+    {
+        try {
+            DB::beginTransaction();
+
+            $user = User::where('id', $id)
+                ->where('user_type', '!=', 'admin')
+                ->firstOrFail();
+
+            // Delete related data
+            if ($user->videos) {
+                foreach ($user->videos as $video) {
+                    // Delete video file from storage
+                    if ($video->file_path && Storage::exists($video->file_path)) {
+                        Storage::delete($video->file_path);
+                    }
+                    // Delete thumbnail if exists
+                    if ($video->thumbnail && Storage::exists($video->thumbnail)) {
+                        Storage::delete($video->thumbnail);
+                    }
+                }
+            }
+
+            // Delete profile images
+            if ($user->user_type === 'player' && $user->player) {
+                if ($user->player->profile_image && Storage::exists($user->player->profile_image)) {
+                    Storage::delete($user->player->profile_image);
+                }
+            } elseif ($user->user_type === 'scout' && $user->scout) {
+                if ($user->scout->profile_image && Storage::exists($user->scout->profile_image)) {
+                    Storage::delete($user->scout->profile_image);
+                }
+                if ($user->scout->id_proof_path && Storage::exists($user->scout->id_proof_path)) {
+                    Storage::delete($user->scout->id_proof_path);
+                }
+                if ($user->scout->certifications) {
+                    foreach ($user->scout->certifications as $cert) {
+                        if (Storage::exists($cert)) {
+                            Storage::delete($cert);
+                        }
+                    }
+                }
+            }
+
+            // Delete the user (this will cascade delete related records due to foreign key constraints)
+            $user->delete();
+
+            DB::commit();
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'User deleted successfully'
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error deleting user: ' . $e->getMessage());
+            return response()->json(['message' => 'Error deleting user'], 500);
+        }
+    }
+
+    public function createEvent(Request $request)
+    {
+        try {
+            $validator = Validator::make($request->all(), [
+                'title' => 'required|string|min:5',
+                'description' => 'nullable|string',
+                'date' => 'required|date',
+                'time' => 'required|date_format:H:i',
+                'location' => 'required|string',
+                'organizer_contact' => 'required|email',
+                'target_audience' => 'required|in:players,scouts,public',
+                'image' => 'nullable|image|mimes:jpeg,png,jpg|max:5120', // 5MB max
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Validation failed',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+
+            $eventData = $validator->validated();
+
+            // Combine date and time
+            $dateTime = $eventData['date'] . ' ' . $eventData['time'];
+            $eventData['date'] = $dateTime;
+            unset($eventData['time']); // Remove separate time field
+
+            // Handle image upload if present
+            if ($request->hasFile('image')) {
+                $image = $request->file('image');
+                $imagePath = $image->store('events', 'public');
+                $eventData['image'] = $imagePath;
+            }
+
+            // Set status as approved since it's created by admin
+            $eventData['status'] = 'approved';
+            $eventData['organizer_id'] = Auth::id();
+
+            // Create the event
+            $event = Event::create($eventData);
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Event created successfully',
+                'data' => $event
+            ], 201);
+
+        } catch (\Exception $e) {
+            Log::error('Error creating event: ' . $e->getMessage());
+            Log::error('Stack trace: ' . $e->getTraceAsString());
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to create event. Please try again.',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function getScoutDocuments($id)
+    {
+        try {
+            $user = User::where('id', $id)
+                ->where('user_type', 'scout')
+                ->firstOrFail();
+
+            $scout = $user->scout;
+
+            if (!$scout) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Scout profile not found'
+                ], 404);
+            }
+
+            $documents = [
+                'id_proof_path' => $scout->id_proof_path ? url('storage/' . $scout->id_proof_path) : null,
+                'certifications' => []
+            ];
+
+            // Handle certifications array
+            if ($scout->certifications) {
+                $documents['certifications'] = array_map(function($cert) {
+                    return url('storage/' . $cert);
+                }, $scout->certifications);
+            }
+
+            return response()->json([
+                'status' => 'success',
+                'data' => $documents
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error fetching scout documents: ' . $e->getMessage());
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to fetch scout documents'
             ], 500);
         }
     }
