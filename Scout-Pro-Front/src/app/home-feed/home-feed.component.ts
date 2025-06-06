@@ -1351,14 +1351,6 @@ export class HomeFeedComponent implements OnInit, OnDestroy {
       }
     });
 
-    // Add age calculation for backend
-    if (filters.age_range) {
-      const [minAge, maxAge] = filters.age_range.split('-');
-      filters.min_age = minAge;
-      filters.max_age = maxAge || '100'; // If no max age specified
-      delete filters.age_range;
-    }
-
     // Map frontend filter names to backend filter names
     interface MappedFilters {
       [key: string]: string | undefined;
@@ -1369,9 +1361,8 @@ export class HomeFeedComponent implements OnInit, OnDestroy {
       preferred_foot: filters.preferred_foot?.toLowerCase(),
       region: filters.region,
       playing_style: filters.playing_style?.toLowerCase(),
-      min_age: filters.min_age,
-      max_age: filters.max_age,
-      transfer_status: filters.transfer_status
+      transfer_status: filters.transfer_status,
+      age_range: filters.age_range
     };
 
     // Remove undefined or null values
@@ -1415,17 +1406,31 @@ export class HomeFeedComponent implements OnInit, OnDestroy {
               console.log('Transfer status mismatch:', player.transfer_status?.toLowerCase(), mappedFilters['transfer_status']);
               return false;
             }
-            // Age filter using the calculated age from the backend
-            if (mappedFilters['min_age'] || mappedFilters['max_age']) {
-              const playerAge = Math.abs(player.age); // Use absolute value since age is negative
-              console.log('Age check:', playerAge, mappedFilters['min_age'], mappedFilters['max_age']);
-              if (mappedFilters['min_age'] && playerAge < parseInt(mappedFilters['min_age'])) {
-                console.log('Age below minimum:', playerAge, mappedFilters['min_age']);
+
+            // Age filter using the age_range
+            if (mappedFilters['age_range']) {
+              // Convert negative decimal age to positive integer
+              const playerAge = Math.abs(Math.round(player.age));
+              if (isNaN(playerAge)) {
+                console.log('Invalid player age:', player.age);
                 return false;
               }
-              if (mappedFilters['max_age'] && playerAge > parseInt(mappedFilters['max_age'])) {
-                console.log('Age above maximum:', playerAge, mappedFilters['max_age']);
-                return false;
+
+              const [minAge, maxAge] = mappedFilters['age_range'].split('-').map(Number);
+              console.log('Age check - Player Age:', playerAge, 'Range:', minAge, '-', maxAge);
+
+              // Special handling for "29-35" which includes all players 29 and above
+              if (minAge === 29) {
+                if (playerAge < 29) {
+                  console.log('Age below minimum for 29+ category:', playerAge);
+                  return false;
+                }
+              } else {
+                // Normal range check for other age ranges
+                if (playerAge < minAge || playerAge > maxAge) {
+                  console.log('Age not in range:', playerAge, 'not between', minAge, 'and', maxAge);
+                  return false;
+                }
               }
             }
 
@@ -1440,8 +1445,8 @@ export class HomeFeedComponent implements OnInit, OnDestroy {
             id: video.id,
             title: video.title,
             description: video.description,
-            file_path: video.file_path ? `${API_URL}/storage/${video.file_path}` : null,
-            thumbnail: video.thumbnail ? `${API_URL}/storage/${video.thumbnail}` : null,
+            file_path: video.file_path,
+            thumbnail: video.thumbnail,
             user: {
               id: video.user.id,
               player_id: video.user.player?.id,
