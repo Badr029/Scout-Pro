@@ -7,6 +7,7 @@ use App\Models\Like;
 use App\Models\Follow;
 use App\Models\Event;
 use App\Models\Player;
+use App\Models\Post;
 use App\Models\User;
 use App\Models\Video;
 use Illuminate\Http\Request;
@@ -23,338 +24,270 @@ class FeedController extends Controller
      */
     public function index(Request $request)
     {
-        try {
-            $currentUser = Auth::user();
-
-            // Get the list of users that the current user is following
-            $followingIds = Follow::where('follower_id', $currentUser->id)
-                ->pluck('following_id')
-                ->toArray();
-
-            // Get videos with user and player information
-            $videos = Video::with(['user.player', 'likes', 'comments'])
-                ->orderBy('created_at', 'desc')
-                ->paginate(10);
-
-            // Process videos and add follow status
-            $processedVideos = $videos->through(function ($video) use ($followingIds, $currentUser) {
-                // Add follow status to user
-                $video->user->following = in_array($video->user->id, $followingIds);
-                $video->user->is_following = in_array($video->user->id, $followingIds);
-                $video->user->isCurrentUser = $video->user->id === $currentUser->id;
-                return $video;
-            });
-
-            return response()->json([
-                'status' => 'success',
-                'posts' => $processedVideos
-            ]);
-        } catch (\Exception $e) {
-            Log::error('Feed error: ' . $e->getMessage());
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Failed to load feed'
-            ], 500);
-        }
-    }
-
-    /**
-     * Get the main feed based on user type with video filters by player profile
-     */
-    public function indexOld(Request $request)
-    {
         $user = Auth::user();
-        $query = Post::with([
-            'player.user',
-            'likes',
-            'comments',
-            'likes as user_liked' => function ($query) use ($user) {
+        $userType = $user->user_type;
+
+        // Get filter parameters
+        $position = $request->input('position');
+        $secondary_position = $request->input('secondary_position');
+        $region = $request->input('region');
+        $age = $request->input('age');
+        $height = $request->input('height');
+        $preferred_foot = $request->input('preferred_foot');
+        $playing_style = $request->input('playing_style');
+        $transfer_status = $request->input('transfer_status');
+
+        // Build query for videos
+        $videosQuery = Video::with([
+            'user.player',
+            'comments.user.player',
+            'likes.user.player',
+            'likes' => function ($query) use ($user) {
                 $query->where('user_id', $user->id);
             }
-        ])->whereNotNull('video_url');
+        ])
+        ->whereHas('user', function ($query) {
+            $query->where('user_type', 'player');
+        })
+        ->orderBy('created_at', 'desc');
 
-        // Filter feed by player attributes
-        if ($request->has('position')) {
-            $query->whereHas('player', function ($q) use ($request) {
-                $q->where('position', $request->position)
-                  ->orWhere('secondary_position', $request->position);
-            });
-        }
-
-        if ($request->has('playing_style')) {
-            $query->whereHas('player', function ($q) use ($request) {
-                $q->where('playing_style', $request->playing_style);
-            });
-        }
-
-        if ($request->has('preferred_foot')) {
-            $query->whereHas('player', function ($q) use ($request) {
-                $q->where('preferred_foot', $request->preferred_foot);
-            });
-        }
-
-        // Age range filter
-        if ($request->has('min_age') || $request->has('max_age')) {
-            $query->whereHas('player', function ($q) use ($request) {
-                if ($request->has('min_age')) {
-                    $maxDate = now()->subYears($request->min_age)->format('Y-m-d');
-                    $q->whereDate('DateofBirth', '<=', $maxDate);
-                }
-                if ($request->has('max_age')) {
-                    $minDate = now()->subYears($request->max_age)->format('Y-m-d');
-                    $q->whereDate('DateofBirth', '>=', $minDate);
-                }
-            });
-        }
-
-        // Region/City filter
-        if ($request->has('region')) {
-            $query->whereHas('player', function ($q) use ($request) {
-                $q->where('current_city', 'LIKE', "%{$request->region}%");
-            });
-        }
-
-        // Add video category filter
-        if ($request->has('video_category')) {
-            $query->where('video_category', $request->video_category);
-        }
-
-        // Add engagement level filter
-        if ($request->has('engagement')) {
-            switch ($request->engagement) {
-                case 'high':
-                    $query->where('likes_count', '>=', 100);
-                    break;
-                case 'medium':
-                    $query->whereBetween('likes_count', [20, 99]);
-                    break;
-                case 'low':
-                    $query->where('likes_count', '<', 20);
-                    break;
+        // Apply filters if user is a scout
+        if ($userType === 'scout') {
+            if ($position) {
+                $videosQuery->whereHas('user.player', function ($query) use ($position) {
+                    $query->where('position', $position);
+                });
+            }
+            if ($region) {
+                $videosQuery->whereHas('user.player', function ($query) use ($region) {
+                    $query->where('current_city', $region);
+                });
+            }
+            if ($preferred_foot) {
+                $videosQuery->whereHas('user.player', function ($query) use ($preferred_foot) {
+                    $query->where('preferred_foot', $preferred_foot);
+                });
+            }
+            if ($age) {
+                $videosQuery->whereHas('user.player', function ($query) use ($age) {
+                    // Since age is stored as a negative number, we use abs() to compare
+                    $query->whereRaw('ABS(age) = ?', [abs((int)$age)]);
+                });
+            }
+            if ($transfer_status) {
+                $videosQuery->whereHas('user.player', function ($query) use ($transfer_status) {
+                    $query->where('transfer_status', $transfer_status);
+                });
+                Log::info('Applying transfer status filter:', [
+                    'transfer_status' => $transfer_status,
+                    'sql' => $videosQuery->toSql(),
+                    'bindings' => $videosQuery->getBindings()
+                ]);
             }
         }
 
-        // For scouts: Show posts from followed players first
-        if ($user->user_type === 'scout') {
-            $followingIds = Follow::where('follower_id', $user->id)
-                ->pluck('following_id');
+        // Get videos with pagination
+        $videos = $videosQuery->paginate(10);
 
-            // Get scout's most viewed positions
-            $mostViewedPositions = Post::whereHas('views', function ($q) use ($user) {
-                $q->where('user_id', $user->id);
-            })
-            ->join('players', 'posts.player_id', '=', 'players.id')
-            ->groupBy('players.position')
-            ->orderByRaw('COUNT(*) DESC')
-            ->limit(3)
-            ->pluck('players.position');
+        // Transform the videos to include user-specific data
+        $videos->through(function ($video) use ($user) {
+            // Add has_liked flag
+            $video->has_liked = $video->likes->where('user_id', $user->id)->count() > 0;
 
-            // Enhanced ordering for scouts
-            $query->orderByRaw("CASE
-                WHEN player_id IN (
-                    SELECT id FROM players WHERE membership = 'premium'
-                ) THEN 1
-                WHEN player_id IN (
-                    SELECT id FROM players WHERE user_id IN (" . $followingIds->implode(',') . ")
-                ) THEN 2
-                WHEN player_id IN (
-                    SELECT id FROM players WHERE position IN ('" . $mostViewedPositions->implode("','") . "')
-                ) THEN 3
-                ELSE 4
-                END")
-                ->orderBy('created_at', 'desc');
+            // Format the likes data
+            $video->likes_data = $video->likes->map(function ($like) {
+                return [
+                    'id' => $like->id,
+                    'user_id' => $like->user_id,
+                    'user' => [
+                        'id' => $like->user->id,
+                        'first_name' => $like->user->first_name,
+                        'last_name' => $like->user->last_name,
+                        'profile_image' => $like->user->player ? $like->user->player->profile_image : null
+                    ]
+                ];
+            });
 
-        } else {
-            // For players: Enhanced similar player matching
-            $playerProfile = $user->player;
-            if ($playerProfile) {
-                $query->orderByRaw("CASE
-                    WHEN player_id IN (
-                        SELECT id FROM players
-                        WHERE (position = ? OR secondary_position = ?)
-                        AND playing_style = ?
-                        AND preferred_foot = ?
-                    ) THEN 1
-                    WHEN player_id IN (
-                        SELECT id FROM players
-                        WHERE position = ?
-                        OR current_city = ?
-                    ) THEN 2
-                    ELSE 3
-                    END", [
-                        $playerProfile->position,
-                        $playerProfile->position,
-                        $playerProfile->playing_style,
-                        $playerProfile->preferred_foot,
-                        $playerProfile->position,
-                        $playerProfile->current_city
-                    ])
-                    ->orderBy('created_at', 'desc');
+            // Format the comments data
+            $video->comments_data = $video->comments->map(function ($comment) {
+                // Get profile image based on user type
+                $profileImage = null;
+                if ($comment->user->user_type === 'scout' && $comment->user->scout) {
+                    $profileImage = $comment->user->scout->profile_image;
+                } elseif ($comment->user->user_type === 'player' && $comment->user->player) {
+                    $profileImage = $comment->user->player->profile_image;
+                }
+
+                return [
+                    'id' => $comment->id,
+                    'content' => $comment->content,
+                    'created_at' => $comment->created_at,
+                    'user_id' => $comment->user_id,
+                    'user' => [
+                        'id' => $comment->user->id,
+                        'first_name' => $comment->user->first_name,
+                        'last_name' => $comment->user->last_name,
+                        'profile_image' => $profileImage ? url('storage/' . $profileImage) : null,
+                        'user_type' => $comment->user->user_type,
+                        'scout_id' => $comment->user->scout ? $comment->user->scout->id : null,
+                        'player_id' => $comment->user->player ? $comment->user->player->id : null
+                    ]
+                ];
+            });
+
+            // Add user data with proper profile image path and player info
+            if ($video->user && $video->user->player) {
+                $video->user->profile_image = $video->user->player->profile_image ? url('storage/' . $video->user->player->profile_image) : null;
+                $video->user->player_info = [
+                    'position' => $video->user->player->position,
+                    'region' => $video->user->player->current_city,
+                    'age' => abs($video->user->player->getAge()),
+                    'preferred_foot' => $video->user->player->preferred_foot,
+                    'transfer_status' => $video->user->player->transfer_status
+                ];
             }
-        }
 
-        $posts = $query->paginate(10);
-
-        // Enhanced trending players with performance metrics
-        $trendingPlayers = Player::select('players.*')
-            ->join('posts', 'players.id', '=', 'posts.player_id')
-            ->whereNotNull('posts.video_url')
-            ->withCount(['posts' => function ($query) {
-                $query->whereNotNull('video_url');
-            }])
-            ->withCount('likes')
-            ->withCount('views')
-            ->withAvg('posts', 'likes_count')
-            ->orderBy('views_count', 'desc')
-            ->orderBy('likes_count', 'desc')
-            ->limit(5)
-            ->get();
-
-        // Get upcoming events
-        $upcomingEvents = Event::where('status', 'active')
-            ->where(function ($query) use ($user) {
-                $query->where('target_audience', $user->user_type)
-                    ->orWhere('target_audience', 'all');
-            })
-            ->whereDate('start_date', '>=', now())
-            ->whereDate('start_date', '<=', now()->addDays(7))
-            ->orderBy('start_date')
-            ->limit(3)
-            ->get();
-
-        // Transform posts with enhanced data
-        $posts->through(function ($post) use ($user) {
-            $post->user_liked = !is_null($post->user_liked);
-            $post->user_following = Follow::where('follower_id', $user->id)
-                ->where('following_id', $post->player->user_id)
-                ->exists();
-            $post->time_ago = $post->created_at->diffForHumans();
-
-            // Enhanced player details
-            $post->player_details = [
-                'position' => $post->player->position,
-                'playing_style' => $post->player->playing_style,
-                'preferred_foot' => $post->player->preferred_foot,
-                'age' => $post->player->DateofBirth ? now()->diffInYears($post->player->DateofBirth) : null,
-                'current_city' => $post->player->current_city,
-                'engagement_rate' => $this->calculateEngagementRate($post),
-                'performance_level' => $this->getPerformanceLevel($post)
-            ];
-
-            // Add video analytics
-            $post->video_analytics = [
-                'views_count' => $post->views_count,
-                'likes_count' => $post->likes_count,
-                'comments_count' => $post->comments_count,
-                'engagement_rate' => ($post->views_count > 0) ?
-                    round(($post->likes_count + $post->comments_count) / $post->views_count * 100, 2) : 0,
-                'watch_time' => $this->getAverageWatchTime($post->id)
-            ];
-
-            return $post;
+            return $video;
         });
 
-        // Enhanced filter options
+        // Get trending players (based on video views and likes)
+        $trendingPlayers = User::where('user_type', 'player')
+            ->whereHas('videos', function ($query) {
+                $query->orderByDesc('views')
+                    ->orderByDesc('created_at');
+            })
+            ->with('player')
+            ->take(5)
+            ->get()
+            ->map(function ($user) {
+                return [
+                    'id' => $user->id,
+                    'name' => $user->first_name . ' ' . $user->last_name,
+                    'position' => $user->player ? $user->player->position : null,
+                    'region' => $user->player ? $user->player->nationality : null,
+                    'profile_image' => $user->player && $user->player->profile_image ? url('storage/' . $user->player->profile_image) : null,
+                ];
+            });
+
+        // Get upcoming events
+        $upcomingEvents = Event::where('date', '>=', now())
+            ->orderBy('date')
+            ->take(3)
+            ->get();
+
+        // Get recommended players based on user's interests
+        $recommendedPlayers = [];
+        if ($userType === 'scout' && $user->scout) {
+            $recommendedPlayers = User::where('user_type', 'player')
+                ->whereHas('player', function ($query) use ($user) {
+                    if ($user->scout->preferred_positions) {
+                        $positions = explode(',', $user->scout->preferred_positions);
+                        $query->whereIn('position', $positions);
+                    }
+                })
+                ->with('player')
+                ->take(5)
+                ->get()
+                ->map(function ($user) {
+                    return [
+                        'id' => $user->id,
+                        'name' => $user->first_name . ' ' . $user->last_name,
+                        'position' => $user->player ? $user->player->position : null,
+                        'region' => $user->player ? $user->player->nationality : null,
+                        'image' => $user->player && $user->player->profile_image
+                            ? url('storage/' . $user->player->profile_image)
+                            : null,
+                    ];
+                });
+        }
+
+        // Get filter options
         $filterOptions = [
-            'positions' => Player::distinct()->pluck('position')->filter(),
-            'playing_styles' => Player::distinct()->pluck('playing_style')->filter(),
-            'preferred_feet' => Player::distinct()->pluck('preferred_foot')->filter(),
-            'regions' => Player::distinct()->pluck('current_city')->filter(),
-            'video_categories' => [
-                'match_highlights',
-                'training_session',
-                'skills_showcase',
-                'match_analysis',
-                'tactical_review'
+            [
+                'label' => 'Position',
+                'key' => 'position',
+                'options' => [
+                    ['label' => 'All', 'value' => ''],
+                    ['label' => 'Forward', 'value' => 'forward'],
+                    ['label' => 'Midfielder', 'value' => 'midfielder'],
+                    ['label' => 'Defender', 'value' => 'defender'],
+                    ['label' => 'Goalkeeper', 'value' => 'goalkeeper']
+                ]
             ],
-            'engagement_levels' => [
-                'high' => '100+ likes',
-                'medium' => '20-99 likes',
-                'low' => '<20 likes'
+            [
+                'label' => 'Secondary Position',
+                'key' => 'secondary_position',
+                'options' => [
+                    ['label' => 'All', 'value' => ''],
+                    ['label' => 'Forward', 'value' => 'forward'],
+                    ['label' => 'Midfielder', 'value' => 'midfielder'],
+                    ['label' => 'Defender', 'value' => 'defender'],
+                    ['label' => 'Goalkeeper', 'value' => 'goalkeeper']
+                ]
+            ],
+            [
+                'label' => 'Region',
+                'key' => 'region',
+                'options' => [
+                    ['label' => 'All', 'value' => ''],
+                    ['label' => 'Europe', 'value' => 'europe'],
+                    ['label' => 'Africa', 'value' => 'africa'],
+                    ['label' => 'Asia', 'value' => 'asia'],
+                    ['label' => 'North America', 'value' => 'north america'],
+                    ['label' => 'South America', 'value' => 'south america'],
+                    ['label' => 'Oceania', 'value' => 'oceania']
+                ]
+            ],
+            [
+                'label' => 'Preferred Foot',
+                'key' => 'preferred_foot',
+                'options' => [
+                    ['label' => 'All', 'value' => ''],
+                    ['label' => 'Right', 'value' => 'right'],
+                    ['label' => 'Left', 'value' => 'left'],
+                    ['label' => 'Both', 'value' => 'both']
+                ]
+            ],
+            [
+                'label' => 'Playing Style',
+                'key' => 'playing_style',
+                'options' => [
+                    ['label' => 'All', 'value' => ''],
+                    ['label' => 'Attacker', 'value' => 'attacker'],
+                    ['label' => 'Playmaker', 'value' => 'playmaker'],
+                    ['label' => 'Defender', 'value' => 'defender'],
+                    ['label' => 'Box-to-Box', 'value' => 'box-to-box']
+                ]
+            ],
+            [
+                'label' => 'Transfer Status',
+                'key' => 'transfer_status',
+                'options' => [
+                    ['label' => 'All', 'value' => ''],
+                    ['label' => 'Available', 'value' => 'available'],
+                    ['label' => 'Not Available', 'value' => 'not_available']
+                ]
             ]
         ];
 
-        // Get personalized recommendations
-        $recommendations = $this->getPersonalizedRecommendations($user);
+        // Get suggested searches
+        $suggestedSearches = [
+            'Forward',
+            'Under 18',
+            'London',
+            'Available for transfer'
+        ];
 
         return response()->json([
             'status' => 'success',
-            'data' => [
-                'posts' => $posts,
+            'user_type' => $userType,
+            'filter_options' => $filterOptions,
+            'posts' => $videos,
                 'trending_players' => $trendingPlayers,
                 'upcoming_events' => $upcomingEvents,
-                'filter_options' => $filterOptions,
-                'applied_filters' => array_intersect_key($request->all(), array_flip([
-                    'position', 'playing_style', 'preferred_foot', 'region',
-                    'min_age', 'max_age', 'video_category', 'engagement'
-                ])),
-                'recommendations' => $recommendations,
-                'user_type' => $user->user_type
-            ]
+            'recommendations' => $recommendedPlayers,
+            'suggested_searches' => $suggestedSearches
         ]);
-    }
-
-    /**
-     * Calculate engagement rate for a post
-     */
-    private function calculateEngagementRate($post)
-    {
-        if ($post->views_count > 0) {
-            return round(($post->likes_count + $post->comments_count) / $post->views_count * 100, 2);
-        }
-        return 0;
-    }
-
-    /**
-     * Get performance level based on engagement
-     */
-    private function getPerformanceLevel($post)
-    {
-        $engagementRate = $this->calculateEngagementRate($post);
-        if ($engagementRate >= 15) return 'High';
-        if ($engagementRate >= 5) return 'Medium';
-        return 'Low';
-    }
-
-    /**
-     * Get average watch time for a video
-     */
-    private function getAverageWatchTime($postId)
-    {
-        // Implement video watch time tracking logic
-        // This is a placeholder returning random value between 0-100%
-        return rand(0, 100);
-    }
-
-    /**
-     * Get personalized recommendations based on user behavior
-     */
-    private function getPersonalizedRecommendations($user)
-    {
-        if ($user->user_type === 'scout') {
-            // For scouts: recommend based on most viewed positions and regions
-            return Player::whereHas('posts', function ($query) {
-                $query->whereNotNull('video_url');
-            })
-            ->where('membership', 'premium')
-            ->whereDoesntHave('followers', function ($query) use ($user) {
-                $query->where('follower_id', $user->id);
-            })
-            ->inRandomOrder()
-            ->limit(5)
-            ->get();
-        } else {
-            // For players: recommend similar players
-            $player = $user->player;
-            return Player::where('position', $player->position)
-                ->where('id', '!=', $player->id)
-                ->whereHas('posts', function ($query) {
-                    $query->whereNotNull('video_url');
-                })
-                ->inRandomOrder()
-                ->limit(5)
-                ->get();
-        }
     }
 
     /**
@@ -631,33 +564,33 @@ class FeedController extends Controller
     public function toggleLike(Request $request)
     {
         $request->validate([
-            'post_id' => 'required|exists:posts,id'
+            'post_id' => 'required|exists:videos,id'
         ]);
 
         $user = Auth::user();
-        $post = Post::findOrFail($request->post_id);
+        $video = Video::findOrFail($request->post_id);
 
         $like = Like::where('user_id', $user->id)
-                    ->where('post_id', $post->id)
+                    ->where('post_id', $video->id)
                     ->first();
 
         if ($like) {
             $like->delete();
-            $post->decrement('likes_count');
-            $message = 'Post unliked successfully';
+            $video->decrement('likes_count');
+            $message = 'Video unliked successfully';
         } else {
             Like::create([
                 'user_id' => $user->id,
-                'post_id' => $post->id
+                'post_id' => $video->id
             ]);
-            $post->increment('likes_count');
-            $message = 'Post liked successfully';
+            $video->increment('likes_count');
+            $message = 'Video liked successfully';
         }
 
         return response()->json([
             'status' => 'success',
             'message' => $message,
-            'likes_count' => $post->likes_count
+            'likes_count' => $video->likes_count
         ]);
     }
 
@@ -730,14 +663,14 @@ class FeedController extends Controller
     public function filterVideos(Request $request)
     {
         $user = Auth::user();
-        $query = Post::with([
-            'player.user',
+        $query = Video::with([
+            'user.player',
             'likes',
             'comments',
             'likes as user_liked' => function ($query) use ($user) {
                 $query->where('user_id', $user->id);
             }
-        ])->whereNotNull('video_url'); // Only get posts with videos
+        ]);
 
         // Filter by video type
         if ($request->has('video_type')) {
@@ -854,7 +787,6 @@ class FeedController extends Controller
         return $applied;
     }
 
-
     /**
      * Get available filters based on user type
      */
@@ -883,6 +815,7 @@ class FeedController extends Controller
      $age = $birthDate->diff($currentDate)->y;
      return $age;
  }
+
 public function playerviewprofile($user_id) {
     // First find the user
     $user = User::where('id', $user_id)->where('user_type', 'player')->first();
@@ -947,7 +880,6 @@ public function playerviewprofile($user_id) {
     ]);
 }
 
-
     public function scoutviewprofile($user_id) {
         $scoutprofiledata = Scout::with('user')->where('user_id', $user_id)->first();
         if (!$scoutprofiledata) {
@@ -991,6 +923,4 @@ public function playerviewprofile($user_id) {
             ], 500);
         }
     }
-
 }
-

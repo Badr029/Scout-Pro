@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
-import { Observable, catchError, throwError, tap, Subject } from 'rxjs';
+import { Observable, catchError, throwError, tap, Subject, BehaviorSubject } from 'rxjs';
 import { environment } from '../environments/environment';
 import { Router } from '@angular/router';
 
@@ -9,11 +9,23 @@ import { Router } from '@angular/router';
 })
 export class ApiService {
   private apiUrl = environment.apiUrl;
-  private followStatusChanged = new Subject<{userId: string | number, following: boolean}>();
+  private followStatusSubject = new BehaviorSubject<{userId: number, following: boolean} | null>(null);
+  followStatusChanged$ = this.followStatusSubject.asObservable();
 
-  followStatusChanged$ = this.followStatusChanged.asObservable();
+  constructor(private http: HttpClient, private router: Router) {
+    // Load initial follow states from localStorage
+    this.initializeFollowStates();
+  }
 
-  constructor(private http: HttpClient, private router: Router) { }
+  private initializeFollowStates() {
+    const followedUsers = JSON.parse(localStorage.getItem('followedUsers') || '{}');
+    // Convert to array of { userId, following } objects
+    Object.keys(followedUsers).forEach(userId => {
+      if (followedUsers[userId]) {
+        this.followStatusSubject.next({ userId: parseInt(userId), following: true });
+      }
+    });
+  }
 
   private getHeaders(): HttpHeaders {
     const token = localStorage.getItem('auth_token');
@@ -71,15 +83,28 @@ export class ApiService {
   }
 
   followPlayer(userId: number): Observable<any> {
-    return this.http.post(`${this.apiUrl}/users/${userId}/follow`, {}, { headers: this.getHeaders() });
+    return this.http.post(`${this.apiUrl}/users/${userId}/follow`, {}, { headers: this.getHeaders() }).pipe(
+      tap((response: any) => {
+        if (response.status === 'success') {
+          this.emitFollowStatusChanged({ userId, following: true });
+        }
+      })
+    );
   }
 
   unfollowPlayer(userId: number): Observable<any> {
-    return this.http.post(`${this.apiUrl}/users/${userId}/unfollow`, {}, { headers: this.getHeaders() });
+    return this.http.post(`${this.apiUrl}/users/${userId}/unfollow`, {}, { headers: this.getHeaders() }).pipe(
+      tap((response: any) => {
+        if (response.status === 'success') {
+          this.emitFollowStatusChanged({ userId, following: false });
+        }
+      })
+    );
   }
 
-  getFollowStatus(userId: number): Observable<any> {
-    return this.http.get(`${this.apiUrl}/users/${userId}/follow-status`, { headers: this.getHeaders() });
+  getFollowStatus(userId: number): boolean {
+    const followedUsers = JSON.parse(localStorage.getItem('followedUsers') || '{}');
+    return !!followedUsers[userId];
   }
 
   getContactedPlayers(): Observable<any> {
@@ -359,8 +384,28 @@ export class ApiService {
       );
   }
 
-  emitFollowStatusChanged(data: {userId: string | number, following: boolean}) {
-    this.followStatusChanged.next(data);
+  emitFollowStatusChanged(data: { userId: number; following: boolean }) {
+    // Update localStorage
+    const followedUsers = JSON.parse(localStorage.getItem('followedUsers') || '{}');
+    if (data.following) {
+      followedUsers[data.userId] = true;
+    } else {
+      delete followedUsers[data.userId];
+    }
+    localStorage.setItem('followedUsers', JSON.stringify(followedUsers));
+
+    // Emit the change
+    this.followStatusSubject.next(data);
+  }
+
+  checkFollowStatus(userId: number): Observable<any> {
+    return this.http.get(`${this.apiUrl}/users/${userId}/follow-status`, { headers: this.getHeaders() }).pipe(
+      tap((response: any) => {
+        if (response.status === 'success') {
+          this.emitFollowStatusChanged({ userId, following: response.following });
+        }
+      })
+    );
   }
 
   // Contact Request Methods

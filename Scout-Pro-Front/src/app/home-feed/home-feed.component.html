@@ -10,10 +10,7 @@
         <i class="bi bi-search"></i>
         <span>Search</span>
       </a>
-      <a href="#">
-        <i class="bi bi-bell"></i>
-        <span>Notifications</span>
-      </a>
+
       <a href="#" *ngIf="isPlayer" (click)="openUploadModal(); $event.preventDefault()">
         <i class="bi bi-plus-square"></i>
         <span>Upload</span>
@@ -327,16 +324,21 @@
             <div class="reel-user" (click)="post?.user?.id === currentUser?.id ? goToProfile() : goToPlayerProfile(post?.user?.id)">
               <img [src]="getProfileImageUrl(post?.user?.profile_image)"
                    class="avatar-sm"
-                   [alt]="post?.user?.full_name"
+                   [alt]="post?.user?.first_name + ' ' + post?.user?.last_name"
                    (error)="handleImageError($event, post?.user?.first_name, post?.user?.last_name)">
               <div class="reel-user-info">
                 <div class="user-header">
-                  <span class="username">{{ post?.user?.id === currentUser?.id ? 'You' : post?.user?.full_name }}</span>
+                  <span class="username">
+                    {{ post?.user?.isCurrentUser ? 'You' : (post?.user?.first_name + ' ' + post?.user?.last_name) }}
+                  </span>
                   <span class="subscription-badge premium" *ngIf="post?.user?.membership === 'premium'">
                     Premium
                   </span>
                 </div>
-                <span class="user-meta" *ngIf="post?.user?.player">{{ post?.user?.player?.position || 'No Position' }} • {{ post?.user?.player?.region || post?.user?.player?.nationality || 'No Region' }}</span>
+                <span class="user-meta" *ngIf="post?.user?.player">
+                  {{ post?.user?.player?.position }} •
+                  {{ post?.user?.player?.nationality || post?.user?.player?.region }}
+                </span>
               </div>
             </div>
             <button
@@ -402,23 +404,24 @@
           <div class="reel-comments" *ngIf="post?.comments?.length > 0 && !showCommentBox[post?.id]">
             <div *ngFor="let comment of post?.comments?.slice(0, 2)" class="comment">
               <div class="comment-header">
-                <img [src]="getProfileImageUrl(comment.user?.profile_image)"
+                <img [src]="getProfileImageUrl(comment?.user?.profile_image)"
                      class="comment-avatar"
-                     [alt]="comment.user?.full_name"
-                     (error)="handleImageError($event, comment.user?.first_name, comment.user?.last_name)">
-                <span class="comment-user" (click)="comment.user?.isCurrentUser ? goToProfile() : goToUserProfile(comment.user?.id)">
-                  {{ comment.user?.isCurrentUser ? 'You' : comment.user?.full_name }}
+                     [alt]="comment?.user?.first_name + ' ' + comment?.user?.last_name"
+                     (error)="handleImageError($event, comment?.user?.first_name, comment?.user?.last_name)"
+                     (click)="goToUserProfile(comment?.user?.id)">
+                <span class="comment-user" (click)="goToUserProfile(comment?.user?.id)">
+                  {{ comment?.user?.id === currentUser?.id ? 'You' : (comment?.user?.first_name + ' ' + comment?.user?.last_name) }}
                 </span>
               </div>
               <div class="comment-content">
-                <span class="comment-text">{{ comment.content }}</span>
-                <button *ngIf="comment.user?.isCurrentUser"
+                <span class="comment-text">{{ comment?.content }}</span>
+                <button *ngIf="comment?.user?.id === currentUser?.id"
                         class="delete-comment-btn"
-                        (click)="deleteComment(post?.id, comment.id)">
+                        (click)="deleteComment(post?.id, comment?.id)">
                   <i class="bi bi-trash"></i>
                 </button>
               </div>
-              <span class="comment-time">{{ comment.created_at | date:'short' }}</span>
+              <span class="comment-time">{{ comment?.created_at | date:'short' }}</span>
             </div>
             <div *ngIf="post?.comments?.length > 2" class="view-more-comments" (click)="toggleCommentBox(post?.id)">
               View all {{ post?.comments?.length }} comments
@@ -433,8 +436,9 @@
                   <img [src]="getProfileImageUrl(comment.user?.profile_image)"
                        class="comment-avatar"
                        [alt]="comment.user?.full_name"
-                       (error)="handleImageError($event, comment.user?.first_name, comment.user?.last_name)">
-                  <span class="comment-user" (click)="comment.user?.isCurrentUser ? goToProfile() : goToUserProfile(comment.user?.id)">
+                       (error)="handleImageError($event, comment.user?.first_name, comment.user?.last_name)"
+                       (click)="goToUserProfile(comment.user?.id)">
+                  <span class="comment-user" (click)="goToUserProfile(comment.user?.id)">
                     {{ comment.user?.isCurrentUser ? 'You' : comment.user?.full_name }}
                   </span>
                 </div>

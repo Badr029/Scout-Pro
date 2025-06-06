@@ -282,36 +282,9 @@ export class HomeFeedComponent implements OnInit, OnDestroy {
     this.checkMobileView();
     window.addEventListener('resize', () => this.checkMobileView());
     this.followStatusSubscription = this.apiService.followStatusChanged$.subscribe(
-      ({ userId, following }) => {
-        // Update premium players
-        this.premiumPlayers = this.premiumPlayers.map((player: { user_id: string | number }) => {
-          if (player.user_id === userId) {
-            return { ...player, following };
-          }
-          return player;
-        });
-
-        // Update trending players
-        if (this.feedData?.trending_players) {
-          this.feedData.trending_players = this.feedData.trending_players.map((player: { id: string | number }) => {
-            if (player.id === userId) {
-              return { ...player, following };
-            }
-            return player;
-          });
-        }
-
-        // Update feed posts
-        if (this.feedData?.posts?.data) {
-          this.feedData.posts.data = this.feedData.posts.data.map((post: { user: { id: string | number } }) => {
-            if (post.user.id === userId) {
-              return {
-                ...post,
-                user: { ...post.user, following }
-              };
-            }
-            return post;
-          });
+      (data) => {
+        if (data) {
+          this.updateFollowStateInFeed(data.userId, data.following);
         }
       }
     );
@@ -340,6 +313,9 @@ export class HomeFeedComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     console.log('HomeFeedComponent ngOnInit');
+    // Load persisted follow states
+    this.loadPersistedFollowStates();
+
     // Get user data first
     this.getUserProfile();
     // Then load other data
@@ -347,6 +323,10 @@ export class HomeFeedComponent implements OnInit, OnDestroy {
     this.loadPremiumPlayers();
     this.loadRecentSearches();
     this.initializeFilteredLists();
+    this.setupEventListeners();
+
+    // Check follow status for all users in the feed
+    this.checkAllUsersFollowStatus();
   }
 
   ngOnDestroy() {
@@ -383,9 +363,7 @@ export class HomeFeedComponent implements OnInit, OnDestroy {
             this.currentUser = {
               id: response.data.user_id || response.data.id,
               name: `${response.data.first_name} ${response.data.last_name}`,
-              profile_image: response.data.profile_image
-                ? `${API_URL}/storage/${response.data.profile_image}`
-                : null,
+              profile_image: response.data.profile_image || null,
               user_type: userType,
               scout_id: response.data.scout_id || response.data.id,
               role: response.data.role || 'scout'
@@ -395,22 +373,24 @@ export class HomeFeedComponent implements OnInit, OnDestroy {
             this.currentUser = {
               id: response.data.user_id || response.data.id,
               name: `${response.data.first_name} ${response.data.last_name}`,
-              profile_image: response.data.profile_image
-                ? `${API_URL}/storage/${response.data.profile_image}`
-                : null,
+              profile_image: response.data.profile_image || null,
               user_type: userType,
               player_id: response.data.player_id || response.data.id,
               role: response.data.role
             };
           }
 
+          // Process profile image URL if it exists
+          if (this.currentUser.profile_image) {
+            this.currentUser.profile_image = this.getProfileImageUrl(this.currentUser.profile_image);
+          }
+
           console.log('Current user data after setup:', this.currentUser);
         }
       },
-      error: (error: any) => {
-        console.error('Error fetching user profile:', error);
-        if (error.status === 401 || error.status === 404) {
-          console.log('Authentication error or profile not found, redirecting to login');
+      error: (error) => {
+        console.error('Error getting user profile:', error);
+        if (error.status === 401) {
           localStorage.clear();
           this.router.navigate(['/login']);
         }
@@ -422,23 +402,87 @@ export class HomeFeedComponent implements OnInit, OnDestroy {
     this.loading = true;
     this.error = '';
 
-    // Load feed data and events simultaneously
+    // Get the current follow states from localStorage
+    const followedUsers = JSON.parse(localStorage.getItem('followedUsers') || '{}');
+
+    // Get both feed and events data
     Promise.all([
-      this.apiService.getFeed().toPromise(),
-      this.apiService.getEvents().toPromise()
+      this.apiService.getData('feed').toPromise(),
+      this.apiService.getData('events').toPromise()
     ]).then(([feedResponse, eventsResponse]) => {
+      console.log('Feed response:', feedResponse);
+
       if (feedResponse?.status === 'success') {
-        // Process feed data and mark current user's comments
-        const processedPosts = feedResponse.posts.data.map((post: any) => ({
-          ...post,
-          comments: post.comments?.map((comment: any) => ({
-            ...comment,
-            user: {
-              ...comment.user,
-              isCurrentUser: comment.user_id === this.currentUser?.id || comment.user?.id === this.currentUser?.id
+        // Process posts to include user data
+        const processedPosts = (feedResponse.posts?.data || []).map((post: any) => {
+          console.log('Processing post user data:', post.user);
+
+          // Process user data for each post
+          const processedUser = {
+            id: post.user?.id,
+            user_type: post.user?.user_type,
+            first_name: post.user?.first_name,
+            last_name: post.user?.last_name,
+            username: post.user?.username,
+            profile_image: this.getProfileImageUrl(post.user?.profile_image),
+            membership: post.user?.membership || 'free',
+            isCurrentUser: post.user?.id === this.currentUser?.id,
+            // Use both API response and localStorage for follow state
+            following: post.user?.following || post.user?.is_following || followedUsers[post.user?.id] || false,
+            is_following: post.user?.following || post.user?.is_following || followedUsers[post.user?.id] || false,
+            player: post.user?.player ? {
+              position: post.user.player.position || 'No Position',
+              region: post.user.player.current_city || 'No Region',
+              nationality: post.user.player.nationality
+            } : null
+          };
+
+          // Process comments to include user data
+          const processedComments = (post.comments || []).map((comment: any) => {
+            console.log('Processing comment user data:', comment.user);
+            const commentUser = comment.user;
+            let profileImage = null;
+
+            // Get profile image based on user type
+            if (commentUser?.user_type === 'scout' && commentUser?.scout) {
+              profileImage = commentUser.scout.profile_image;
+            } else if (commentUser?.user_type === 'player' && commentUser?.player) {
+              profileImage = commentUser.player.profile_image;
             }
-          }))
-        }));
+
+            return {
+              ...comment,
+              user: {
+                id: commentUser?.id,
+                first_name: commentUser?.first_name,
+                last_name: commentUser?.last_name,
+                full_name: `${commentUser?.first_name} ${commentUser?.last_name}`.trim(),
+                profile_image: this.getProfileImageUrl(profileImage),
+                user_type: commentUser?.user_type,
+                scout_id: commentUser?.scout?.id,
+                player_id: commentUser?.player?.id,
+                isCurrentUser: commentUser?.id === this.currentUser?.id,
+                player: commentUser?.player ? {
+                  position: commentUser.player.position || 'No Position',
+                  region: commentUser.player.current_city || 'No Region',
+                  nationality: commentUser.player.nationality
+                } : null
+              }
+            };
+          });
+
+          console.log('Processed user data:', processedUser);
+          console.log('Processed comments:', processedComments);
+
+          // Return processed post with updated user data and comments
+          return {
+            ...post,
+            user: processedUser,
+            comments: processedComments
+          };
+        });
+
+        console.log('Processed posts:', processedPosts);
 
         this.feedData = {
           ...feedResponse,
@@ -488,8 +532,9 @@ export class HomeFeedComponent implements OnInit, OnDestroy {
     if (profileImage.startsWith('http')) {
       return profileImage;
     }
-    // Remove any double slashes except for http(s)://
-    return `${API_URL}/storage/${profileImage.replace(/^\/+/, '')}`;
+
+    // Direct storage URL for profile images
+    return `http://localhost:8000/storage/${profileImage.replace(/^\/*/, '')}`;
   }
 
   goToProfile() {
@@ -498,12 +543,7 @@ export class HomeFeedComponent implements OnInit, OnDestroy {
       return;
     }
 
-    console.log('Navigating to profile. Current user:', this.currentUser);
-    console.log('User type:', this.currentUser.user_type);
-    console.log('Is Scout:', this.isScout);
-
-    // Navigate based on user type
-    if (this.currentUser.user_type === 'scout' || this.isScout) {
+    if (this.currentUser.user_type === 'scout') {
       this.router.navigate(['/scout/profile']);
     } else {
       this.router.navigate(['/profile']);
@@ -514,51 +554,61 @@ export class HomeFeedComponent implements OnInit, OnDestroy {
     if (!userId) return;
 
     if (userId === this.currentUser?.id) {
-      this.goToProfile(); // Use the existing goToProfile method for current user
+      this.goToProfile();
     } else {
-      // If it's another user, determine their type and navigate accordingly
+      // Get user type from the feed data
       const user = this.findUserInFeed(userId);
       if (user?.user_type === 'scout') {
-        this.router.navigate(['/scout/profile', userId]);
+        // Call scout profile API and navigate
+        this.apiService.getData(`scout/${userId}`).subscribe({
+          next: (response: any) => {
+            if (response.data) {
+              this.router.navigate(['/scout', userId]);
+            } else {
+              this.showNotification('Failed to load scout profile');
+            }
+          },
+          error: (error: any) => {
+            console.error('Error loading scout profile:', error);
+            this.showNotification('Failed to load scout profile');
+          }
+        });
       } else {
-        this.router.navigate(['/player', userId]);
+        // Handle player profile navigation
+        this.apiService.getData(`player/${userId}`).subscribe({
+          next: (response: any) => {
+            if (response.data) {
+              this.router.navigate(['/player', userId]);
+            } else {
+              this.showNotification('Failed to load player profile');
+            }
+          },
+          error: (error: any) => {
+            console.error('Error loading player profile:', error);
+            this.showNotification('Failed to load player profile');
+          }
+        });
       }
     }
   }
 
-  goToPlayerProfile(playerId: number) {
-    if (!playerId) return;
+  goToPlayerProfile(userId: number) {
+    if (!userId) return;
 
-    if (playerId === this.currentUser?.id) {
-      this.goToProfile(); // Use the existing goToProfile method for current user
-          } else {
-      // For premium players section
-      const premiumPlayer = this.premiumPlayers.find((p: { id: number; user_id: number }) => p.id === playerId);
-      if (premiumPlayer) {
-        this.router.navigate(['/player', premiumPlayer.user_id]);
-        return;
-      }
-
-      // For trending players section
-      const trendingPlayer = this.feedData?.trending_players?.find((p: { id: number }) => p.id === playerId);
-      if (trendingPlayer) {
-        this.router.navigate(['/player', trendingPlayer.id]);
-        return;
-      }
-
-      // Default case
-      this.router.navigate(['/player', playerId]);
+    if (userId === this.currentUser?.id) {
+      this.goToProfile();
+    } else {
+      this.router.navigate(['/player', userId]);
     }
   }
 
-  goToScoutProfile(scoutId: number) {
-    if (!scoutId) return;
+  goToScoutProfile(userId: number) {
+    if (!userId) return;
 
-    // Check if the scout ID matches the current user's ID
-    if (this.currentUser?.user_type === 'scout' && scoutId === this.currentUser?.id) {
-      this.router.navigate(['/scout/profile']); // Navigate to own profile
-        } else {
-      this.router.navigate(['/scout', scoutId]); // Navigate to scout view page
+    if (userId === this.currentUser?.id) {
+      this.router.navigate(['/scout/profile']);
+    } else {
+      this.router.navigate(['/scout', userId]);
     }
   }
 
@@ -568,6 +618,13 @@ export class HomeFeedComponent implements OnInit, OnDestroy {
     for (const post of this.feedData.posts.data) {
       if (post.user.id === userId) {
         return post.user;
+      }
+      // Check in comments
+      if (post.comments) {
+        const comment = post.comments.find((c: any) => c.user.id === userId);
+        if (comment) {
+          return comment.user;
+        }
       }
     }
 
@@ -602,19 +659,18 @@ export class HomeFeedComponent implements OnInit, OnDestroy {
 
     // Determine if we're following or unfollowing
     const isCurrentlyFollowing = user.following || user.is_following;
-    const endpoint = `users/${userId}/${isCurrentlyFollowing ? 'unfollow' : 'follow'}`;
 
     // Optimistically update UI
     this.updateFollowStateInFeed(userId, !isCurrentlyFollowing);
 
     // Make API call
-    this.apiService.postData(endpoint, {}).subscribe({
+    const apiCall = isCurrentlyFollowing ?
+      this.apiService.unfollowPlayer(userId) :
+      this.apiService.followPlayer(userId);
+
+    apiCall.subscribe({
       next: (response: any) => {
-        if (response.status === 'success') {
-          // Keep the optimistic update
-          this.apiService.emitFollowStatusChanged({ userId, following: !isCurrentlyFollowing });
-          this.showNotification(response.message);
-        } else {
+        if (response.status !== 'success') {
           // Revert the optimistic update on error
           this.updateFollowStateInFeed(userId, isCurrentlyFollowing);
           this.showNotification('Failed to update follow status');
@@ -633,12 +689,12 @@ export class HomeFeedComponent implements OnInit, OnDestroy {
     // Update in feed posts
     if (this.feedData?.posts?.data) {
       this.feedData.posts.data = this.feedData.posts.data.map((post: any) => {
-        if (post.user.id === userId) {
+        if (post.user?.id === userId) {
           return {
             ...post,
             user: {
               ...post.user,
-              following,
+              following: following,
               is_following: following
             }
           };
@@ -647,7 +703,35 @@ export class HomeFeedComponent implements OnInit, OnDestroy {
       });
     }
 
-    // Force immediate UI update
+    // Update in premium players
+    if (this.premiumPlayers) {
+      this.premiumPlayers = this.premiumPlayers.map((player: any) => {
+        if (player.user_id === userId) {
+          return {
+            ...player,
+            following: following,
+            is_following: following
+          };
+        }
+        return player;
+      });
+    }
+
+    // Update in trending players
+    if (this.feedData?.trending_players) {
+      this.feedData.trending_players = this.feedData.trending_players.map((player: any) => {
+        if (player.id === userId) {
+          return {
+            ...player,
+            following: following,
+            is_following: following
+          };
+        }
+        return player;
+      });
+    }
+
+    // Force change detection
     this.feedData = { ...this.feedData };
   }
 
@@ -713,6 +797,14 @@ export class HomeFeedComponent implements OnInit, OnDestroy {
         if (response.status === 'success' && response.data) {
           const post = this.feedData.posts.data.find((p: any) => p.id === postId);
           if (post) {
+            // Get profile image based on user type
+            let profileImage = null;
+            if (this.currentUser.user_type === 'scout' && this.currentUser.scout) {
+              profileImage = this.currentUser.scout.profile_image;
+            } else if (this.currentUser.user_type === 'player' && this.currentUser.player) {
+              profileImage = this.currentUser.player.profile_image;
+            }
+
             // Create new comment object with proper structure
             const newComment = {
               id: response.data.id,
@@ -720,8 +812,16 @@ export class HomeFeedComponent implements OnInit, OnDestroy {
               created_at: response.data.created_at,
               user_id: response.data.user_id,
               user: {
-                ...response.data.user,
-                isCurrentUser: true // Set this to true since it's the current user's comment
+                id: this.currentUser.id,
+                first_name: this.currentUser.name.split(' ')[0],
+                last_name: this.currentUser.name.split(' ')[1],
+                full_name: this.currentUser.name,
+                profile_image: this.getProfileImageUrl(profileImage),
+                user_type: this.currentUser.user_type,
+                scout_id: this.currentUser.scout_id,
+                player_id: this.currentUser.player_id,
+                isCurrentUser: true,
+                player: this.currentUser.player
               }
             };
 
@@ -1125,6 +1225,7 @@ export class HomeFeedComponent implements OnInit, OnDestroy {
             if (processedResult.type === 'player') {
               processedResult.position = result.position || 'N/A';
               processedResult.nationality = result.nationality || 'N/A';
+              processedResult.profile_image = result.profile_image ? this.getProfileImageUrl(result.profile_image) : null;
               processedResult.current_city = result.current_city || 'N/A';
               processedResult.age = result.age || 'N/A';
               processedResult.preferred_foot = result.preferred_foot || 'N/A';
@@ -1629,8 +1730,12 @@ export class HomeFeedComponent implements OnInit, OnDestroy {
   loadPremiumPlayers() {
     this.apiService.getData('premium-players').subscribe({
       next: (response: any) => {
-        if (response.data) {
-          this.premiumPlayers = response.data;
+        if (response.status === 'success' && response.data) {
+          this.premiumPlayers = response.data.map((player: any) => ({
+            ...player,
+            profile_image: player.profile_image ? this.getProfileImageUrl(player.profile_image) : null,
+            name: `${player.first_name} ${player.last_name}`.trim()
+          }));
         }
       },
       error: (error) => {
@@ -1757,5 +1862,75 @@ export class HomeFeedComponent implements OnInit, OnDestroy {
 
   getApprovedEvents(): EventItem[] {
     return this.feedData?.upcoming_events?.filter((event: EventItem) => event.status === 'approved') || [];
+  }
+
+  private loadPersistedFollowStates() {
+    const followedUsers = JSON.parse(localStorage.getItem('followedUsers') || '{}');
+
+    // Update follow states in feed data if it exists
+    if (this.feedData?.posts?.data) {
+      this.feedData.posts.data = this.feedData.posts.data.map((post: any) => {
+        if (post.user && followedUsers[post.user.id]) {
+          return {
+            ...post,
+            user: {
+              ...post.user,
+              following: true,
+              is_following: true
+            }
+          };
+        }
+        return post;
+      });
+    }
+
+    // Update follow states in premium players
+    if (this.premiumPlayers) {
+      this.premiumPlayers = this.premiumPlayers.map((player: any) => {
+        if (followedUsers[player.user_id]) {
+          return {
+            ...player,
+            following: true,
+            is_following: true
+          };
+        }
+        return player;
+      });
+    }
+
+    // Update follow states in trending players
+    if (this.feedData?.trending_players) {
+      this.feedData.trending_players = this.feedData.trending_players.map((player: any) => {
+        if (followedUsers[player.id]) {
+          return {
+            ...player,
+            following: true,
+            is_following: true
+          };
+        }
+        return player;
+      });
+    }
+  }
+
+  setupEventListeners() {
+    // Implementation of setupEventListeners method
+  }
+
+  private checkAllUsersFollowStatus() {
+    if (!this.feedData?.posts?.data) return;
+
+    // Get unique user IDs from posts
+    const userIds = new Set<number>();
+    this.feedData.posts.data.forEach((post: any) => {
+      if (post.user && post.user.id !== this.currentUser?.id) {
+        userIds.add(post.user.id);
+      }
+    });
+
+    // Check follow status for each user
+    userIds.forEach(userId => {
+      this.apiService.checkFollowStatus(userId).subscribe();
+    });
   }
 }
