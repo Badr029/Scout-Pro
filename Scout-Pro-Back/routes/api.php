@@ -88,6 +88,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/videos/{video}/unlike', [VideoController::class, 'unlike']);
     Route::post('/videos/{video}/comment', [VideoController::class, 'comment']);
     Route::get('/videos/{video}/comments', [VideoController::class, 'getComments']);
+    Route::delete('/videos/{video}/comments/{comment}', [VideoController::class, 'deleteComment']);
     Route::get('/videos/{video}/like-status', [VideoController::class, 'getLikeStatus']);
     Route::post('/videos/{video}/view', [VideoController::class, 'recordView']);
     Route::get('/videos/{video}/likes', [VideoController::class, 'getLikes']);
@@ -145,6 +146,10 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('/admin/event-requests/{id}', [AdminController::class, 'updateEventRequest']);
         Route::post('/admin/events/create', [AdminController::class, 'createEvent']);
         Route::get('/admin/scout-documents/{id}', [AdminController::class, 'getScoutDocuments']);
+        Route::get('/admin/videos', [AdminController::class, 'getVideos']);
+        Route::get('/admin/videos/{id}', [AdminController::class, 'getVideoDetails']);
+        Route::delete('/admin/videos/{id}', [AdminController::class, 'deleteVideo']);
+        Route::delete('/admin/videos/{videoId}/comments/{commentId}', [AdminController::class, 'deleteComment']);
 
         // Subscription Management Routes
         Route::get('admin/subscription-plans', [AdminController::class, 'getSubscriptionPlans']);

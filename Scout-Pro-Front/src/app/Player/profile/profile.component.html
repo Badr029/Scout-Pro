@@ -302,7 +302,7 @@
   </div>
 </div>
 
-<!-- Delete Account Confirmation Modal -->
+<!-- Delete Account Modal -->
 <div class="modal" [class.show]="showDeleteConfirm">
   <div class="modal-content">
     <div class="modal-header">
@@ -310,25 +310,28 @@
       <span class="close" (click)="hideDeleteAccountModal()">&times;</span>
     </div>
     <div class="modal-body">
-      <p>Are you sure you want to delete your account? This action cannot be undone.</p>
+      <p>This action cannot be undone. All your data will be permanently deleted.</p>
 
-      <!-- Email account - Password confirmation -->
-      <div class="form-group" *ngIf="!isGoogleAccount">
-        <label for="password">Please enter your password to confirm:</label>
-        <input type="password" id="password" [(ngModel)]="deletePassword" class="form-control" placeholder="Your password">
+      <div *ngIf="isGoogleAccount">
+        <p>Please type "delete" to confirm:</p>
+        <input class="form-control" type="text" [(ngModel)]="deleteConfirmation" placeholder="Type 'delete' to confirm">
       </div>
 
-      <!-- Google account - Type "delete" confirmation -->
-      <div class="form-group" *ngIf="isGoogleAccount">
-        <label for="delete-confirmation">Type "delete" to confirm:</label>
-        <input type="text" id="delete-confirmation" [(ngModel)]="deleteConfirmation" class="form-control" placeholder="delete">
+      <div *ngIf="!isGoogleAccount" class="password-input-container">
+        <p>Please enter your password to confirm:</p>
+        <div class="input-group">
+          <input [type]="showPassword ? 'text' : 'password'" [(ngModel)]="deletePassword" placeholder="Enter your password">
+          <button type="button" class="btn-show-password" (click)="toggleShowPassword()">
+            <i class="fas" [class.fa-eye]="!showPassword" [class.fa-eye-slash]="showPassword"></i>
+          </button>
+        </div>
       </div>
 
-      <p *ngIf="deleteError" class="error-message">{{ deleteError }}</p>
+      <p class="error-message" *ngIf="deleteError">{{ deleteError }}</p>
     </div>
     <div class="modal-footer">
       <button class="btn btn-outline" (click)="hideDeleteAccountModal()">Cancel</button>
-      <button class="btn btn-danger" (click)="deleteAccount()">Delete My Account</button>
+      <button class="btn btn-danger" (click)="deleteAccount()">Delete Account</button>
     </div>
   </div>
 </div>

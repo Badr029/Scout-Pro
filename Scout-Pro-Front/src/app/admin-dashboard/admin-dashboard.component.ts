@@ -144,6 +144,44 @@ interface SubscriptionStats {
   churnedSubscriptions: number;
 }
 
+interface VideoStats {
+  id: number;
+  title: string;
+  views: number;
+  likes: number;
+  comments_count: number;
+  status: string;
+  thumbnail: string;
+  duration: string;
+  created_at: string;
+  user: {
+    name: string;
+    email: string;
+  };
+}
+
+interface VideoDetails extends Omit<VideoStats, 'comments_count' | 'user'> {
+  description: string;
+  file_path: string;
+  comments: VideoComment[];
+  user: {
+    id: number;
+    name: string;
+    email: string;
+  };
+}
+
+interface VideoComment {
+  id: number;
+  content: string;
+  created_at: string;
+  user: {
+    id: number;
+    name: string;
+    email: string;
+  };
+}
+
 @Component({
   selector: 'app-admin-dashboard',
   standalone: true,
@@ -170,7 +208,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     totalFollows: 0
   };
 
-  currentSection: 'statistics' | 'contact-requests' | 'event-requests' | 'subscriptions' | 'user-management' = 'statistics';
+  currentSection: 'statistics' | 'contact-requests' | 'event-requests' | 'subscriptions' | 'user-management' | 'content-management' = 'statistics';
   activeView: 'overview' | 'contact-requests' | 'event-requests' | 'subscriptions' = 'overview';
   contactRequests: ContactRequest[] = [];
   eventRequests: EventRequest[] = [];
@@ -243,6 +281,16 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   // Add to the existing properties
   selectedScoutDocuments: any = null;
 
+  // Add new properties
+  videos: VideoStats[] = [];
+  loadingVideos = false;
+  videoError: string | null = null;
+  videoSortField: 'views' | 'likes' = 'views';
+  videoSortOrder: 'asc' | 'desc' = 'desc';
+  selectedVideo: VideoDetails | null = null;
+  loadingVideoDetails = false;
+  videoDetailsError: string | null = null;
+
   private readonly API_URL = environment.apiUrl;
 
   isMobile = window.innerWidth <= 768;
@@ -252,7 +300,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     private http: HttpClient,
     private router: Router,
     private authService: AuthService,
-    private modalService: ModalService,
+    public modalService: ModalService,
     private viewContainerRef: ViewContainerRef,
     private fb: FormBuilder
   ) {
@@ -304,9 +352,11 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     window.removeEventListener('resize', this.onResize.bind(this));
   }
 
-  setSection(section: 'statistics' | 'contact-requests' | 'event-requests' | 'subscriptions' | 'user-management') {
+  setSection(section: 'statistics' | 'contact-requests' | 'event-requests' | 'subscriptions' | 'user-management' | 'content-management') {
     this.currentSection = section;
-    if (section === 'user-management') {
+    if (section === 'content-management') {
+      this.loadVideos();
+    } else if (section === 'user-management') {
       this.loadUsers();
     } else if (section === 'contact-requests') {
       this.loadContactRequests();
@@ -1257,5 +1307,154 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
 
   getDocumentUrl(path: string): string {
     return path.startsWith('http') ? path : `${this.API_URL}/storage/${path}`;
+  }
+
+  // Add new methods for content management
+  loadVideos() {
+    this.loadingVideos = true;
+    this.videoError = null;
+
+    this.http.get<any>(`${this.API_URL}/admin/videos`, {
+      headers: this.getHeaders(),
+      params: {
+        sort_by: this.videoSortField,
+        order: this.videoSortOrder
+      }
+    }).subscribe({
+      next: (response) => {
+        if (response.status === 'success') {
+          this.videos = response.data;
+        } else {
+          this.videoError = 'Failed to load videos';
+        }
+        this.loadingVideos = false;
+      },
+      error: (error) => {
+        console.error('Error loading videos:', error);
+        this.videoError = error.error?.message || 'Failed to load videos. Please try again.';
+        this.loadingVideos = false;
+      }
+    });
+  }
+
+  removeVideo(videoId: number) {
+    if (confirm('Are you sure you want to remove this video? This action cannot be undone.')) {
+      this.http.delete<any>(`${this.API_URL}/admin/videos/${videoId}`, {
+        headers: this.getHeaders()
+      }).subscribe({
+        next: (response) => {
+          if (response.status === 'success') {
+            this.videos = this.videos.filter(v => v.id !== videoId);
+            if (this.selectedVideo?.id === videoId) {
+              this.closeVideoDetails();
+            }
+            this.successMessage = 'Video removed successfully';
+            setTimeout(() => {
+              this.successMessage = null;
+            }, 3000);
+          }
+        },
+        error: (error) => {
+          console.error('Error removing video:', error);
+          this.error = error.error?.message || 'Failed to remove video. Please try again.';
+          setTimeout(() => {
+            this.error = null;
+          }, 3000);
+        }
+      });
+    }
+  }
+
+  sortVideos(field: 'views' | 'likes') {
+    this.videoSortField = field;
+    this.videoSortOrder = this.videoSortOrder === 'asc' ? 'desc' : 'asc';
+    this.loadVideos();
+  }
+
+  // Add new methods
+  viewVideoDetails(videoId: number) {
+    this.loadingVideoDetails = true;
+    this.videoDetailsError = null;
+    this.selectedVideo = null; // Reset selected video before loading
+
+    this.http.get<any>(`${this.API_URL}/admin/videos/${videoId}`, {
+      headers: this.getHeaders()
+    }).subscribe({
+      next: (response) => {
+        if (response.status === 'success') {
+          this.selectedVideo = response.data;
+          this.loadingVideoDetails = false; // Set loading to false before opening modal
+          this.modalService.open('videoDetailsModal');
+        } else {
+          this.videoDetailsError = 'Failed to load video details';
+          this.loadingVideoDetails = false;
+        }
+      },
+      error: (error) => {
+        console.error('Error loading video details:', error);
+        this.videoDetailsError = error.error?.message || 'Failed to load video details. Please try again.';
+        this.loadingVideoDetails = false;
+      }
+    });
+  }
+
+  closeVideoDetails() {
+    this.selectedVideo = null;
+    this.modalService.close();
+  }
+
+  deleteComment(videoId: number, commentId: number) {
+    if (confirm('Are you sure you want to delete this comment? This action cannot be undone.')) {
+      this.http.delete<any>(`${this.API_URL}/admin/videos/${videoId}/comments/${commentId}`, {
+        headers: this.getHeaders()
+      }).subscribe({
+        next: (response) => {
+          if (response.status === 'success') {
+            if (this.selectedVideo) {
+              this.selectedVideo.comments = this.selectedVideo.comments.filter(c => c.id !== commentId);
+            }
+            this.successMessage = 'Comment deleted successfully';
+            setTimeout(() => {
+              this.successMessage = null;
+            }, 3000);
+          }
+        },
+        error: (error) => {
+          console.error('Error deleting comment:', error);
+          this.error = error.error?.message || 'Failed to delete comment. Please try again.';
+          setTimeout(() => {
+            this.error = null;
+          }, 3000);
+        }
+      });
+    }
+  }
+
+  // Add the deleteVideo method
+  deleteVideo(videoId: number) {
+    if (confirm('Are you sure you want to delete this video? This action cannot be undone.')) {
+      this.http.delete<any>(`${this.API_URL}/admin/videos/${videoId}`, {
+        headers: this.getHeaders()
+      }).subscribe({
+        next: (response) => {
+          if (response.status === 'success') {
+            this.videos = this.videos.filter(v => v.id !== videoId);
+            this.modalService.close();
+            this.selectedVideo = null;
+            this.successMessage = 'Video deleted successfully';
+            setTimeout(() => {
+              this.successMessage = null;
+            }, 3000);
+          }
+        },
+        error: (error) => {
+          console.error('Error deleting video:', error);
+          this.error = error.error?.message || 'Failed to delete video. Please try again.';
+          setTimeout(() => {
+            this.error = null;
+          }, 3000);
+        }
+      });
+    }
   }
 }

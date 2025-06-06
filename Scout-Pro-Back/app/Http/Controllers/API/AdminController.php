@@ -803,12 +803,15 @@ class AdminController extends Controller
     public function getScoutDocuments($id)
     {
         try {
-            $user = User::where('id', $id)
-                ->where('user_type', 'scout')
-                ->firstOrFail();
+            $user = User::findOrFail($id);
+            if ($user->user_type !== 'scout') {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'User is not a scout'
+                ], 400);
+            }
 
             $scout = $user->scout;
-
             if (!$scout) {
                 return response()->json([
                     'status' => 'error',
@@ -817,16 +820,11 @@ class AdminController extends Controller
             }
 
             $documents = [
-                'id_proof_path' => $scout->id_proof_path ? url('storage/' . $scout->id_proof_path) : null,
-                'certifications' => []
-            ];
-
-            // Handle certifications array
-            if ($scout->certifications) {
-                $documents['certifications'] = array_map(function($cert) {
+                'id_proof' => $scout->id_proof_path ? url('storage/' . $scout->id_proof_path) : null,
+                'certifications' => $scout->certifications ? array_map(function($cert) {
                     return url('storage/' . $cert);
-                }, $scout->certifications);
-            }
+                }, $scout->certifications) : []
+            ];
 
             return response()->json([
                 'status' => 'success',
@@ -834,9 +832,175 @@ class AdminController extends Controller
             ]);
         } catch (\Exception $e) {
             Log::error('Error fetching scout documents: ' . $e->getMessage());
+            return response()->json(['message' => 'Error fetching scout documents'], 500);
+        }
+    }
+
+    public function getVideos(Request $request)
+    {
+        try {
+            $query = Video::with(['user' => function($query) {
+                $query->select('id', 'first_name', 'last_name', 'email');
+            }]);
+
+            // Apply sorting
+            if ($request->has('sort_by') && in_array($request->sort_by, ['views', 'likes'])) {
+                $order = $request->get('order', 'desc');
+                if ($request->sort_by === 'views') {
+                    $query->withCount('views')->orderBy('views_count', $order);
+                } else {
+                    $query->withCount('likes')->orderBy('likes_count', $order);
+                }
+            } else {
+                $query->orderBy('created_at', 'desc');
+            }
+
+            $videos = $query->get()->map(function($video) {
+                return [
+                    'id' => $video->id,
+                    'title' => $video->title,
+                    'views' => $video->views()->count(),
+                    'likes' => $video->likes()->count(),
+                    'comments' => $video->comments()->count(),
+                    'status' => $video->status,
+                    'thumbnail' => $video->thumbnail ? url('storage/' . $video->thumbnail) : null,
+                    'duration' => $video->duration,
+                    'created_at' => $video->created_at,
+                    'user' => [
+                        'name' => $video->user->first_name . ' ' . $video->user->last_name,
+                        'email' => $video->user->email
+                    ]
+                ];
+            });
+
+            return response()->json([
+                'status' => 'success',
+                'data' => $videos
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error fetching videos: ' . $e->getMessage());
             return response()->json([
                 'status' => 'error',
-                'message' => 'Failed to fetch scout documents'
+                'message' => 'Error fetching videos'
+            ], 500);
+        }
+    }
+
+    public function getVideoDetails($id)
+    {
+        try {
+            $video = Video::with([
+                'user' => function($query) {
+                    $query->select('id', 'first_name', 'last_name', 'email');
+                },
+                'comments.user' => function($query) {
+                    $query->select('id', 'first_name', 'last_name', 'email');
+                },
+                'likes.user' => function($query) {
+                    $query->select('id', 'first_name', 'last_name', 'email');
+                }
+            ])->findOrFail($id);
+
+            $data = [
+                'id' => $video->id,
+                'title' => $video->title,
+                'description' => $video->description,
+                'file_path' => $video->file_path ? url('storage/' . $video->file_path) : null,
+                'thumbnail' => $video->thumbnail ? url('storage/' . $video->thumbnail) : null,
+                'duration' => $video->duration,
+                'views' => $video->views()->count(),
+                'likes' => $video->likes()->count(),
+                'comments' => $video->comments->map(function($comment) {
+                    return [
+                        'id' => $comment->id,
+                        'content' => $comment->content,
+                        'created_at' => $comment->created_at,
+                        'user' => [
+                            'id' => $comment->user->id,
+                            'name' => $comment->user->first_name . ' ' . $comment->user->last_name,
+                            'email' => $comment->user->email
+                        ]
+                    ];
+                }),
+                'status' => $video->status,
+                'created_at' => $video->created_at,
+                'user' => [
+                    'id' => $video->user->id,
+                    'name' => $video->user->first_name . ' ' . $video->user->last_name,
+                    'email' => $video->user->email
+                ]
+            ];
+
+            return response()->json([
+                'status' => 'success',
+                'data' => $data
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error fetching video details: ' . $e->getMessage());
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Error fetching video details'
+            ], 500);
+        }
+    }
+
+    public function deleteVideo($id)
+    {
+        try {
+            DB::beginTransaction();
+
+            $video = Video::findOrFail($id);
+
+            // Delete video file from storage
+            if ($video->file_path && Storage::exists($video->file_path)) {
+                Storage::delete($video->file_path);
+            }
+
+            // Delete thumbnail if exists
+            if ($video->thumbnail && Storage::exists($video->thumbnail)) {
+                Storage::delete($video->thumbnail);
+            }
+
+            // Delete associated records (likes, comments, views)
+            $video->likes()->delete();
+            $video->comments()->delete();
+            $video->views()->delete();
+
+            // Delete the video record
+            $video->delete();
+
+            DB::commit();
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Video deleted successfully'
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error deleting video: ' . $e->getMessage());
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Error deleting video'
+            ], 500);
+        }
+    }
+
+    public function deleteComment($videoId, $commentId)
+    {
+        try {
+            $video = Video::findOrFail($videoId);
+            $comment = $video->comments()->findOrFail($commentId);
+            $comment->delete();
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Comment deleted successfully'
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error deleting comment: ' . $e->getMessage());
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Error deleting comment'
             ], 500);
         }
     }

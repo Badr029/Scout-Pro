@@ -1,3 +1,5 @@
+@use 'sass:color';
+
 // Color Variables
 $gray-800: #1f2937;
 $white: #ffffff;
@@ -249,7 +251,7 @@ $card-gradient-end: #3a3a3a;
       border: none;
 
       &:hover {
-        background-color: darken($primary-color, 10%);
+        background-color: color.adjust($primary-color, $lightness: -10%);
       }
 
       &:disabled {
@@ -379,8 +381,12 @@ $card-gradient-end: #3a3a3a;
     display: flex;
 
         &:hover:not(:disabled) {
-          background-color: darken($primary-color, 10%);
-    }
+          background-color: color.adjust($primary-color, $lightness: -10%);
+        }
+
+        &:active {
+          background-color: color.adjust($primary-color, $lightness: 20%);
+        }
 
         &:disabled {
           background-color: lighten($primary-color, 20%);

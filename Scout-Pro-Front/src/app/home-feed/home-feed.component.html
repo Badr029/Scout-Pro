@@ -57,7 +57,7 @@
 
     <div class="search-form">
       <div class="search-input-container">
-        <i class="bi bi-search"></i>
+
         <input
           type="text"
           placeholder="Search players by name or position..."
@@ -399,7 +399,7 @@
           </div>
 
           <!-- Comments Section -->
-          <div class="reel-comments" *ngIf="post?.comments?.length > 0">
+          <div class="reel-comments" *ngIf="post?.comments?.length > 0 && !showCommentBox[post?.id]">
             <div *ngFor="let comment of post?.comments?.slice(0, 2)" class="comment">
               <div class="comment-header">
                 <img [src]="getProfileImageUrl(comment.user?.profile_image)"
@@ -408,9 +408,16 @@
                      (error)="handleImageError($event, comment.user?.first_name, comment.user?.last_name)">
                 <span class="comment-user" (click)="comment.user?.isCurrentUser ? goToProfile() : goToUserProfile(comment.user?.id)">
                   {{ comment.user?.isCurrentUser ? 'You' : comment.user?.full_name }}
-              </span>
+                </span>
               </div>
-              <span class="comment-text">{{ comment.content }}</span>
+              <div class="comment-content">
+                <span class="comment-text">{{ comment.content }}</span>
+                <button *ngIf="comment.user?.isCurrentUser"
+                        class="delete-comment-btn"
+                        (click)="deleteComment(post?.id, comment.id)">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </div>
               <span class="comment-time">{{ comment.created_at | date:'short' }}</span>
             </div>
             <div *ngIf="post?.comments?.length > 2" class="view-more-comments" (click)="toggleCommentBox(post?.id)">
@@ -431,7 +438,14 @@
                     {{ comment.user?.isCurrentUser ? 'You' : comment.user?.full_name }}
                   </span>
                 </div>
-                <span class="comment-text">{{ comment.content }}</span>
+                <div class="comment-content">
+                  <span class="comment-text">{{ comment.content }}</span>
+                  <button *ngIf="comment.user?.isCurrentUser"
+                          class="delete-comment-btn"
+                          (click)="deleteComment(post?.id, comment.id)">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </div>
                 <span class="comment-time">{{ comment.created_at | date:'short' }}</span>
               </div>
             </div>
@@ -1029,5 +1043,37 @@
 
 .btn-premium-small:hover {
   transform: translateY(-2px);
+}
+
+.comment-content {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.delete-comment-btn {
+  background: none;
+  border: none;
+  color: #666;
+  padding: 4px 8px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  border-radius: 4px;
+  opacity: 0;
+  transition: all 0.2s ease;
+}
+
+.comment:hover .delete-comment-btn {
+  opacity: 1;
+}
+
+.delete-comment-btn:hover {
+  color: #ef4444;
+  background-color: rgba(239, 68, 68, 0.1);
+}
+
+.comment-text {
+  flex: 1;
 }
 </style>

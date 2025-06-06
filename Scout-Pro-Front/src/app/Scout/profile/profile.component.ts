@@ -24,7 +24,7 @@ interface ScoutProfile {
   linkedin_url?: string;
   id_proof: string;
   certifications: string[] | string;
-  registration_type?: string; // 'email' or 'google'
+  provider?: string; // 'google' or null/undefined for regular accounts
 }
 
 interface ContactedPlayer {
@@ -63,6 +63,7 @@ export class ScoutProfileComponent implements OnInit, OnDestroy {
   deleteError = '';
   isGoogleAccount = false;
   showSettingsMenu = false;
+  showPassword = false;
   Array = Array;
 
   constructor(
@@ -107,7 +108,7 @@ export class ScoutProfileComponent implements OnInit, OnDestroy {
           this.scoutData = response.data;
 
           if (this.scoutData) {
-            if (response.data.registration_type === 'google') {
+            if (response.data.provider === 'GOOGLE') {
               this.isGoogleAccount = true;
               console.log('This is a Google account');
             } else {
@@ -173,6 +174,7 @@ export class ScoutProfileComponent implements OnInit, OnDestroy {
   showDeleteAccountModal() {
     this.showDeleteConfirm = true;
     this.deletePassword = '';
+    this.deleteConfirmation = '';
     this.deleteError = '';
   }
 
@@ -203,24 +205,10 @@ export class ScoutProfileComponent implements OnInit, OnDestroy {
       'Authorization': `Bearer ${token}`
     });
 
-    const requestData = this.isGoogleAccount ? {} : { password: this.deletePassword };
+    const requestData = this.isGoogleAccount ?
+      { confirm_delete: this.deleteConfirmation } :
+      { password: this.deletePassword };
 
-    this.http.delete<any>('http://localhost:8000/api/account', { headers, body: requestData })
-      .subscribe({
-        next: () => {
-          localStorage.removeItem('auth_token');
-          this.router.navigate(['/login']);
-        },
-        error: (error) => {
-          this.deleteError = error.error.message || 'Failed to delete account';
-          if (error.status === 404) {
-            this.tryBackupDelete(headers, requestData);
-          }
-        }
-      });
-  }
-
-  tryBackupDelete(headers: HttpHeaders, requestData: any) {
     this.http.post<any>('http://localhost:8000/api/account/delete', requestData, { headers })
       .subscribe({
         next: () => {
@@ -375,5 +363,9 @@ export class ScoutProfileComponent implements OnInit, OnDestroy {
       default:
         return 'Unknown Status';
     }
+  }
+
+  toggleShowPassword() {
+    this.showPassword = !this.showPassword;
   }
 }

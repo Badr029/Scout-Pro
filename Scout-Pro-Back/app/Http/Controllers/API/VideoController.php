@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\DB;
 
 class VideoController extends Controller
 {
@@ -779,6 +780,45 @@ class VideoController extends Controller
         return response()->json([
             'status' => 'success',
             'data' => $likes
+        ]);
+    }
+
+    /**
+     * Delete a comment from a video
+     */
+    public function deleteComment($videoId, $commentId)
+    {
+        $user = Auth::user();
+
+        // Find the comment
+        $comment = DB::table('comments')
+            ->where('id', $commentId)
+            ->where('video_id', $videoId)
+            ->first();
+
+        if (!$comment) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Comment not found'
+            ], 404);
+        }
+
+        // Check if user owns the comment
+        if ($comment->user_id !== $user->id) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Unauthorized to delete this comment'
+            ], 403);
+        }
+
+        // Delete the comment
+        DB::table('comments')
+            ->where('id', $commentId)
+            ->delete();
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Comment deleted successfully'
         ]);
     }
 }

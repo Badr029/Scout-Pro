@@ -428,9 +428,24 @@ export class HomeFeedComponent implements OnInit, OnDestroy {
       this.apiService.getEvents().toPromise()
     ]).then(([feedResponse, eventsResponse]) => {
       if (feedResponse?.status === 'success') {
-        // Process feed data
+        // Process feed data and mark current user's comments
+        const processedPosts = feedResponse.posts.data.map((post: any) => ({
+          ...post,
+          comments: post.comments?.map((comment: any) => ({
+            ...comment,
+            user: {
+              ...comment.user,
+              isCurrentUser: comment.user_id === this.currentUser?.id || comment.user?.id === this.currentUser?.id
+            }
+          }))
+        }));
+
         this.feedData = {
           ...feedResponse,
+          posts: {
+            ...feedResponse.posts,
+            data: processedPosts
+          },
           upcoming_events: [] // We'll set this from events response
         };
 
@@ -740,7 +755,10 @@ export class HomeFeedComponent implements OnInit, OnDestroy {
               content: response.data.content,
               created_at: response.data.created_at,
               user_id: response.data.user_id,
-              user: response.data.user
+              user: {
+                ...response.data.user,
+                isCurrentUser: true // Set this to true since it's the current user's comment
+              }
             };
 
             // Initialize comments array if it doesn't exist
@@ -1211,6 +1229,35 @@ export class HomeFeedComponent implements OnInit, OnDestroy {
 
   toggleCommentBox(postId: number) {
     this.showCommentBox[postId] = !this.showCommentBox[postId];
+  }
+
+  deleteComment(postId: number, commentId: number) {
+    if (confirm('Are you sure you want to delete this comment?')) {
+      this.http.delete(`${API_URL}/videos/${postId}/comments/${commentId}`, {
+        headers: new HttpHeaders({
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+        })
+      }).subscribe({
+        next: (response: any) => {
+          if (response.status === 'success') {
+            // Update the post's comments in the feed
+            const post = this.feedData.posts.data.find((p: any) => p.id === postId);
+            if (post) {
+              post.comments = post.comments.filter((c: any) => c.id !== commentId);
+              post.comments_count = post.comments.length;
+            }
+            // Show success notification
+            this.notification = 'Comment deleted successfully';
+            setTimeout(() => this.notification = '', 3000);
+          }
+        },
+        error: (error) => {
+          console.error('Error deleting comment:', error);
+          this.error = error.error?.message || 'Failed to delete comment';
+          setTimeout(() => this.error = '', 3000);
+        }
+      });
+    }
   }
 
   expandSidebar() {

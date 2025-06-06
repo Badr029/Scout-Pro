@@ -214,9 +214,14 @@
         <input type="text" [(ngModel)]="deleteConfirmation" placeholder="Type 'delete' to confirm">
       </div>
 
-      <div *ngIf="!isGoogleAccount">
+      <div *ngIf="!isGoogleAccount" class="password-input-container">
         <p>Please enter your password to confirm:</p>
-        <input type="password" [(ngModel)]="deletePassword" placeholder="Enter your password">
+        <div class="input-group">
+          <input [type]="showPassword ? 'text' : 'password'" [(ngModel)]="deletePassword" placeholder="Enter your password">
+          <button type="button" class="btn-show-password" (click)="toggleShowPassword()">
+            <i class="fas" [class.fa-eye]="!showPassword" [class.fa-eye-slash]="showPassword"></i>
+          </button>
+        </div>
       </div>
 
       <p class="error-message" *ngIf="deleteError">{{ deleteError }}</p>

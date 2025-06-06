@@ -28,7 +28,7 @@ interface PlayerProfile {
   membership: string;
   monthly_video_count: number;
   last_count_reset?: string;
-  registration_type?: string; // 'email' or 'google'
+  provider?: string; // 'google' or null/undefined for regular accounts
 }
 
 interface Video {
@@ -80,6 +80,7 @@ export class ProfileComponent implements OnInit, OnDestroy {
   deleteError = '';
   isGoogleAccount = false;
   showSettingsMenu = false;
+  showPassword = false;
   showUploadModal = false;
   showBioModal = false;
   bioText = '';
@@ -151,7 +152,7 @@ export class ProfileComponent implements OnInit, OnDestroy {
 
           if (this.playerData) {
             // Check if this is a Google account
-            if (response.data.registration_type === 'google') {
+            if (response.data.provider === 'GOOGLE') {
               this.isGoogleAccount = true;
               console.log('This is a Google account');
             } else {
@@ -222,10 +223,16 @@ export class ProfileComponent implements OnInit, OnDestroy {
     await this.authService.logout();
   }
 
+  toggleShowPassword() {
+    this.showPassword = !this.showPassword;
+  }
+
   showDeleteAccountModal() {
     this.showDeleteConfirm = true;
     this.deletePassword = '';
+    this.deleteConfirmation = '';
     this.deleteError = '';
+    this.showPassword = false;
   }
 
   hideDeleteAccountModal() {

@@ -35,6 +35,11 @@
         <i class="fas fa-users"></i>
         <span>User Management</span>
       </a>
+
+      <a class="menu-item" [class.active]="currentSection === 'content-management'" (click)="setSection('content-management')">
+        <i class="fas fa-film"></i>
+        <span>Content Management</span>
+      </a>
     </div>
 
     <div class="sidebar-footer">
@@ -780,6 +785,165 @@
           <button class="btn-secondary" (click)="closeScoutDocuments()">Close</button>
         </div>
       </app-modal>
+    </div>
+
+    <!-- Add Content Management Section -->
+    <div *ngIf="currentSection === 'content-management'" class="content-management-section">
+      <div class="section-header">
+        <h2>Content Management</h2>
+        <div class="sort-controls">
+          <button class="btn-sort" (click)="sortVideos('views')" [class.active]="videoSortField === 'views'">
+            Sort by Views
+            <i class="fas" [class.fa-sort-up]="videoSortField === 'views' && videoSortOrder === 'asc'"
+               [class.fa-sort-down]="videoSortField === 'views' && videoSortOrder === 'desc'"></i>
+          </button>
+          <button class="btn-sort" (click)="sortVideos('likes')" [class.active]="videoSortField === 'likes'">
+            Sort by Likes
+            <i class="fas" [class.fa-sort-up]="videoSortField === 'likes' && videoSortOrder === 'asc'"
+               [class.fa-sort-down]="videoSortField === 'likes' && videoSortOrder === 'desc'"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Error Message -->
+      <div *ngIf="videoError" class="error-message">
+        {{ videoError }}
+      </div>
+
+      <!-- Success Message -->
+      <div *ngIf="successMessage" class="success-message">
+        {{ successMessage }}
+      </div>
+
+      <!-- Loading Spinner -->
+      <div *ngIf="loadingVideos" class="loading-spinner">
+        <i class="fas fa-spinner fa-spin"></i> Loading videos...
+      </div>
+
+      <!-- Videos Grid -->
+      <div *ngIf="!loadingVideos && !videoError" class="videos-grid">
+        <div *ngFor="let video of videos" class="video-card">
+          <div class="video-thumbnail" (click)="viewVideoDetails(video.id)">
+            <img [src]="video.thumbnail" [alt]="video.title">
+            <span class="video-duration">{{ video.duration }}</span>
+          </div>
+          <div class="video-info">
+            <h3 class="video-title" (click)="viewVideoDetails(video.id)">{{ video.title }}</h3>
+            <p class="video-meta">
+              <span><i class="fas fa-user"></i> {{ video.user.name }}</span>
+              <span><i class="fas fa-calendar"></i> {{ video.created_at | date }}</span>
+            </p>
+            <div class="video-stats">
+              <span><i class="fas fa-eye"></i> {{ video.views }}</span>
+              <span><i class="fas fa-heart"></i> {{ video.likes }}</span>
+              <span><i class="fas fa-comment"></i> {{ video.comments_count }}</span>
+            </div>
+            <div class="video-actions">
+              <button class="btn-action" (click)="viewVideoDetails(video.id)" title="View Details">
+                <i class="fas fa-info-circle"></i>
+              </button>
+              <button class="btn-action btn-delete" (click)="removeVideo(video.id)" title="Delete Video">
+                <i class="fas fa-trash"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- No Videos Message -->
+      <div *ngIf="!loadingVideos && !videoError && videos.length === 0" class="no-content">
+        <i class="fas fa-video"></i>
+        <p>No videos found</p>
+      </div>
+
+      <!-- Video Details Modal -->
+      <div class="modal" [class.show]="modalService.isOpen('videoDetailsModal')" id="videoDetailsModal">
+        <div class="modal-dialog modal-lg">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title">{{ selectedVideo?.title || 'Video Details' }}</h5>
+              <button type="button" class="close" (click)="modalService.close()">
+                <span>&times;</span>
+              </button>
+            </div>
+            <div class="modal-body">
+              <!-- Loading State -->
+              <div *ngIf="loadingVideoDetails" class="text-center p-4">
+                <div class="spinner-border text-primary" role="status">
+                  <span class="sr-only">Loading...</span>
+                </div>
+                <p class="mt-2">Loading video details...</p>
+              </div>
+
+              <!-- Error State -->
+              <div *ngIf="videoDetailsError" class="alert alert-danger">
+                {{ videoDetailsError }}
+                <button class="btn btn-link" (click)="viewVideoDetails(selectedVideo?.id!)">Retry</button>
+              </div>
+
+              <!-- Video Content -->
+              <div *ngIf="selectedVideo && !loadingVideoDetails && !videoDetailsError" class="video-details">
+                <div class="video-player">
+                  <video [src]="selectedVideo.file_path" controls>
+                    Your browser does not support the video tag.
+                  </video>
+                </div>
+
+                <div class="video-info-detailed">
+                  <div class="info-section">
+                    <h4>Video Information</h4>
+                    <p><strong>Title:</strong> {{ selectedVideo.title }}</p>
+                    <p><strong>Description:</strong> {{ selectedVideo.description }}</p>
+                    <p><strong>Uploaded by:</strong> {{ selectedVideo.user.name }}</p>
+                    <p><strong>Upload Date:</strong> {{ selectedVideo.created_at | date }}</p>
+                  </div>
+
+                  <div class="stats-section">
+                    <h4>Statistics</h4>
+                    <div class="stats-grid">
+                      <div class="stat-item">
+                        <i class="fas fa-eye"></i>
+                        <span>{{ selectedVideo.views }} Views</span>
+                      </div>
+                      <div class="stat-item">
+                        <i class="fas fa-thumbs-up"></i>
+                        <span>{{ selectedVideo.likes }} Likes</span>
+                      </div>
+                      <div class="stat-item">
+                        <i class="fas fa-comments"></i>
+                        <span>{{ selectedVideo.comments.length }} Comments</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="comments-section">
+                    <h4>Comments</h4>
+                    <div class="comments-list">
+                      <div *ngFor="let comment of selectedVideo.comments" class="comment-item">
+                        <div class="comment-header">
+                          <strong>{{ comment.user.name }}</strong>
+                          <span>{{ comment.created_at | date }}</span>
+                          <button class="btn btn-sm btn-danger" (click)="deleteComment(selectedVideo.id, comment.id)">
+                            <i class="fas fa-trash"></i>
+                          </button>
+                        </div>
+                        <p>{{ comment.content }}</p>
+                      </div>
+                      <div *ngIf="selectedVideo.comments.length === 0" class="no-comments">
+                        No comments yet.
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-danger" (click)="deleteVideo(selectedVideo?.id!)">Delete Video</button>
+              <button type="button" class="btn btn-secondary" (click)="modalService.close()">Close</button>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </div>

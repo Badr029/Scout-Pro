@@ -19,9 +19,16 @@ class AccountController extends Controller
     {
         $user = Auth::user();
 
-        $validator = Validator::make($request->all(), [
-            'password' => 'required|string',
-        ]);
+        // Different validation based on account type
+        if ($user->provider === 'GOOGLE') {
+            $validator = Validator::make($request->all(), [
+                'confirm_delete' => 'required|string|in:delete',
+            ]);
+        } else {
+            $validator = Validator::make($request->all(), [
+                'password' => 'required|string',
+            ]);
+        }
 
         if ($validator->fails()) {
             return response()->json([
@@ -30,8 +37,8 @@ class AccountController extends Controller
             ], 422);
         }
 
-        // Verify password
-        if (!Hash::check($request->password, $user->password)) {
+        // For regular accounts, verify password
+        if ($user->provider !== 'GOOGLE' && !Hash::check($request->password, $user->password)) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Password is incorrect'

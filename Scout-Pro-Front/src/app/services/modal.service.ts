@@ -6,8 +6,8 @@ import { Subject } from 'rxjs';
 })
 export class ModalService {
   private modalContainer: ViewContainerRef | null = null;
-  private activeModal: ComponentRef<any> | null = null;
-  private modalState = new Subject<boolean>();
+  private activeModalId: string | null = null;
+  private modalState = new Subject<{id: string | null; isOpen: boolean}>();
 
   modalState$ = this.modalState.asObservable();
 
@@ -15,21 +15,21 @@ export class ModalService {
     this.modalContainer = container;
   }
 
-  open(content: any) {
-    if (!this.modalContainer) {
-      console.error('Modal container not set');
-      return;
+  open(modalId: string) {
+    if (this.activeModalId) {
+      this.close();
     }
-
-    this.activeModal = this.modalContainer.createComponent(content);
-    this.modalState.next(true);
+    this.activeModalId = modalId;
+    this.modalState.next({ id: modalId, isOpen: true });
   }
 
   close() {
-    if (this.activeModal) {
-      this.activeModal.destroy();
-      this.activeModal = null;
-      this.modalState.next(false);
-    }
+    const previousId = this.activeModalId;
+    this.activeModalId = null;
+    this.modalState.next({ id: previousId, isOpen: false });
+  }
+
+  isOpen(modalId: string): boolean {
+    return this.activeModalId === modalId;
   }
 }

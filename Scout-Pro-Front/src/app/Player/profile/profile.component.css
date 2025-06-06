@@ -1628,3 +1628,43 @@ textarea.form-control {
     transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(107, 70, 193, 0.4);
 }
+
+.password-input-container {
+    margin-bottom: 1rem;
+}
+
+.input-group {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.input-group input {
+    flex: 1;
+    padding-right: 40px;
+    background: #1E1E1E;
+    border: 1px solid #333;
+    color: #ffffff;
+    border-radius: 4px;
+    padding: 8px 40px 8px 12px;
+    width: 100%;
+}
+
+.btn-show-password {
+    position: absolute;
+    right: 8px;
+    background: none;
+    border: none;
+    color: #666;
+    padding: 4px 8px;
+    cursor: pointer;
+    transition: color 0.2s ease;
+}
+
+.btn-show-password:hover {
+    color: #ffffff;
+}
+
+.btn-show-password i {
+    font-size: 1rem;
+}

@@ -29,7 +29,8 @@ class ProfileController extends Controller
                 'username' => $user->username,
                 'email' => $user->email,
                 'user_type' => $user->user_type,
-                'user_id' => $user->id
+                'user_id' => $user->id,
+                'provider' => $user->provider
             ];
             $profileData = array_merge($playerData, $userData);
 
@@ -56,7 +57,8 @@ class ProfileController extends Controller
                 'username' => $user->username,
                 'email' => $user->email,
                 'user_type' => $user->user_type,
-                'user_id' => $user->id
+                'user_id' => $user->id,
+                'provider' => $user->provider
             ];
             $profileData = array_merge($scoutData, $userData);
 
@@ -179,11 +181,29 @@ class ProfileController extends Controller
         }
     }
 
+    public function delete(Request $request) {
+        $user = Auth::user();
 
+        // Check if user is a Google account
+        if ($user->provider === 'GOOGLE') {
+            // For Google accounts, validate the confirmation text
+            $request->validate([
+                'confirm_delete' => 'required|string|in:delete',
+            ]);
 
-        public function delete(Request $request) {
-            $user = auth()->user();
+            if ($user->user_type == 'player') {
+                $user->player()->delete();
+                $user->delete();
+                return response()->json(['message' => 'Player account deactivated permanently'], 200);
+            }
 
+            if ($user->user_type == 'scout') {
+                $user->scout()->delete();
+                $user->delete();
+                return response()->json(['message' => 'Scout account deactivated permanently'], 200);
+            }
+        } else {
+            // Regular email account - validate password
             $request->validate([
                 'password' => 'required|string',
             ]);
@@ -191,17 +211,21 @@ class ProfileController extends Controller
             if (!Hash::check($request->password, $user->password)) {
                 return response()->json(['message' => 'Incorrect password'], 403);
             }
-            if ($user->user_type=='player') {
+
+            if ($user->user_type == 'player') {
                 $user->player()->delete();
                 $user->delete();
-                return response()->json(['message' => 'Player account deactivated permanently'],200);
+                return response()->json(['message' => 'Player account deactivated permanently'], 200);
             }
 
-            if ($user->user_type=='scout') {
+            if ($user->user_type == 'scout') {
                 $user->scout()->delete();
                 $user->delete();
-                return response()->json(['message' => 'Scout account deactivated permanently'],200);
+                return response()->json(['message' => 'Scout account deactivated permanently'], 200);
             }
         }
+
+        return response()->json(['message' => 'Invalid user type'], 400);
+    }
 }
 

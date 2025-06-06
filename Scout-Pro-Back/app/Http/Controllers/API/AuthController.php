@@ -117,12 +117,12 @@ class AuthController extends Controller
         try {
             // Check if user exists by social_id and provider first
             $user = User::where('social_id', $request->socialId)
-                        ->where('provider', $request->provider)
+                        ->where('provider', 'GOOGLE')
                         ->first();
 
             // If not found by social_id, check by email
             if (!$user) {
-            $user = User::where('email', $request->email)->first();
+                $user = User::where('email', $request->email)->first();
             }
 
             // If user doesn't exist and no user_type provided, return special response
@@ -134,7 +134,7 @@ class AuthController extends Controller
                         'firstName' => $request->firstName,
                         'lastName' => $request->lastName,
                         'socialId' => $request->socialId,
-                        'provider' => $request->provider,
+                        'provider' => 'GOOGLE',
                         'idToken' => $request->idToken
                     ]
                 ], 202);
@@ -159,7 +159,7 @@ class AuthController extends Controller
                     'username' => $username,
                     'email' => $request->email,
                     'social_id' => $request->socialId,
-                    'provider' => $request->provider,
+                    'provider' => 'GOOGLE',
                     'provider_token' => $request->idToken,
                     'email_verified_at' => now(),
                     'password' => null // No password for social login
@@ -168,7 +168,7 @@ class AuthController extends Controller
                 // Update existing user's social credentials if they don't have them
                 if (!$user->social_id) {
                     $user->social_id = $request->socialId;
-                    $user->provider = $request->provider;
+                    $user->provider = 'GOOGLE';
                     $user->provider_token = $request->idToken;
                     $user->save();
                 }

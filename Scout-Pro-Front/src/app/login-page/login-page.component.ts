@@ -52,6 +52,13 @@ export class LoginPageComponent {
     }
   }
 
+  hideUserTypeSelection() {
+    this.showUserTypeSelection = false;
+    this.pendingGoogleData = null;
+    this.selectedUserType = '';
+    this.errorMessage = '';
+  }
+
   login() {
     // Clear previous messages
     this.errorMessage = '';
