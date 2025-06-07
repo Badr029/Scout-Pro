@@ -481,7 +481,7 @@
       <!-- Events View -->
       <div *ngIf="activeView === 'events'" class="events-section">
         <!-- Premium Subscription Prompt for Free Members -->
-        <div *ngIf="userProfile?.membership === 'free' && !isScout" class="premium-upgrade-prompt">
+        <div *ngIf="userProfile?.membership === 'free' && !isScout" class="premium-subscription-card">
           <div class="upgrade-content">
             <h2>Upgrade to Premium to Access Events</h2>
             <div class="premium-benefits">
@@ -491,6 +491,8 @@
                 <li><i class="bi bi-graph-up"></i> Track your video performance analytics</li>
                 <li><i class="bi bi-camera-video"></i> Unlimited video uploads</li>
                 <li><i class="bi bi-star"></i> Premium badge on your profile</li>
+                <li><i class="bi bi-bell"></i> More notifications and features</li>
+
               </ul>
             </div>
             <button class="btn btn-premium" (click)="goToSubscription()">
@@ -765,17 +767,19 @@
       </div>
 
       <!-- Right panel events section -->
-      <div class="right-panel-events">
-        <div class="right-panel-events-header">
+      <div class="right-panel-events" >
+        <div class="right-panel-events-header" *ngIf="userProfile?.membership === 'premium' || isScout">
           <h4>Upcoming Events</h4>
           <button class="btn btn-outline" (click)="switchView('events'); $event.preventDefault()">See all</button>
         </div>
 
         <!-- Premium Upgrade Prompt for Free Members -->
-        <div *ngIf="userProfile?.membership === 'free' && !isScout" class="right-panel-premium-prompt">
+        <div *ngIf="userProfile?.membership === 'free' && !isScout" class="premium-subscription-card">
           <div class="premium-content">
-            <h4>Upgrade to Premium to Access Events</h4>
-            <p>Upgrade to premium to view upcoming scouting events and tryouts.</p>
+            <h4>Upgrade to Premium</h4>
+            <p>🚀 Unlimited video uploads</p>
+            <p>🎖 Premium badge on profile</p>
+            <p>📥 Apply for scouts' events</p>
             <button class="btn btn-premium-small" (click)="goToSubscription()">
               Upgrade Now
             </button>
@@ -938,151 +942,4 @@
 <!-- Mobile Overlay -->
 <div class="mobile-overlay" [class.show]="showRightPanel" (click)="closeRightPanel()"></div>
 
-<style>
-.premium-upgrade-prompt {
-  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-  border-radius: 12px;
-  padding: 2rem;
-  text-align: center;
-  margin: 2rem auto;
-  max-width: 600px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-}
 
-.upgrade-content {
-  color: #fff;
-}
-
-.upgrade-content h2 {
-  font-size: 2rem;
-  margin-bottom: 1.5rem;
-  color: #fff;
-}
-
-.premium-benefits {
-  text-align: left;
-  margin: 2rem 0;
-}
-
-.premium-benefits h3 {
-  font-size: 1.2rem;
-  margin-bottom: 1rem;
-  color: #ffd700;
-}
-
-.premium-benefits ul {
-  list-style: none;
-  padding: 0;
-}
-
-.premium-benefits li {
-  margin: 1rem 0;
-  font-size: 1.1rem;
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-}
-
-.premium-benefits i {
-  color: #ffd700;
-  font-size: 1.2rem;
-}
-
-.btn-premium {
-  background: linear-gradient(45deg, #ffd700, #ffa500);
-  color: #1a1a2e;
-  border: none;
-  padding: 1rem 2rem;
-  font-size: 1.2rem;
-  border-radius: 30px;
-  font-weight: bold;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin: 0 auto;
-  cursor: pointer;
-  transition: transform 0.2s;
-}
-
-.btn-premium:hover {
-  transform: translateY(-2px);
-}
-
-.right-panel-premium-prompt {
-  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-  border-radius: 8px;
-  padding: 1.5rem;
-  text-align: center;
-  margin: 1rem 0;
-}
-
-.premium-content {
-  color: #fff;
-}
-
-.premium-content i {
-  font-size: 2rem;
-  color: #ffd700;
-  margin-bottom: 1rem;
-}
-
-.premium-content h4 {
-  font-size: 1.2rem;
-  margin-bottom: 0.5rem;
-  color: #fff;
-}
-
-.premium-content p {
-  font-size: 0.9rem;
-  margin-bottom: 1rem;
-  color: #ccc;
-}
-
-.btn-premium-small {
-  background: linear-gradient(45deg, #ffd700, #ffa500);
-  color: #1a1a2e;
-  border: none;
-  padding: 0.5rem 1rem;
-  font-size: 0.9rem;
-  border-radius: 20px;
-  font-weight: bold;
-  cursor: pointer;
-  transition: transform 0.2s;
-}
-
-.btn-premium-small:hover {
-  transform: translateY(-2px);
-}
-
-.comment-content {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  width: 100%;
-}
-
-.delete-comment-btn {
-  background: none;
-  border: none;
-  color: #666;
-  padding: 4px 8px;
-  cursor: pointer;
-  font-size: 0.8rem;
-  border-radius: 4px;
-  opacity: 0;
-  transition: all 0.2s ease;
-}
-
-.comment:hover .delete-comment-btn {
-  opacity: 1;
-}
-
-.delete-comment-btn:hover {
-  color: #ef4444;
-  background-color: rgba(239, 68, 68, 0.1);
-}
-
-.comment-text {
-  flex: 1;
-}
-</style>
