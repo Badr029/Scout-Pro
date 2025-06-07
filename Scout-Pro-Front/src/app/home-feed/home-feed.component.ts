@@ -1280,16 +1280,19 @@ export class HomeFeedComponent implements OnInit, OnDestroy {
     setTimeout(() => this.notification = '', 3000);
   }
 
-  getAvatarUrl(firstName?: string, lastName?: string): string {
-    const name = ((firstName || '') + ' ' + (lastName || '')).trim() || 'User';
-    return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}`;
+  getAvatarUrl(name?: string): string {
+    if (!name) return 'assets/default-avatar.png';
+    const [firstName, lastName] = name.split(' ');
+    return `https://ui-avatars.com/api/?name=${firstName}+${lastName}&background=random`;
   }
 
-  handleImageError(event: ErrorEvent, firstName?: string, lastName?: string): void {
-    const imgElement = event.target as HTMLImageElement;
-    if (imgElement) {
-      imgElement.src = this.getAvatarUrl(firstName, lastName);
+  handleImageError(event: ErrorEvent, name?: string): void {
+    if (!name) {
+      (event.target as HTMLImageElement).src = 'assets/default-avatar.png';
+      return;
     }
+    const [firstName, lastName] = name.split(' ');
+    (event.target as HTMLImageElement).src = this.getAvatarUrl(name);
   }
 
   toggleCommentBox(postId: number) {
@@ -1733,8 +1736,8 @@ export class HomeFeedComponent implements OnInit, OnDestroy {
         if (response.status === 'success' && response.data) {
           this.premiumPlayers = response.data.map((player: any) => ({
             ...player,
-            profile_image: player.profile_image ? this.getProfileImageUrl(player.profile_image) : null,
-            name: `${player.first_name} ${player.last_name}`.trim()
+            profile_image: player.image ? player.image : null,
+            name: player.name || 'Unknown Player'
           }));
         }
       },

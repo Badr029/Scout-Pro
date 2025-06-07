@@ -70,7 +70,6 @@ class FeedController extends Controller
             }
             if ($age) {
                 $videosQuery->whereHas('user.player', function ($query) use ($age) {
-                    // Since age is stored as a negative number, we use abs() to compare
                     $query->whereRaw('ABS(age) = ?', [abs((int)$age)]);
                 });
             }
@@ -78,11 +77,6 @@ class FeedController extends Controller
                 $videosQuery->whereHas('user.player', function ($query) use ($transfer_status) {
                     $query->where('transfer_status', $transfer_status);
                 });
-                Log::info('Applying transfer status filter:', [
-                    'transfer_status' => $transfer_status,
-                    'sql' => $videosQuery->toSql(),
-                    'bindings' => $videosQuery->getBindings()
-                ]);
             }
         }
 
@@ -93,6 +87,23 @@ class FeedController extends Controller
         $videos->through(function ($video) use ($user) {
             // Add has_liked flag
             $video->has_liked = $video->likes->where('user_id', $user->id)->count() > 0;
+            // Add following flag and user data
+            if ($video->user) {
+                $video->user->following = $this->getFollowState($video->user->id);
+                $video->user->isCurrentUser = $video->user->id === $user->id;
+
+                // Add profile image and player info
+                if ($video->user->player) {
+                    $video->user->profile_image = $video->user->player->profile_image ? url('storage/' . $video->user->player->profile_image) : null;
+                    $video->user->player_info = [
+                        'position' => $video->user->player->position,
+                        'region' => $video->user->player->current_city,
+                        'age' => abs($video->user->player->getAge()),
+                        'preferred_foot' => $video->user->player->preferred_foot,
+                        'transfer_status' => $video->user->player->transfer_status
+                    ];
+                }
+            }
 
             // Format the likes data
             $video->likes_data = $video->likes->map(function ($like) {
@@ -103,7 +114,7 @@ class FeedController extends Controller
                         'id' => $like->user->id,
                         'first_name' => $like->user->first_name,
                         'last_name' => $like->user->last_name,
-                        'profile_image' => $like->user->player ? $like->user->player->profile_image : null
+                        'profile_image' => $like->user->player ? url('storage/' . $like->user->player->profile_image) : null
                     ]
                 ];
             });
@@ -135,18 +146,6 @@ class FeedController extends Controller
                 ];
             });
 
-            // Add user data with proper profile image path and player info
-            if ($video->user && $video->user->player) {
-                $video->user->profile_image = $video->user->player->profile_image ? url('storage/' . $video->user->player->profile_image) : null;
-                $video->user->player_info = [
-                    'position' => $video->user->player->position,
-                    'region' => $video->user->player->current_city,
-                    'age' => abs($video->user->player->getAge()),
-                    'preferred_foot' => $video->user->player->preferred_foot,
-                    'transfer_status' => $video->user->player->transfer_status
-                ];
-            }
-
             return $video;
         });
 
@@ -164,7 +163,7 @@ class FeedController extends Controller
                     'id' => $user->id,
                     'name' => $user->first_name . ' ' . $user->last_name,
                     'position' => $user->player ? $user->player->position : null,
-                    'region' => $user->player ? $user->player->nationality : null,
+                    'region' => $user->player ? $user->player->current_city : null,
                     'profile_image' => $user->player && $user->player->profile_image ? url('storage/' . $user->player->profile_image) : null,
                 ];
             });
@@ -193,7 +192,7 @@ class FeedController extends Controller
                         'id' => $user->id,
                         'name' => $user->first_name . ' ' . $user->last_name,
                         'position' => $user->player ? $user->player->position : null,
-                        'region' => $user->player ? $user->player->nationality : null,
+                        'region' => $user->player ? $user->player->current_city : null,
                         'image' => $user->player && $user->player->profile_image
                             ? url('storage/' . $user->player->profile_image)
                             : null,
@@ -604,34 +603,46 @@ class FeedController extends Controller
         ]);
 
         $follower = Auth::user();
+        $userId = $request->user_id;
 
         // Prevent self-following
-        if ($follower->id === $request->user_id) {
+        if ($follower->id === $userId) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'You cannot follow yourself'
             ], 400);
         }
 
-        $follow = Follow::where('follower_id', $follower->id)
-                       ->where('following_id', $request->user_id)
-                       ->first();
+        try {
+            $follow = Follow::where('follower_id', $follower->id)
+                           ->where('following_id', $userId)
+                           ->first();
 
-        if ($follow) {
-            $follow->delete();
-            $message = 'User unfollowed successfully';
-        } else {
-            Follow::create([
-                'follower_id' => $follower->id,
-                'following_id' => $request->user_id
+            if ($follow) {
+                $follow->delete();
+                $message = 'User unfollowed successfully';
+                $following = false;
+            } else {
+                Follow::create([
+                    'follower_id' => $follower->id,
+                    'following_id' => $userId
+                ]);
+                $message = 'User followed successfully';
+                $following = true;
+            }
+
+            return response()->json([
+                'status' => 'success',
+                'message' => $message,
+                'following' => $following
             ]);
-            $message = 'User followed successfully';
+        } catch (\Exception $e) {
+            Log::error('Toggle follow error: ' . $e->getMessage());
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to update follow status'
+            ], 500);
         }
-
-        return response()->json([
-            'status' => 'success',
-            'message' => $message
-        ]);
     }
 
     /**
@@ -807,7 +818,18 @@ class FeedController extends Controller
         return $filters;
     }
 
-       public function calculateAge($DateofBirth)
+    /**
+     * Get follow state for a user
+     */
+    private function getFollowState($userId)
+    {
+        $currentUser = Auth::user();
+        return Follow::where('follower_id', $currentUser->id)
+                    ->where('following_id', $userId)
+                    ->exists();
+    }
+
+    public function calculateAge($DateofBirth)
    {
        if (!$DateofBirth) return null;
        $birthDate = new \DateTime($DateofBirth);
@@ -901,8 +923,8 @@ public function playerviewprofile($user_id) {
                 ->get()
                 ->map(function($player) {
                     return [
-                        'id' => $player->id,
-                        'name' => $player->first_name . ' ' . $player->last_name,
+                        'id' => $player->user->id,
+                        'name' => $player->user->first_name . ' ' . $player->user->last_name,
                         'position' => $player->position,
                         'region' => $player->current_city,
                         'image' => $player->profile_image ? url('storage/' . $player->profile_image) : null,
