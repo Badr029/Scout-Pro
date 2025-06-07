@@ -107,7 +107,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/plans', [SubscriptionController::class, 'getPlans']);
     Route::post('/subscription/upgrade', [SubscriptionController::class, 'upgrade']);
     Route::post('/subscription/cancel', [SubscriptionController::class, 'cancel']);
-    Route::get('/player/{id}/subscription-status', [SubscriptionController::class, 'manageSubscription']);
+    Route::get('/player/{id}/subscription-status', [SubscriptionController::class, 'checkPlayerSubscriptionStatus']);
 
     // Player membership routes
     Route::get('/player/membership', [SubscriptionController::class, 'checkPlayerMembership']);
@@ -117,7 +117,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/subscription/scout/upgrade', [SubscriptionController::class, 'upgradeScout']);
     Route::post('/subscription/scout/cancel', [SubscriptionController::class, 'cancelScout']);
     Route::get('/scout/{id}/subscription-status', [SubscriptionController::class, 'checkScoutSubscriptionStatus']);
-    Route::get('/subscription/scout/status', [SubscriptionController::class, 'getScoutSubscriptionStatus']);
+    Route::get('/subscription/scout/status', [SubscriptionController::class, 'checkCurrentUserSubscriptionStatus']);
 
     // Feed related routes
     Route::get('/events', [EventController::class, 'index']);
@@ -172,5 +172,14 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::middleware(['auth:sanctum'])->group(function () {
         Route::post('/contact-requests', [ContactRequestController::class, 'store']);
         Route::get('/contact-requests/check/{playerId}', [ContactRequestController::class, 'checkStatus']);
+    });
+
+    // Notification Routes
+    Route::prefix('notifications')->group(function () {
+        Route::get('/', 'App\Http\Controllers\API\NotificationController@index');
+        Route::get('/unread-count', 'App\Http\Controllers\API\NotificationController@getUnreadCount');
+        Route::post('/{id}/mark-as-read', 'App\Http\Controllers\API\NotificationController@markAsRead');
+        Route::post('/mark-all-as-read', 'App\Http\Controllers\API\NotificationController@markAllAsRead');
+        Route::delete('/{id}', 'App\Http\Controllers\API\NotificationController@destroy');
     });
 });

@@ -1,0 +1,47 @@
+<div class="notification-container">
+  <button class="notification-toggle" [class.active]="isOpen" (click)="togglePanel()">
+    <i class="bi bi-bell-fill"></i>
+    <span class="notification-text" [class.hidden]="!sidebarExpanded">Notifications</span>
+    <span class="notification-badge" *ngIf="unreadCount > 0">{{ unreadCount }}</span>
+  </button>
+
+  <div class="notification-panel" [class.open]="isOpen">
+    <div class="notification-header">
+      <h3>Notifications</h3>
+      <div class="header-actions">
+        <button class="mark-all-read" (click)="markAllAsRead()" *ngIf="unreadCount > 0">
+          Mark all as read
+        </button>
+        <button class="close-btn" (click)="togglePanel()">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+    </div>
+
+    <div class="notification-list" *ngIf="notifications.length > 0">
+      <div class="notification-item" *ngFor="let notification of notifications"
+           [class.unread]="!notification.is_read">
+        <div class="notification-icon">
+          <i [class]="getNotificationIcon(notification.type)"></i>
+        </div>
+        <div class="notification-content">
+          <p class="notification-message">{{ notification.message }}</p>
+          <span class="notification-time">{{ notification.created_at | timeAgo }}</span>
+        </div>
+        <div class="notification-actions">
+          <button class="action-btn" (click)="markAsRead(notification.id)" *ngIf="!notification.is_read">
+            <i class="fas fa-check"></i>
+          </button>
+          <button class="action-btn delete" (click)="deleteNotification(notification.id)">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="no-notifications" *ngIf="notifications.length === 0">
+      <i class="bi bi-bell-slash"></i>
+      <p>No notifications yet</p>
+    </div>
+  </div>
+</div>

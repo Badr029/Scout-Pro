@@ -3,6 +3,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { AuthService } from '../auth.service';
 import { CommonModule } from '@angular/common';
+import { ApiService } from '../api.service';
 
 interface ScoutProfile {
   id?: string;
@@ -38,12 +39,15 @@ export class ScoutViewComponent implements OnInit {
   error: string | null = null;
   scoutData: ScoutProfile | null = null;
   activeTab: string = 'about';
+  isFollowing: boolean = false;
+  followLoading: boolean = false;
 
   constructor(
     private route: ActivatedRoute,
     private router: Router,
     private http: HttpClient,
-    private authService: AuthService
+    private authService: AuthService,
+    private apiService: ApiService
   ) {}
 
   ngOnInit(): void {
@@ -72,7 +76,7 @@ export class ScoutViewComponent implements OnInit {
     this.http.get<{ data: any }>(apiUrl, { headers }).subscribe({
       next: (response) => {
         if (response.data) {
-          this.scoutData = {
+          const scoutData = {
             ...response.data,
             // Process arrays that might come as strings
             scouting_regions: this.getArrayFromString(response.data.scouting_regions),
@@ -80,6 +84,11 @@ export class ScoutViewComponent implements OnInit {
             age_groups: this.getArrayFromString(response.data.age_groups),
             certifications: Array.isArray(response.data.certifications) ? response.data.certifications : []
           };
+          this.scoutData = scoutData;
+          // After loading scout data, fetch follow status if user_id exists
+          if (scoutData.user_id) {
+            this.fetchFollowStatus(scoutData.user_id);
+          }
         }
         this.loading = false;
       },
@@ -90,15 +99,55 @@ export class ScoutViewComponent implements OnInit {
     });
   }
 
-  getArrayFromString(value: string | string[] | null | undefined): string[] {
-  if (!value) return [];
+  fetchFollowStatus(userId: number): void {
+    this.apiService.getFollowStatus(userId).subscribe({
+      next: (response) => {
+        this.isFollowing = response.following;
+      },
+      error: (error) => {
+        console.error('Failed to fetch follow status:', error);
+      }
+    });
+  }
+
+  toggleFollow(): void {
+    if (!this.scoutData?.user_id || this.followLoading) return;
+
+    this.followLoading = true;
+    const userId = this.scoutData.user_id;
+
+    const action$ = this.isFollowing
+      ? this.apiService.unfollowPlayer(userId)
+      : this.apiService.followPlayer(userId);
+
+    action$.subscribe({
+      next: (response) => {
+        if (response.status === 'success') {
+          this.isFollowing = response.following;
+        }
+        this.followLoading = false;
+      },
+      error: (error) => {
+        console.error('Failed to toggle follow:', error);
+        this.followLoading = false;
+      }
+    });
+  }
+
+  switchTab(tab: string): void {
+    this.activeTab = tab;
+  }
+
+  getArrayFromString(value: any): string[] {
     if (Array.isArray(value)) return value;
+    if (typeof value === 'string') {
   try {
-    const parsed = JSON.parse(value);
-    return Array.isArray(parsed) ? parsed : [parsed];
+        return JSON.parse(value);
   } catch {
     return value.split(',').map(item => item.trim());
   }
+    }
+    return [];
 }
 
   // Helper methods to ensure arrays are always returned
@@ -116,10 +165,6 @@ export class ScoutViewComponent implements OnInit {
 
   getCertifications(): string[] {
     return this.scoutData?.certifications || [];
-  }
-
-  switchTab(tab: string): void {
-    this.activeTab = tab;
   }
 
   goToHome(): void {

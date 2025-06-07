@@ -102,9 +102,8 @@ export class ApiService {
     );
   }
 
-  getFollowStatus(userId: number): boolean {
-    const followedUsers = JSON.parse(localStorage.getItem('followedUsers') || '{}');
-    return !!followedUsers[userId];
+  getFollowStatus(userId: number): Observable<any> {
+    return this.http.get(`${this.apiUrl}/users/${userId}/follow-status`, { headers: this.getHeaders() });
   }
 
   getContactedPlayers(): Observable<any> {

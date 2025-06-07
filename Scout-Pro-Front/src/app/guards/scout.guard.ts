@@ -19,12 +19,12 @@ export class ScoutGuard implements CanActivate {
     // Get user type from localStorage
     const userType = localStorage.getItem('user_type');
 
-    // If not a scout, allow navigation
+    // If not a scout, don't apply this guard
     if (userType !== 'scout') {
       return of(true);
     }
 
-    // If trying to access subscription page, allow it
+    // If already on subscription page, allow it
     if (state.url === '/scout-subscription') {
       return of(true);
     }
@@ -36,14 +36,18 @@ export class ScoutGuard implements CanActivate {
     return this.http.get('http://localhost:8000/api/subscription/scout/status', { headers })
       .pipe(
         map((response: any) => {
-          if (response.subscription_active) {
+          // Check if subscription is active (1) or inactive (0)
+          const isActive = response.data?.active === true || response.subscription_active === true;
+          if (isActive) {
             return true;
           } else {
+            // If subscription is not active, redirect to subscription page
             this.router.navigate(['/scout-subscription']);
             return false;
           }
         }),
         catchError(() => {
+          // On error, redirect to subscription page
           this.router.navigate(['/scout-subscription']);
           return of(false);
         })

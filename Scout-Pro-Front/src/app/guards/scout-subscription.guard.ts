@@ -16,6 +16,15 @@ export class ScoutSubscriptionGuard implements CanActivate {
     route: ActivatedRouteSnapshot,
     state: RouterStateSnapshot
   ): Observable<boolean> {
+    // Get user type from localStorage
+    const userType = localStorage.getItem('user_type');
+
+    // Only apply this guard for scouts
+    if (userType !== 'scout') {
+      this.router.navigate(['/']);
+      return of(false);
+    }
+
     const headers = new HttpHeaders({
       'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
     });
@@ -23,22 +32,32 @@ export class ScoutSubscriptionGuard implements CanActivate {
     return this.http.get('http://localhost:8000/api/subscription/scout/status', { headers })
       .pipe(
         map((response: any) => {
-          if (response.subscription_active) {
+          // Check if subscription is active (1) or inactive (0)
+          const isActive = response.data?.active === true || response.subscription_active === true;
+          if (isActive) {
+            // If subscription is active and trying to access subscription page,
+            // redirect to home-feed
+            if (state.url === '/scout-subscription') {
+              this.router.navigate(['/home-feed']);
+              return false;
+            }
             return true;
           } else {
-            // If not on subscription page, redirect to it
-            if (!state.url.includes('/subscription')) {
-              this.router.navigate(['/subscription']);
-            }
+            // If subscription is not active, only allow access to subscription page
+            if (state.url !== '/scout-subscription') {
+              this.router.navigate(['/scout-subscription']);
             return false;
+            }
+            return true;
           }
         }),
         catchError(() => {
-          // On error, redirect to subscription page
-          if (!state.url.includes('/subscription')) {
-            this.router.navigate(['/subscription']);
-          }
+          // On error, allow access to subscription page only
+          if (state.url !== '/scout-subscription') {
+            this.router.navigate(['/scout-subscription']);
           return of(false);
+          }
+          return of(true);
         })
       );
   }

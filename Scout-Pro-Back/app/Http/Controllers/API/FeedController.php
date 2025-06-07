@@ -16,9 +16,13 @@ use Illuminate\Database\Eloquent\Builder;
 use App\Models\Scout;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use App\Traits\NotificationHelper;
+use App\Models\Comment;
 
 class FeedController extends Controller
 {
+    use NotificationHelper;
+
     /**
      * Display the feed for the authenticated user.
      */
@@ -318,14 +322,30 @@ class FeedController extends Controller
                 });
 
             // Search in scouts table
-            $scoutsQuery = Scout::select('scouts.*')
-                ->join('users', 'scouts.user_id', '=', 'users.id')
-                ->where(function($q) use ($query) {
-                    $q->where('scouts.first_name', 'LIKE', "%{$query}%")
-                      ->orWhere('scouts.last_name', 'LIKE', "%{$query}%")
-                      ->orWhere('scouts.organization', 'LIKE', "%{$query}%")
-                      ->orWhere('scouts.position_title', 'LIKE', "%{$query}%");
-                });
+            $scoutsQuery = User::select(
+                'users.id as user_id',
+                'users.first_name',
+                'users.last_name',
+                'users.email',
+                'scouts.profile_image',
+                'scouts.organization',
+                'scouts.position_title',
+                'scouts.city',
+                'scouts.country'
+            )
+            ->leftJoin('scouts', 'users.id', '=', 'scouts.user_id')
+            ->where('users.user_type', 'scout')
+            ->where(function($q) use ($query) {
+                $q->where('users.first_name', 'LIKE', "%{$query}%")
+                  ->orWhere('users.last_name', 'LIKE', "%{$query}%")
+                  ->orWhere('users.email', 'LIKE', "%{$query}%")
+                  ->orWhere('scouts.organization', 'LIKE', "%{$query}%")
+                  ->orWhere('scouts.position_title', 'LIKE', "%{$query}%")
+                  ->orWhere('scouts.city', 'LIKE', "%{$query}%")
+                  ->orWhere('scouts.country', 'LIKE', "%{$query}%")
+                  ->orWhere(DB::raw("CONCAT(users.first_name, ' ', users.last_name)"), 'LIKE', "%{$query}%")
+                  ->orWhere('users.user_type', 'LIKE', "%{$query}%"); // This will match "scout" in user_type
+            });
 
             // Apply filters for players if user is a scout and filters are provided
             if ($userType === 'scout' && !empty($filters)) {
@@ -395,21 +415,23 @@ class FeedController extends Controller
                         'position' => $player->position,
                         'nationality' => $player->nationality,
                         'current_city' => $player->current_city,
-                        'type' => 'player'
+                        'type' => 'player',
+                        'membership' => $player->membership
                     ];
                 });
 
                 $scouts = $scoutsQuery->get()->map(function($scout) {
                     return [
-                        'id' => $scout->id,
+                        'id' => $scout->user_id,
                         'user_id' => $scout->user_id,
                         'first_name' => $scout->first_name,
                         'last_name' => $scout->last_name,
+                        'email' => $scout->email,
                         'profile_image' => $scout->profile_image,
-                        'organization' => $scout->organization,
-                        'position_title' => $scout->position_title,
-                        'city' => $scout->city,
-                        'country' => $scout->country,
+                        'organization' => $scout->organization ?? 'Scout Organization',
+                        'position_title' => $scout->position_title ?? 'Scout',
+                        'city' => $scout->city ?? '',
+                        'country' => $scout->country ?? '',
                         'type' => 'scout',
                         'scout_id' => $scout->user_id
                     ];
@@ -944,5 +966,54 @@ public function playerviewprofile($user_id) {
                 'message' => 'Failed to fetch premium players'
             ], 500);
         }
+    }
+
+    public function like(Request $request)
+    {
+        $video = Video::findOrFail($request->video_id);
+        $user = Auth::user();
+
+        $like = Like::firstOrCreate([
+            'user_id' => $user->id,
+            'video_id' => $video->id
+        ]);
+
+        // Only create notification if this is a new like and it's not their own video
+        // and if they are a premium player (handled in NotificationHelper)
+        if ($like->wasRecentlyCreated && $video->user_id !== $user->id) {
+            $this->createLikeNotification($user, User::find($video->user_id), 'video');
+        }
+
+        return response()->json([
+            'message' => 'Video liked successfully',
+            'like' => $like
+        ]);
+    }
+
+    public function comment(Request $request)
+    {
+        $request->validate([
+            'video_id' => 'required|exists:videos,id',
+            'content' => 'required|string|max:500'
+        ]);
+
+        $comment = Comment::create([
+            'user_id' => Auth::id(),
+            'video_id' => $request->video_id,
+            'content' => $request->content
+        ]);
+
+        $video = Video::find($request->video_id);
+
+        // Only create notification if the commenter is not the video owner
+        // and if they are a premium player (handled in NotificationHelper)
+        if ($video->user_id !== Auth::id()) {
+            $this->createCommentNotification(Auth::user(), User::find($video->user_id));
+        }
+
+        return response()->json([
+            'message' => 'Comment added successfully',
+            'comment' => $comment
+        ]);
     }
 }

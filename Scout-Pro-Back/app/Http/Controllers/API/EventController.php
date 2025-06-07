@@ -4,12 +4,16 @@ namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
 use App\Models\Event;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use App\Traits\NotificationHelper;
 
 class EventController extends Controller
 {
+    use NotificationHelper;
+
     /**
      * Display a listing of events.
      */
@@ -159,6 +163,29 @@ class EventController extends Controller
             'rejection_reason' => $validated['rejection_reason'] ?? null,
             'responded_at' => now()
         ]);
+
+        // Notify the scout about the event status
+        $this->createEventRequestStatusNotification(
+            User::find($event->organizer_id),
+            $validated['status'],
+            $event->title
+        );
+
+        // If event is approved, notify premium players
+        if ($validated['status'] === 'approved') {
+            $premiumPlayers = User::whereHas('player', function($query) {
+                $query->where('membership', 'premium');
+            })->get();
+
+            foreach ($premiumPlayers as $player) {
+                $this->createEventNotification($player, [
+                    'title' => $event->title,
+                    'date' => $event->date,
+                    'location' => $event->location,
+                    'event_id' => $event->id
+                ]);
+            }
+        }
 
         return response()->json([
             'status' => 'success',

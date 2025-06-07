@@ -8,9 +8,12 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use App\Traits\NotificationHelper;
 
 class ContactRequestController extends Controller
 {
+    use NotificationHelper;
+
     public function store(Request $request)
     {
         try {
@@ -60,7 +63,8 @@ class ContactRequestController extends Controller
                 'status' => 'pending'
             ]);
 
-            // TODO: Send email notification to player
+            // Create notification for the player
+            $this->createContactRequestNotification($scout, $player);
 
             return response()->json([
                 'status' => 'success',
@@ -108,5 +112,35 @@ class ContactRequestController extends Controller
                 'message' => 'Failed to check request status.'
             ], 500);
         }
+    }
+
+    public function updateStatus(Request $request, $id)
+    {
+        $request->validate([
+            'status' => 'required|in:approved,rejected'
+        ]);
+
+        $contactRequest = ContactRequest::findOrFail($id);
+
+        // Only admin can update status
+        if (Auth::user()->user_type !== 'admin') {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        $contactRequest->update([
+            'status' => $request->status,
+            'responded_at' => now()
+        ]);
+
+        // Create notification for the scout
+        $this->createContactRequestStatusNotification(
+            User::find($contactRequest->scout_id),
+            $request->status
+        );
+
+        return response()->json([
+            'message' => 'Contact request status updated successfully',
+            'contact_request' => $contactRequest
+        ]);
     }
 }

@@ -81,7 +81,8 @@ export class ScoutSubscriptionComponent implements OnInit {
     this.http.get('http://localhost:8000/api/subscription/scout/status', { headers })
       .subscribe({
         next: (response: any) => {
-          if (response.subscription_active) {
+          const isActive = response.data?.active === true || response.subscription_active === true;
+          if (isActive) {
             // If subscription is active, redirect to home-feed
             this.router.navigate(['/home-feed']);
           } else {
@@ -92,6 +93,7 @@ export class ScoutSubscriptionComponent implements OnInit {
         error: (error) => {
           console.error('Error checking subscription status:', error);
           this.error = 'Failed to check subscription status';
+          this.currentPlan = 'Free';
         }
       });
   }
@@ -185,9 +187,6 @@ export class ScoutSubscriptionComponent implements OnInit {
             // Clear payment form
             this.paymentInfo = { cardNumber: '', cardName: '', expiry: '', cvv: '' };
 
-            // Update localStorage to reflect subscription status
-            localStorage.setItem('subscription_active', 'true');
-
             // Show success message and navigate after a short delay
             setTimeout(() => {
               this.router.navigate(['/home-feed'])
@@ -198,13 +197,13 @@ export class ScoutSubscriptionComponent implements OnInit {
                 });
             }, 1500);
       } else {
-            this.error = response.message || 'Subscription upgrade failed. Please try again.';
+            this.error = response.message || 'Failed to upgrade subscription';
       }
         },
         error: (error) => {
           this.loading = false;
-          console.error('Payment error:', error);
-          this.error = error.error?.message || 'Failed to process payment. Please try again later.';
+          console.error('Error upgrading subscription:', error);
+          this.error = error.error?.message || 'Failed to upgrade subscription. Please try again.';
         }
       });
   }

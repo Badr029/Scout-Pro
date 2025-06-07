@@ -75,14 +75,30 @@ export class ScoutRegisterComponent {
   ];
 
   playerRolesList = [
-    'Goalkeepers',
-    'Center Backs',
-    'Full Backs',
-    'Defensive Midfielders',
-    'Central Midfielders',
-    'Attacking Midfielders',
-    'Wingers',
-    'Strikers'
+    // Goalkeeper
+    'GK - Goalkeeper',
+
+    // Defenders
+    'CB - Center Back',
+    'RB - Right Back',
+    'LB - Left Back',
+    'RWB - Right Wing Back',
+    'LWB - Left Wing Back',
+    'SW - Sweeper',
+
+    // Midfielders
+    'CDM - Defensive Midfielder',
+    'CM - Central Midfielder',
+    'CAM - Attacking Midfielder',
+    'RM - Right Midfielder',
+    'LM - Left Midfielder',
+
+    // Forwards
+    'RW - Right Winger',
+    'LW - Left Winger',
+    'CF - Center Forward',
+    'ST - Striker',
+    'SS - Second Striker'
   ];
 
   regionsList = [
@@ -90,11 +106,6 @@ export class ScoutRegisterComponent {
     'Egypt - Second Division',
     'Egypt - Third Division',
     'Egypt - Youth Leagues',
-    'North Africa',
-    'East Africa',
-    'West Africa',
-    'Middle East',
-    'Europe'
   ];
 
   loading = false;

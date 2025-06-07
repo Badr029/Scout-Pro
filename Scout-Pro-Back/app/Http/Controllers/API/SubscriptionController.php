@@ -23,9 +23,11 @@ use Illuminate\Support\Str;
 
 use App\Models\PlayerInvoice;
 use App\Mail\PlayerSubscriptionInvoice;
+use App\Traits\NotificationHelper;
 
 class SubscriptionController extends Controller
 {
+    use NotificationHelper;
 
     /**
      * Display the user's current subscription.
@@ -233,6 +235,16 @@ public function upgrade(Request $request)
             Log::error('Failed to send player invoice email: ' . $e->getMessage());
             // Don't return error to user as subscription was successful
         }
+
+        // Add notification after successful subscription
+        $this->createSubscriptionNotification(
+            $user,
+            "Your {$plan->name} subscription has been activated successfully!",
+            [
+                'plan_name' => $plan->name,
+                'expires_at' => $subscription->expires_at
+            ]
+        );
 
         DB::commit();
 
@@ -445,6 +457,16 @@ public function upgrade(Request $request)
                 Log::error('Failed to send invoice email: ' . $e->getMessage());
                 // Don't return error to user as subscription was successful
             }
+
+            // Add notification after successful subscription
+            $this->createSubscriptionNotification(
+                $user,
+                "Your {$plan->name} subscription has been activated successfully!",
+                [
+                    'plan_name' => $plan->name,
+                    'expires_at' => $subscription->expires_at
+                ]
+            );
 
             DB::commit();
 
@@ -733,6 +755,16 @@ public function upgrade(Request $request)
                 // Don't return error to user as subscription was successful
             }
 
+            // Add notification after successful subscription
+            $this->createSubscriptionNotification(
+                $user,
+                "Your {$plan->name} subscription has been activated successfully!",
+                [
+                    'plan_name' => $plan->name,
+                    'expires_at' => $subscription->expires_at
+                ]
+            );
+
             DB::commit();
 
             return response()->json([
@@ -789,5 +821,87 @@ public function upgrade(Request $request)
         ]
     ]);
 }
-  
+
+    /**
+     * Check subscription status for a specific player
+     */
+    public function checkPlayerSubscriptionStatus($playerId)
+    {
+        $player = Player::findOrFail($playerId);
+        $subscription = Subscription::where('user_id', $player->user_id)->latest()->first();
+
+        if (!$subscription) {
+            Player::where('id', $playerId)->update(['membership' => 'free']);
+            return response()->json([
+                'status' => 'no_subscription',
+                'membership' => 'free',
+                'days_remaining' => 0
+            ]);
+        }
+
+        $expires_at = $subscription->expires_at;
+        $now = now();
+
+        if ($expires_at && $expires_at <= $now) {
+            Player::where('id', $playerId)->update(['membership' => 'free']);
+            return response()->json([
+                'status' => 'expired',
+                'membership' => 'free',
+                'days_remaining' => 0
+            ]);
+        }
+        $days_remaining = $now->diffInDays($expires_at);
+
+        return response()->json([
+            'status' => 'active',
+            'membership' => 'Premium',
+            'days_remaining' => $days_remaining
+        ]);
+    }
+
+    /**
+     * Check current user's subscription status and send expiry notifications
+     */
+    public function checkCurrentUserSubscriptionStatus()
+    {
+        $user = Auth::user();
+        $subscription = $user->subscription;
+
+        if ($subscription && $subscription->active) {
+            $daysLeft = now()->diffInDays($subscription->expires_at);
+
+            // Notify user when subscription is about to expire (7 days before)
+            if ($daysLeft <= 7) {
+                $this->createSubscriptionNotification(
+                    $user,
+                    "Your subscription will expire in {$daysLeft} days. Please renew to continue enjoying premium features.",
+                    [
+                        'days_left' => $daysLeft,
+                        'expires_at' => $subscription->expires_at
+                    ]
+                );
+            }
+
+            return response()->json([
+                'status' => 'success',
+                'data' => [
+                    'active' => true,
+                    'days_left' => $daysLeft,
+                    'expires_at' => $subscription->expires_at
+                ]
+            ]);
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'data' => [
+                'active' => false,
+                'days_left' => 0,
+                'expires_at' => null
+            ]
+        ]);
+    }
+
 }
+
+

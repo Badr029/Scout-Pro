@@ -128,4 +128,12 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         return $this->following()->where('following_id', $user->id)->exists();
     }
+
+    /**
+     * Get the user's notifications.
+     */
+    public function notifications()
+    {
+        return $this->hasMany(Notification::class);
+    }
 }

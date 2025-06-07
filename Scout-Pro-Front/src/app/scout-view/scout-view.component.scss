@@ -128,6 +128,7 @@ body {
     .action-buttons {
         display: flex;
         align-items: center;
+        margin-top: 1rem;
     }
 
     .scout-name {
@@ -327,6 +328,57 @@ body {
     &:hover {
         background: $primary-dark;
         transform: translateY(-2px);
+    }
+}
+
+.action-buttons {
+    display: flex;
+    align-items: center;
+    margin-top: 1rem;
+
+    .btn {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.6rem 1.2rem;
+        border-radius: 6px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        border: none;
+        cursor: pointer;
+        font-size: 0.9rem;
+
+        &.btn-primary {
+            background: #2667cc;
+            color: #ffffff;
+
+            &:hover {
+                background: #5649c0;
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+            }
+        }
+
+        &.btn-outline-primary {
+            background: transparent;
+            border: 1px solid #2667cc;
+            color: #2667cc;
+
+            &:hover {
+                background: rgba(38, 103, 204, 0.1);
+            }
+        }
+
+        &:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        i {
+            font-size: 0.9rem;
+        }
     }
 }
 

@@ -8,6 +8,8 @@ import { HttpClient, HttpHeaders, HttpEventType } from '@angular/common/http';
 import { AuthService } from '../auth.service';
 import { Subscription } from 'rxjs';
 import { environment } from '../../environments/environment';
+import { SharedModule } from '../shared/shared.module';
+import { NotificationPanelComponent } from '../shared/components/notification-panel/notification-panel.component';
 
 const API_URL = environment.apiUrl;
 
@@ -94,7 +96,14 @@ interface EventItem {
 @Component({
   selector: 'app-home-feed',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule],
+  imports: [
+    CommonModule,
+    FormsModule,
+    ReactiveFormsModule,
+    RouterModule,
+    SharedModule,
+    NotificationPanelComponent
+  ],
   templateUrl: './home-feed.component.html',
   styleUrl: './home-feed.component.css'
 })
@@ -152,6 +161,7 @@ export class HomeFeedComponent implements OnInit, OnDestroy {
   showRightPanel = false;
   premiumPlayers: any[] = [];
   private followStatusSubscription: Subscription;
+  showNotificationPanel: boolean = false;
 
   // Filter Options
   ageRanges = [
@@ -1150,8 +1160,6 @@ export class HomeFeedComponent implements OnInit, OnDestroy {
     if (!this.searchQuery.trim()) return;
 
     console.log('Performing search with query:', this.searchQuery);
-    console.log('Current user:', this.currentUser);
-    console.log('Is Scout:', this.isScout);
     this.loading = true;
 
     // Save the search term to localStorage first
@@ -1198,9 +1206,11 @@ export class HomeFeedComponent implements OnInit, OnDestroy {
     this.apiService.postData('search', searchData).subscribe({
       next: (response: any) => {
         console.log('Search response:', response);
+        this.loading = false;
+
         if (response.data) {
           // Handle the results array from the response
-          const results = response.data.results || response.data || [];
+          const results = response.data.results || [];
           console.log('Raw search results:', results);
 
           // Process each result to ensure proper image URLs and data structure
@@ -1209,61 +1219,44 @@ export class HomeFeedComponent implements OnInit, OnDestroy {
 
             // Base result object with common properties
             const processedResult = {
-          ...result,
-          profile_image: result.profile_image ? this.getProfileImageUrl(result.profile_image) : null,
+              ...result,
+              profile_image: result.profile_image ? this.getProfileImageUrl(result.profile_image) : null,
               first_name: result.first_name || '',
               last_name: result.last_name || '',
               full_name: `${result.first_name || ''} ${result.last_name || ''}`.trim(),
-              type: result.type || (result.player_id ? 'player' : 'scout'),
-              id: result.id || result.user_id,
-              user_id: result.user_id || result.id,
-              scout_id: result.scout_id,
-              membership: result.membership || 'free'
+              type: result.type || 'player',
+              id: result.id,
+              user_id: result.user_id,
+              scout_id: result.scout_id
             };
 
-            // Add type-specific fields
-            if (processedResult.type === 'player') {
-              processedResult.position = result.position || 'N/A';
-              processedResult.nationality = result.nationality || 'N/A';
-              processedResult.profile_image = result.profile_image ? this.getProfileImageUrl(result.profile_image) : null;
-              processedResult.current_city = result.current_city || 'N/A';
-              processedResult.age = result.age || 'N/A';
-              processedResult.preferred_foot = result.preferred_foot || 'N/A';
-              processedResult.region = result.region || 'N/A';
-            } else if (processedResult.type === 'scout') {
-              processedResult.position_title = result.position_title || 'Scout';
-              processedResult.organization = result.organization || 'N/A';
-              processedResult.city = result.city || 'N/A';
-              processedResult.country = result.country || 'N/A';
+            // Add type-specific properties
+            if (result.type === 'scout') {
+              return {
+                ...processedResult,
+                organization: result.organization || '',
+                position_title: result.position_title || '',
+                city: result.city || '',
+                country: result.country || ''
+              };
+            } else {
+              return {
+                ...processedResult,
+                position: result.position || '',
+                nationality: result.nationality || '',
+                current_city: result.current_city || '',
+                membership: result.membership || 'free'
+              };
             }
-
-            console.log('Processed result:', processedResult);
-            return processedResult;
           });
 
-          console.log('Final processed search results:', this.searchResults);
-
-          // Update filter options if available
-        if (response.data.filter_options) {
-          this.feedData.filter_options = response.data.filter_options;
-          }
-        } else {
-          console.warn('No data in search response:', response);
-          this.searchResults = [];
+          console.log('Processed search results:', this.searchResults);
         }
-        this.loading = false;
       },
-      error: (error) => {
-        console.error('Search error details:', {
-          status: error.status,
-          statusText: error.statusText,
-          error: error.error,
-          message: error.message,
-          fullError: error
-        });
+      error: (error: any) => {
+        console.error('Search error:', error);
         this.loading = false;
-        this.searchResults = [];
-        this.showNotification(error.error?.message || 'Failed to perform search');
+        this.error = 'Failed to perform search';
       }
     });
   }
@@ -1333,7 +1326,8 @@ export class HomeFeedComponent implements OnInit, OnDestroy {
   }
 
   collapseSidebar() {
-    if (!this.showSearchPanel && !this.showAccountMenu) {
+    // Don't collapse if any panel is open
+    if (!this.showSearchPanel && !this.showAccountMenu && !this.showNotificationPanel) {
       this.sidebarExpanded = false;
     }
   }
@@ -1935,5 +1929,16 @@ export class HomeFeedComponent implements OnInit, OnDestroy {
     userIds.forEach(userId => {
       this.apiService.checkFollowStatus(userId).subscribe();
     });
+  }
+
+  handleNotificationPanelToggle(isOpen: boolean) {
+    this.showNotificationPanel = isOpen;
+    // Keep sidebar expanded when notification panel is open
+    if (isOpen) {
+      this.sidebarExpanded = true;
+    } else {
+      // Only collapse if no other panels are open
+      this.collapseSidebar();
+    }
   }
 }

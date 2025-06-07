@@ -11,6 +11,11 @@
         <span>Search</span>
       </a>
 
+      <app-notification-panel
+        [sidebarExpanded]="sidebarExpanded"
+        (panelToggled)="handleNotificationPanelToggle($event)">
+      </app-notification-panel>
+
       <a href="#" *ngIf="isPlayer" (click)="openUploadModal(); $event.preventDefault()">
         <i class="bi bi-plus-square"></i>
         <span>Upload</span>
@@ -180,15 +185,15 @@
         <div class="player-info">
           <div class="player-header">
             <h3 class="clickable" (click)="result.id === currentUser?.id ? goToProfile() : (result.type === 'scout' ? goToScoutProfile(result.scout_id) : goToPlayerProfile(result.user_id))">
-            {{ result.first_name }} {{ result.last_name }}
-          </h3>
-            <span class="subscription-badge premium" *ngIf="result.membership === 'premium'">
-              Premium
-            </span>
+              {{ result.first_name }} {{ result.last_name }}
+            </h3>
           </div>
           <div class="type-badge" [ngClass]="result.type">{{ result.type | titlecase }}</div>
 
           <!-- Player-specific info -->
+          <span class="subscription-badge premium" *ngIf="result.membership === 'premium'">
+            Premium
+          </span>
           <ng-container *ngIf="result.type === 'player'">
             <div class="position">{{ result.position }}</div>
             <div class="meta">{{ result.nationality }} • {{ result.current_city }}</div>

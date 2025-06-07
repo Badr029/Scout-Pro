@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Models\Like;
 use App\Models\View;
 use App\Models\Follow;
+use App\Models\Notification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -16,9 +17,12 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
+use App\Traits\NotificationHelper;
 
 class VideoController extends Controller
 {
+    use NotificationHelper;
+
     /**
      * Display a listing of the user's videos.
      */
@@ -344,6 +348,12 @@ class VideoController extends Controller
             // If already liked, unlike it
             $existingLike->delete();
 
+            // Delete any existing like notifications
+            Notification::where('user_id', $video->user_id)
+                ->where('actor_id', $user->id)
+                ->where('type', 'like')
+                ->delete();
+
             return response()->json([
                 'status' => 'success',
                 'message' => 'Video unliked successfully',
@@ -359,27 +369,16 @@ class VideoController extends Controller
             'user_id' => $user->id
         ]);
 
-        // Load the user relationship for the response
-        $like->load('user.player');
+        // Create notification for video owner if it's not their own video
+        // and if they are a premium player (handled in NotificationHelper)
+        if ($video->user_id !== $user->id) {
+            $this->createLikeNotification($user, User::find($video->user_id), 'video');
+        }
 
         return response()->json([
             'status' => 'success',
             'message' => 'Video liked successfully',
             'data' => [
-                'like' => [
-                    'id' => $like->id,
-                    'user' => [
-                        'id' => $like->user->id,
-                        'first_name' => $like->user->first_name,
-                        'last_name' => $like->user->last_name,
-                        'full_name' => $like->user->first_name . ' ' . $like->user->last_name,
-                        'profile_image' => $like->user->player ? url('storage/' . $like->user->player->profile_image) : null,
-                        'player' => $like->user->player ? [
-                            'position' => $like->user->player->position,
-                            'nationality' => $like->user->player->nationality,
-                        ] : null
-                    ]
-                ],
                 'likes_count' => $video->fresh()->likes()->count(),
                 'has_liked' => true
             ]
@@ -474,6 +473,12 @@ class VideoController extends Controller
             'user_id' => $user->id,
             'content' => $request->content
         ]);
+
+        // Create notification for video owner if it's not their own comment
+        // and if they are a premium player (handled in NotificationHelper)
+        if ($video->user_id !== $user->id) {
+            $this->createCommentNotification($user, User::find($video->user_id));
+        }
 
         // Load the user relationship for the response
         $comment->load('user.player');

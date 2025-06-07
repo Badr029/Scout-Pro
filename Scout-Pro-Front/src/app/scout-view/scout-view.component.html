@@ -35,7 +35,15 @@
                 </div>
 
                 <div class="action-buttons">
-                    <button class="btn btn-primary">Follow</button>
+                    <button
+                        class="btn"
+                        [class.btn-primary]="!isFollowing"
+                        [class.btn-outline-primary]="isFollowing"
+                        [disabled]="followLoading || !scoutData || !scoutData.user_id"
+                        (click)="toggleFollow()">
+                        <i class="fas" [class.fa-user-plus]="!isFollowing" [class.fa-user-check]="isFollowing"></i>
+                        {{ isFollowing ? 'Following' : 'Follow' }}
+                    </button>
                 </div>
             </div>
 

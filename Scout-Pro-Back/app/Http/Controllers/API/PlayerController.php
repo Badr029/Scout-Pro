@@ -5,12 +5,16 @@ namespace App\Http\Controllers\API;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\Follow;
+use App\Models\Notification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use App\Traits\NotificationHelper;
 
 class PlayerController extends Controller
 {
+    use NotificationHelper;
+
     /**
      * Follow a user.
      * @param int $userId
@@ -46,6 +50,9 @@ class PlayerController extends Controller
                 'follower_id' => $follower->id,
                 'following_id' => $following->id
             ]);
+
+            // Create notification for the user being followed
+            $this->createFollowNotification($follower, $following);
 
             return response()->json([
                 'status' => 'success',
@@ -84,6 +91,12 @@ class PlayerController extends Controller
 
             $follow->delete();
 
+            // Delete any existing follow notifications
+            Notification::where('user_id', $following->id)
+                ->where('actor_id', $follower->id)
+                ->where('type', 'follow')
+                ->delete();
+
             return response()->json([
                 'status' => 'success',
                 'message' => 'Successfully unfollowed user',
@@ -106,8 +119,10 @@ class PlayerController extends Controller
     {
         try {
             $follower = Auth::user();
+            $following = User::findOrFail($userId);
+
             $isFollowing = Follow::where('follower_id', $follower->id)
-                ->where('following_id', $userId)
+                ->where('following_id', $following->id)
                 ->exists();
 
         return response()->json([

@@ -23,9 +23,12 @@ use Illuminate\Support\Facades\Validator;
 use App\Models\Event;
 use App\Models\Payment;
 use App\Models\Subscription;
+use App\Traits\NotificationHelper;
 
 class AdminController extends Controller
 {
+    use NotificationHelper;
+
     public function stats()
     {
         try {
@@ -293,12 +296,34 @@ class AdminController extends Controller
                     'event_date' => $event->date,
                     'event_location' => $event->location
                 ]));
+
+                // Create notification for the scout
+                $this->createEventRequestStatusNotification(
+                    $organizer,
+                    'approved',
+                    $event->title
+                );
+
+                // Notify premium players about the new event
+                $this->notifyUsersAboutEvent([
+                    'title' => $event->title,
+                    'date' => $event->date,
+                    'location' => $event->location,
+                    'event_id' => $event->id
+                ], false);
             } else {
                 Mail::to($organizer->email)->send(new EventRequestRejected([
                     'organizer_name' => $organizer->first_name,
                     'event_title' => $event->title,
                     'rejection_reason' => $event->rejection_reason
                 ]));
+
+                // Create notification for the scout
+                $this->createEventRequestStatusNotification(
+                    $organizer,
+                    'rejected',
+                    $event->title
+                );
             }
 
             // Refresh the event to get updated relationships
@@ -334,16 +359,7 @@ class AdminController extends Controller
             ]);
         } catch (\Exception $e) {
             Log::error('Error updating event request: ' . $e->getMessage());
-            Log::error('Stack trace: ' . $e->getTraceAsString());
-
-            return response()->json([
-                'message' => 'Error updating event request: ' . $e->getMessage(),
-                'details' => [
-                    'request_id' => $id,
-                    'status' => $request->status ?? 'not provided',
-                    'error' => $e->getMessage()
-                ]
-            ], 500);
+            return response()->json(['message' => 'Error updating event request'], 500);
         }
     }
 
@@ -783,6 +799,14 @@ class AdminController extends Controller
             // Create the event
             $event = Event::create($eventData);
 
+            // Notify all scouts and premium players about the admin-created event
+            $this->notifyUsersAboutEvent([
+                'title' => $event->title,
+                'date' => $event->date,
+                'location' => $event->location,
+                'event_id' => $event->id
+            ], true);
+
             return response()->json([
                 'status' => 'success',
                 'message' => 'Event created successfully',
@@ -791,11 +815,9 @@ class AdminController extends Controller
 
         } catch (\Exception $e) {
             Log::error('Error creating event: ' . $e->getMessage());
-            Log::error('Stack trace: ' . $e->getTraceAsString());
             return response()->json([
                 'status' => 'error',
-                'message' => 'Failed to create event. Please try again.',
-                'error' => $e->getMessage()
+                'message' => 'Failed to create event: ' . $e->getMessage()
             ], 500);
         }
     }
