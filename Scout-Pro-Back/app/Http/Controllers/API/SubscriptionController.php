@@ -181,17 +181,22 @@ public function upgrade(Request $request)
         ]);
 
         // Create or update subscription
-        $subscription = Subscription::updateOrCreate(
-            ['user_id' => $user->id],
-            [
-                'plan_id' => $plan->id,
-                'payment_id' => $payment->id,
-                'plan' => $plan->Name,
-                'active' => true,
-                'expires_at' => now()->addDays($plan->Duration),
-                'canceled_at' => null
-            ]
-        );
+       Subscription::where('user_id', $user->id)->where('active', true)->update([
+    'active' => false,
+    'canceled_at' => now()
+]);
+
+$subscription = Subscription::create([
+    'user_id' => $user->id,
+    'plan_id' => $plan->id,
+    'payment_id' => $payment->id,
+    'plan' => $plan->Name,
+    'active' => true,
+    'start_date' => now(),
+    'expires_at' => now()->addDays($plan->Duration),
+    'canceled_at' => null
+]);
+
 
         // Update player membership and subscription fields
         $player->update([
@@ -290,7 +295,6 @@ public function upgrade(Request $request)
         'message' => 'Subscription canceled successfully. You are now on the Free plan.'
     ]);
 }
-
     /**
      * Get all available subscription plans.
      */
@@ -755,28 +759,37 @@ public function upgrade(Request $request)
             ], 500);
         }
     }
-    public function manageSubscription($player_id)
+    public function manageSubscription()
 {
-    $player = Player::with('user.subscription')->findOrFail($player_id);
-    $subscription = $player->user->subscription;
+    $user = auth()->user();
+    $player = $user->player; 
 
-    if (!$subscription) {
+    if (!$player || !$user->subscription) {
         return response()->json([
             'status' => 'success',
             'data' => null
         ]);
     }
 
+    $subscription = $user->subscription;
+
     $expiresAt = Carbon::parse($subscription->expires_at);
     $now = Carbon::now();
 
     $totalMinutes = $now->diffInMinutes($expiresAt, false);
 
-    $daysLeft = intdiv($totalMinutes, 1440); // 1440 minutes in a day
-    $hoursLeft = intdiv($totalMinutes % 1440, 60); // remaining hours
+    $daysLeft = intdiv($totalMinutes, 1440);
+    $hoursLeft = intdiv($totalMinutes % 1440, 60);
 
     $daysLeft = max($daysLeft, 0);
     $hoursLeft = max($hoursLeft, 0);
+    if($subscription->active==1){
+        $status="Active";
+    }elseif($subscription->active==0){
+        $status="Deactivated";
+
+    }
+
 
     return response()->json([
         'status' => 'success',
@@ -786,8 +799,12 @@ public function upgrade(Request $request)
             'expires_at' => $expiresAt->toDateString(),
             'days_left' => $daysLeft,
             'hours_left' => $hoursLeft,
+            'created_at' => $subscription->created_at->toDateTimeString(),
+            'status'=>$status,
+
         ]
     ]);
 }
+
   
 }

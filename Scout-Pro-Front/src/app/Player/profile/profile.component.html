@@ -16,6 +16,9 @@
         <div class="settings-menu-item" (click)="goToEditProfile()">
           <i class="fas fa-user-edit"></i> Edit Profile
         </div>
+        <div class="settings-menu-item" *ngIf="isPlayer && isPremiumPlayer" (click)="goToDetails()">
+  <i class="fas fa-crown"></i> Your Subscription
+</div>
         <div class="settings-menu-item" (click)="goToSubscription()" *ngIf="playerData?.membership !== 'premium'">
           <i class="fas fa-crown"></i> Upgrade to Premium
         </div>

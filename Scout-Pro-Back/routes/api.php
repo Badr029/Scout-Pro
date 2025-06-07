@@ -107,7 +107,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/plans', [SubscriptionController::class, 'getPlans']);
     Route::post('/subscription/upgrade', [SubscriptionController::class, 'upgrade']);
     Route::post('/subscription/cancel', [SubscriptionController::class, 'cancel']);
-    Route::get('/player/{id}/subscription-status', [SubscriptionController::class, 'manageSubscription']);
+    Route::get('/player/subscription-status', [SubscriptionController::class, 'manageSubscription']);
 
     // Player membership routes
     Route::get('/player/membership', [SubscriptionController::class, 'checkPlayerMembership']);
