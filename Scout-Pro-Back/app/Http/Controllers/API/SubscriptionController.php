@@ -77,236 +77,216 @@ class SubscriptionController extends Controller
     /**
      * Upgrade the user's subscription.
      */
-
-     public function checkSubscriptionStatus($playerId)
-{
-    $player = Player::findOrFail($playerId);
-$subscription = Subscription::where('user_id', $player->user_id)->latest()->first();
-
-    if (!$subscription) {
-        Player::where('id', $playerId)->update(['membership' => 'free']);
-        return response()->json([
-            'status' => 'no_subscription',
-            'membership' => 'free',
-            'days_remaining' => 0
-        ]);
-    }
-
-    $expires_at = $subscription->expires_at;
-    $now = now();
-
-    if ($expires_at && $expires_at <= $now) {
-        Player::where('id', $playerId)->update(['membership' => 'free']);
-        return response()->json([
-            'status' => 'expired',
-            'membership' => 'free',
-            'days_remaining' => 0
-        ]);
-    }
-    $days_remaining = $now->diffInDays($expires_at);
-
-    return response()->json([
-        'status' => 'active',
-        'membership' => 'Premium',
-        'days_remaining' => $days_remaining
-    ]);
-}
-
-
-private function isExpiryValid(string $expiry): bool
-{
-    [$month, $year] = explode('/', $expiry);
-    $month = (int) $month;
-    $year = (int) ('20' . $year);
-    $now = now();
-
-    $expiryDate = \Carbon\Carbon::createFromDate($year, $month, 1)->endOfMonth();
-
-    return $expiryDate->isFuture();
-}
-
-public function upgrade(Request $request)
-{
-    $user = Auth::user();
-    $validator = Validator::make($request->all(), [
-        'plan_type' => 'required|in:Player Monthly,Player Yearly',
-        'card_number' => ['required', 'regex:/^\d{16}$/'],
-        'cardholder_name' => ['required', 'regex:/^[a-zA-Z\s]+$/'],
-        'expiry' => ['required', 'regex:/^(0[1-9]|1[0-2])\/\d{2}$/'],
-        'cvv' => ['required', 'regex:/^\d{3,4}$/'],
-    ]);
-
-    if ($validator->fails()) {
-        return response()->json([
-            'status' => 'error',
-            'message' => $validator->errors()->first()
-        ], 422);
-    }
-
-    try {
-        DB::beginTransaction();
-
-    $expiry = $request->input('expiry');
-    if (!$this->isExpiryValid($expiry)) {
-        return response()->json([
-            'status' => 'error',
-            'message' => 'Expiry date is invalid or has passed.'
-        ], 422);
-    }
-
-    $plan = Plan::where('name', $request->plan_type)->first();
-    if (!$plan) {
-        return response()->json(['status' => 'error', 'message' => 'Invalid plan selected'], 404);
-    }
-
-    $player = $user->player;
-    if (!$player) {
-        return response()->json(['status' => 'error', 'message' => 'Player profile not found'], 404);
-    }
-
-    $encryptedCard = Crypt::encryptString($request->card_number);
-    $encryptedCVV = Crypt::encryptString($request->cvv);
-    $lastFour = substr($request->card_number, -4);
-
-        // Create payment record
-    $payment = Payment::create([
-            'user_id' => $user->id,
-            'amount' => $plan->Price,
-            'currency' => 'EGP',
-            'payment_method' => 'card',
-        'card_number_encrypted' => $encryptedCard,
-        'card_last_four' => $lastFour,
-        'expiry' => $request->expiry,
-        'cvv_encrypted' => $encryptedCVV,
-        'cardholder_name' => $request->cardholder_name,
-            'status' => 'completed'
-    ]);
-
-        // Create or update subscription
-       Subscription::where('user_id', $user->id)->where('active', true)->update([
-    'active' => false,
-    'canceled_at' => now()
-]);
-
-$subscription = Subscription::create([
-    'user_id' => $user->id,
-    'plan_id' => $plan->id,
-    'payment_id' => $payment->id,
-    'plan' => $plan->Name,
-    'active' => true,
-    'start_date' => now(),
-    'expires_at' => now()->addDays($plan->Duration),
-    'canceled_at' => null
-]);
-
-
-        // Update player membership and subscription fields
-    $player->update([
-            'membership' => 'premium',
-            'subscription_id' => $subscription->id,
-            'subscription_expires_at' => now()->addDays($plan->Duration)
+    public function upgrade(Request $request)
+    {
+        $user = Auth::user();
+        $validator = Validator::make($request->all(), [
+            'plan_type' => 'required|in:Player Monthly,Player Yearly',
+            'card_number' => ['required', 'regex:/^\d{16}$/'],
+            'cardholder_name' => ['required', 'regex:/^[a-zA-Z\s]+$/'],
+            'expiry' => ['required', 'regex:/^(0[1-9]|1[0-2])\/\d{2}$/'],
+            'cvv' => ['required', 'regex:/^\d{3,4}$/'],
         ]);
 
-        // Create regular invoice
-        $invoice = Invoice::create([
-            'payment_id' => $payment->id,
-            'IssueDate' => now(),
-            'Status' => 'Paid'
-        ]);
-
-        // Create player invoice
-        $playerInvoice = PlayerInvoice::create([
-            'payment_id' => $payment->id,
-            'player_id' => $player->id,
-            'invoice_number' => 'INV-' . date('Y') . '-' . str_pad($payment->id, 6, '0', STR_PAD_LEFT),
-            'amount' => $plan->Price,
-            'currency' => 'EGP',
-            'status' => 'paid',
-            'paid_at' => now()
-        ]);
-
-        // Send invoice email
-        try {
-            Mail::to($user->email)->send(new PlayerSubscriptionInvoice([
-                'player_name' => $user->first_name . ' ' . $user->last_name,
-                'plan_name' => $plan->Name,
-                'amount' => $plan->Price,
-                'invoice_number' => $playerInvoice->invoice_number,
-                'invoice_date' => $playerInvoice->created_at->format('F j, Y'),
-                'card_last_four' => $lastFour,
-                'expiry_date' => $subscription->expires_at->format('F j, Y')
-            ]));
-        } catch (\Exception $e) {
-            Log::error('Failed to send player invoice email: ' . $e->getMessage());
-            // Don't return error to user as subscription was successful
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $validator->errors()->first()
+            ], 422);
         }
 
-        // Add notification after successful subscription
-        $this->createSubscriptionNotification(
-            $user,
-            "Your {$plan->name} subscription has been activated successfully!",
-            [
-                'plan_name' => $plan->name,
-                'expires_at' => $subscription->expires_at
-            ]
-        );
+        try {
+            DB::beginTransaction();
 
-        DB::commit();
+            $expiry = $request->input('expiry');
+            if (!$this->isExpiryValid($expiry)) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Expiry date is invalid or has passed.'
+                ], 422);
+            }
 
-    return response()->json([
-            'status' => 'success',
-            'message' => 'Subscription upgraded successfully',
-        'data' => [
-            'subscription' => $subscription,
-            'payment_id' => $payment->id,
-            'card_last_four' => $lastFour,
-                'invoice_number' => $playerInvoice->invoice_number
-        ]
-    ]);
+            $plan = Plan::where('name', $request->plan_type)->first();
+            if (!$plan) {
+                return response()->json(['status' => 'error', 'message' => 'Invalid plan selected'], 404);
+            }
 
-    } catch (\Exception $e) {
-        DB::rollBack();
-        Log::error('Player subscription upgrade failed: ' . $e->getMessage());
-        return response()->json([
-            'status' => 'error',
-            'message' => 'Failed to upgrade subscription: ' . $e->getMessage()
-        ], 500);
+            $player = $user->player;
+            if (!$player) {
+                return response()->json(['status' => 'error', 'message' => 'Player profile not found'], 404);
+            }
+
+            $encryptedCard = Crypt::encryptString($request->card_number);
+            $encryptedCVV = Crypt::encryptString($request->cvv);
+            $lastFour = substr($request->card_number, -4);
+
+            // Create payment record
+            $payment = Payment::create([
+                'user_id' => $user->id,
+                'amount' => $plan->Price,
+                'currency' => 'EGP',
+                'payment_method' => 'card',
+                'card_number_encrypted' => $encryptedCard,
+                'card_last_four' => $lastFour,
+                'expiry' => $request->expiry,
+                'cvv_encrypted' => $encryptedCVV,
+                'cardholder_name' => $request->cardholder_name,
+                'status' => 'completed'
+            ]);
+
+            // Find existing subscription or create new one
+            $subscription = Subscription::where('user_id', $user->id)->latest()->first();
+
+            if ($subscription) {
+                // Update existing subscription
+                $subscription->update([
+                    'plan_id' => $plan->id,
+                    'payment_id' => $payment->id,
+                    'plan' => $plan->Name,
+                    'active' => true,
+                    'expires_at' => now()->addDays($plan->Duration),
+                    'canceled_at' => null
+                ]);
+            } else {
+                // Create new subscription only if one doesn't exist
+                $subscription = Subscription::create([
+                    'user_id' => $user->id,
+                    'plan_id' => $plan->id,
+                    'payment_id' => $payment->id,
+                    'plan' => $plan->Name,
+                    'active' => true,
+                    'start_date' => now(),
+                    'expires_at' => now()->addDays($plan->Duration),
+                    'canceled_at' => null
+                ]);
+            }
+
+            // Update player membership and subscription fields
+            $player->update([
+                'membership' => 'premium',
+                'subscription_id' => $subscription->id,
+                'subscription_expires_at' => now()->addDays($plan->Duration),
+                'status' => 'active' // Ensure player status is set to active
+            ]);
+
+            // Create regular invoice
+            $invoice = Invoice::create([
+                'payment_id' => $payment->id,
+                'IssueDate' => now(),
+                'Status' => 'Paid'
+            ]);
+
+            // Create player invoice
+            $playerInvoice = PlayerInvoice::create([
+                'payment_id' => $payment->id,
+                'player_id' => $player->id,
+                'invoice_number' => 'INV-' . date('Y') . '-' . str_pad($payment->id, 6, '0', STR_PAD_LEFT),
+                'amount' => $plan->Price,
+                'currency' => 'EGP',
+                'status' => 'paid',
+                'paid_at' => now()
+            ]);
+
+            // Send invoice email
+            try {
+                Mail::to($user->email)->send(new PlayerSubscriptionInvoice([
+                    'player_name' => $user->first_name . ' ' . $user->last_name,
+                    'plan_name' => $plan->Name,
+                    'amount' => $plan->Price,
+                    'invoice_number' => $playerInvoice->invoice_number,
+                    'invoice_date' => $playerInvoice->created_at->format('F j, Y'),
+                    'card_last_four' => $lastFour,
+                    'expiry_date' => $subscription->expires_at->format('F j, Y')
+                ]));
+            } catch (\Exception $e) {
+                Log::error('Failed to send player invoice email: ' . $e->getMessage());
+            }
+
+            // Add notification after successful subscription
+            $this->createSubscriptionNotification(
+                $user,
+                "Your {$plan->name} subscription has been activated successfully!",
+                [
+                    'plan_name' => $plan->name,
+                    'expires_at' => $subscription->expires_at
+                ]
+            );
+
+            DB::commit();
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Subscription upgraded successfully',
+                'data' => [
+                    'subscription' => $subscription,
+                    'payment_id' => $payment->id,
+                    'card_last_four' => $lastFour,
+                    'invoice_number' => $playerInvoice->invoice_number
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Player subscription upgrade failed: ' . $e->getMessage());
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to upgrade subscription: ' . $e->getMessage()
+            ], 500);
+        }
     }
-}
 
     /**
      * Cancel the user's subscription.
      */
     public function cancel()
     {
-    $user = Auth::user();
-    $subscription = $user->subscription;
-    $player = $user->player;
+        $user = Auth::user();
+        $subscription = $user->subscription;
+        $player = $user->player;
 
-    if (!$subscription || $subscription->plan === 'Free') {
-        return response()->json([
-            'status' => 'error',
-            'message' => 'No active paid subscription found'
-        ], 400);
+        if (!$subscription || $subscription->plan === 'Free') {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'No active paid subscription found'
+            ], 400);
+        }
+
+        try {
+            DB::beginTransaction();
+
+            // Update subscription
+            $subscription->update([
+                'plan' => 'Free',
+                'active' => false,
+                'canceled_at' => now(),
+                'expires_at' => now(),
+            ]);
+
+            // Update player status to free (not deactivated)
+            if ($player) {
+                $player->update([
+                    'membership' => 'free',
+                    'status' => 'active' // Keep player status active
+                ]);
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Subscription canceled successfully. You are now on the Free plan.'
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Subscription cancellation failed: ' . $e->getMessage());
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to cancel subscription: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
-    $subscription->update([
-        'plan' => 'Free',
-        'active' => false,
-        'canceled_at' => now(),
-        'expires_at' => now(),
-    ]);
-
-    if ($player) {
-        $player->membership = 'free';
-        $player->save();
-    }
-
-    return response()->json([
-        'status' => 'success',
-        'message' => 'Subscription canceled successfully. You are now on the Free plan.'
-    ]);
-}
     /**
      * Get all available subscription plans.
      */
@@ -791,51 +771,114 @@ $subscription = Subscription::create([
             ], 500);
         }
     }
-    public function manageSubscription()
-{
-    $user = auth()->user();
-    $player = $user->player;
 
-    if (!$player || !$user->subscription) {
+    public function manageSubscription()
+    {
+        $user = Auth::user();
+        $player = $user->player;
+
+        if (!$player || !$user->subscription) {
+            return response()->json([
+                'status' => 'success',
+                'data' => [
+                    'plan' => 'Free',
+                    'status' => 'active',
+                    'days_left' => 0,
+                    'hours_left' => 0,
+                    'created_at' => now()->toDateTimeString()
+                ]
+            ]);
+        }
+
+        $subscription = $user->subscription;
+        $expiresAt = Carbon::parse($subscription->expires_at);
+        $now = Carbon::now();
+
+        $totalMinutes = $now->diffInMinutes($expiresAt, false);
+        $daysLeft = intdiv($totalMinutes, 1440);
+        $hoursLeft = intdiv($totalMinutes % 1440, 60);
+
+        $daysLeft = max($daysLeft, 0);
+        $hoursLeft = max($hoursLeft, 0);
+
+        // Determine status based on subscription and player status
+        $status = 'active';
+        if ($player->status === 'deactivated') {
+            $status = 'deactivated';
+        } else if (!$subscription->active || $subscription->plan === 'Free') {
+            $status = 'free';
+        }
+
         return response()->json([
             'status' => 'success',
-            'data' => null
+            'data' => [
+                'plan' => $subscription->plan,
+                'plan_type' => Str::contains(strtolower($subscription->plan), 'monthly') ? 'monthly' : 'yearly',
+                'expires_at' => $expiresAt->toDateString(),
+                'days_left' => $daysLeft,
+                'hours_left' => $hoursLeft,
+                'created_at' => $subscription->created_at->toDateTimeString(),
+                'status' => $status
+            ]
         ]);
     }
 
-    $subscription = $user->subscription;
+    // Add this method to check subscription status
+    public function checkSubscriptionStatus($playerId)
+    {
+        $player = Player::findOrFail($playerId);
+        $subscription = Subscription::where('user_id', $player->user_id)->latest()->first();
 
-    $expiresAt = Carbon::parse($subscription->expires_at);
-    $now = Carbon::now();
+        if (!$subscription) {
+            return response()->json([
+                'status' => 'success',
+                'data' => [
+                    'plan' => 'Free',
+                    'membership' => 'free',
+                    'status' => $player->status ?? 'active',
+                    'days_remaining' => 0
+                ]
+            ]);
+        }
 
-    $totalMinutes = $now->diffInMinutes($expiresAt, false);
+        $expires_at = $subscription->expires_at;
+        $now = now();
+        $days_remaining = $now->diffInDays($expires_at);
 
-    $daysLeft = intdiv($totalMinutes, 1440);
-    $hoursLeft = intdiv($totalMinutes % 1440, 60);
+        // Check if subscription is expired
+        if ($expires_at && $expires_at <= $now) {
+            $player->update(['membership' => 'free']);
+            return response()->json([
+                'status' => 'success',
+                'data' => [
+                    'plan' => 'Free',
+                    'membership' => 'free',
+                    'status' => $player->status ?? 'active',
+                    'days_remaining' => 0
+                ]
+            ]);
+        }
 
-    $daysLeft = max($daysLeft, 0);
-    $hoursLeft = max($hoursLeft, 0);
-    if($subscription->active==1){
-        $status="Active";
-    }elseif($subscription->active==0){
-        $status="Deactivated";
-
+        return response()->json([
+            'status' => 'success',
+            'data' => [
+                'plan' => $subscription->plan,
+                'membership' => $player->membership,
+                'status' => $player->status ?? 'active',
+                'days_remaining' => $days_remaining
+            ]
+        ]);
     }
 
+    private function isExpiryValid(string $expiry): bool
+    {
+        [$month, $year] = explode('/', $expiry);
+        $month = (int) $month;
+        $year = (int) ('20' . $year);
+        $now = now();
 
-    return response()->json([
-        'status' => 'success',
-        'data' => [
-            'plan' => $subscription->plan,
-            'plan_type' => Str::contains(strtolower($subscription->plan), 'monthly') ? 'monthly' : 'yearly',
-            'expires_at' => $expiresAt->toDateString(),
-            'days_left' => $daysLeft,
-            'hours_left' => $hoursLeft,
-            'created_at' => $subscription->created_at->toDateTimeString(),
-            'status'=>$status,
+        $expiryDate = \Carbon\Carbon::createFromDate($year, $month, 1)->endOfMonth();
 
-        ]
-    ]);
-}
-
+        return $expiryDate->isFuture();
+    }
 }

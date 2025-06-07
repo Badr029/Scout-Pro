@@ -1,239 +1,392 @@
 /* Container for the entire layout */
 .container {
- max-width: 700px;
-  margin: 2rem auto;
-  margin-top:5%;
-  padding: 1.5rem;
-  font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
   color: #e0e0e0;
-  background: #1e1e1e;
-  border-radius: 12px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-.container:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+  background-color: #121212;
 }
 
-/* Page Header for Back Button */
 .page-header {
-  margin-bottom: 1rem;
+  margin-bottom: 2rem;
 }
 
-/* Back Button */
 .btn-back {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  background: none;
-  border: none;
-  color: #adb5bd;
-  font-size: 0.95rem;
-  cursor: pointer;
-  margin-bottom: 1.2rem;
+  padding: 0.75rem 1.5rem;
+  background: transparent;
+  border: 1px solid #2c2c2c;
+  border-radius: 8px;
+  color: #e0e0e0;
+  font-weight: 500;
+  transition: all 0.3s ease;
 }
 
 .btn-back:hover {
-  color: #5d9de2;
-}
-
-.btn-back i {
-  font-size: 1.25rem; /* Slightly larger icon for visibility */
-}
-
-/* Subscription Details and Time Remaining Sections */
-section {
-  margin-bottom: 1.5rem;
-  padding-bottom: 1.25rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-h2 {
-   font-size: 1.5rem;
-  font-weight: 600;
-  margin-bottom: 0.75rem;
+  background: rgba(79, 125, 249, 0.1);
+  border-color: #4f7df9;
   color: #4f7df9;
-  letter-spacing: -0.025rem;
+  transform: translateX(-2px);
 }
 
-p {
-   font-size: 1rem;
-  line-height: 1.5;
-  margin: 0.5rem 0;
-  color: #d1d5db;
+.subscription-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
 }
 
-p strong {
+/* Status Card Styles */
+.status-card {
+  background: #1e1e1e;
+  border-radius: 16px;
+  padding: 2rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  transition: all 0.3s ease;
+  border: 1px solid #2c2c2c;
+}
+
+.status-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 25px rgba(0, 0, 0, 0.4);
+  border-color: #3c3c3c;
+}
+
+.status-card.premium {
+  background: linear-gradient(135deg, #1a1a1a, #2c3e50);
+  border: 1px solid #4f7df9;
+}
+
+.status-card.free {
+  background: linear-gradient(135deg, #1a1a1a, #2c2c2c);
+}
+
+.status-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.status-header h1 {
+  font-size: 2rem;
 font-weight: 600;
-  margin-right: 0.5rem;
-  color: #f3f4f6;}
-
-/* Buttons */
-button.bg-red-500 {
-  background-color: #b91c1c; /* bright red */
+  margin: 0;
   color: #ffffff;
-  padding: 0.75rem 1.5rem;
-  border: none;
-  border-radius: 8px;
+}
+
+.status-badge {
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.status-badge.active {
+  background: rgba(46, 213, 115, 0.15);
+  color: #2ed573;
+  border: 1px solid rgba(46, 213, 115, 0.3);
+}
+
+.status-badge.inactive {
+  background: rgba(255, 71, 87, 0.15);
+  color: #ff4757;
+  border: 1px solid rgba(255, 71, 87, 0.3);
+}
+
+.details-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.5rem;
+}
+
+.detail-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.detail-item .label {
+  font-size: 0.875rem;
+  color: #808080;
+}
+
+.detail-item .value {
   font-size: 1rem;
+  font-weight: 500;
+  color: #e0e0e0;
+}
+
+/* Countdown Card Styles */
+.countdown-card {
+  background: #1e1e1e;
+  border-radius: 16px;
+  padding: 2rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  border: 1px solid #2c2c2c;
+}
+
+.countdown-card h2 {
+  font-size: 1.5rem;
   font-weight: 600;
-  cursor: pointer;
-  transition: background-color 0.3s ease, transform 0.2s ease;
-  outline: none;
-  user-select: none;
-  margin-left: 22%; /* remove margin-left */
-  flex: none; /* fix width in flexbox */
+  margin-bottom: 1.5rem;
+  color: #4f7df9;
 }
 
-button.bg-red-500:hover {
-  background-color: #6b7280;
-  transform: translateY(-1px);
+.countdown-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  gap: 1rem;
+  text-align: center;
 }
 
-button.bg-red-500:focus {
-  outline: 2px solid #60a5fa;
-  outline-offset: 2px;
+.countdown-item {
+  padding: 1.5rem;
+  background: #252525;
+  border-radius: 12px;
+  transition: all 0.3s ease;
+  border: 1px solid #2c2c2c;
 }
 
-button.bg-red-500:active {
-  transform: translateY(0);
+.countdown-item:hover {
+  transform: translateY(-2px);
+  background: #2a2a2a;
+  border-color: #4f7df9;
 }
 
-/* Upgrade button styles */
-button.upgrade {
-  background-color: #5b92e9; /* Tailwind gray-500 */
-  color: white;
-  margin-left:5px;
-  padding: 0.75rem 1.5rem;
-  border: none;
+.countdown-item .time {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #4f7df9;
+  margin-bottom: 0.5rem;
+  text-shadow: 0 0 20px rgba(79, 125, 249, 0.3);
+}
+
+.countdown-item .label {
+  font-size: 0.875rem;
+  color: #808080;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* Action Buttons */
+.action-buttons {
+  display: flex;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+.action-buttons button {
+  flex: 1;
+  padding: 1rem 2rem;
   border-radius: 8px;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color 0.3s ease, transform 0.2s ease;
-  outline: none;
-  user-select: none;
-  flex: none;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: all 0.3s ease;
 }
 
-button.upgrade:hover {
-  background-color: #6b7280; /* blue */
+.cancel-subscription {
+  background: transparent;
+  border: 1px solid #ff4757;
+  color: #ff4757;
+}
+
+.cancel-subscription:hover {
+  background: rgba(255, 71, 87, 0.1);
+  transform: translateY(-2px);
+}
+
+.upgrade-subscription {
+  background: #4f7df9;
+  border: none;
   color: white;
-  transform: translateY(-1px);
+  box-shadow: 0 4px 15px rgba(79, 125, 249, 0.3);
 }
 
-button.upgrade:focus {
-  outline: 2px solid #3a86ff;
-  outline-offset: 2px;
+.upgrade-subscription:hover {
+  background: #3867e0;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(79, 125, 249, 0.4);
 }
 
-button.upgrade:active {
-  transform: translateY(0);
-}
-
-/* Modal Overlay */
+/* Modal Styles */
 .modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.5);
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.85);
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 1000;
+  backdrop-filter: blur(4px);
+  animation: fadeIn 0.3s ease;
 }
 
-/* Modal Box */
 .modal-box {
-  background-color: #2a2929;
-  padding: 1.5rem;
-  border-radius: 0.5rem;
-  width: 100%;
-  max-width: 400px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  background: #1a1a1a;
+  padding: 2rem;
+  border-radius: 16px;
+  max-width: 500px;
+  width: 90%;
+  color: white;
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+  border: 1px solid #2c2c2c;
+  animation: slideUp 0.3s ease;
 }
 
 .modal-box h3 {
-  font-size: 1.125rem;
+  font-size: 1.5rem;
   font-weight: 600;
   margin-bottom: 1rem;
-  color:white;
+  color: #ffffff;
 }
 
 .modal-box p {
-  margin-bottom: 1.5rem;
-  color: rgb(255, 255, 255);
+  color: #b3b3b3;
+  margin-bottom: 2rem;
+  line-height: 1.6;
 }
 
-/* Modal Buttons */
-.modal-box .flex {
+.modal-actions {
   display: flex;
-  justify-content: flex-end;
   gap: 1rem;
+  justify-content: flex-end;
 }
 
-button.cancel-btn {
-  background-color: #6b7280;
-  color: #ffffff;
+.modal-actions button {
   padding: 0.75rem 1.5rem;
-  border: none;
   border-radius: 8px;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color 0.3s ease, transform 0.2s ease;
-  outline: none;
-  user-select: none;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.3s ease;
 }
 
-button.cancel-btn:hover {
-  background-color: #4b5563;
-  transform: translateY(-1px);
+.modal-actions .cancel-btn {
+  background: transparent;
+  border: 1px solid #2c2c2c;
+  color: #e0e0e0;
 }
 
-button.cancel-btn:focus {
-  outline: 2px solid #3a86ff;
-  outline-offset: 2px;
+.modal-actions .cancel-btn:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: #3c3c3c;
 }
 
-button.cancel-btn:active {
+.modal-actions .confirm-btn {
+  background: #ff4757;
+  border: none;
+  color: white;
+  box-shadow: 0 4px 15px rgba(255, 71, 87, 0.2);
+}
+
+.modal-actions .confirm-btn:hover {
+  background: #ff3344;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(255, 71, 87, 0.3);
+}
+
+/* Loading State */
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 2rem;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(79, 125, 249, 0.1);
+  border-top: 3px solid #4f7df9;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+/* Messages */
+.success-message,
+.error-message {
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  animation: slideDown 0.3s ease;
+}
+
+.success-message {
+  background: rgba(46, 213, 115, 0.1);
+  color: #2ed573;
+  border: 1px solid rgba(46, 213, 115, 0.2);
+}
+
+.error-message {
+  background: rgba(255, 71, 87, 0.1);
+  color: #ff4757;
+  border: 1px solid rgba(255, 71, 87, 0.2);
+}
+
+/* Animations */
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+}
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+}
+  to {
+    opacity: 1;
   transform: translateY(0);
 }
-
-button.confirm-btn {
-  background-color: #b91c1c;
-  color: #ffffff;
-  padding: 0.75rem 1.5rem;
-  border: none;
-  border-radius: 8px;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color 0.3s ease, transform 0.2s ease;
-  outline: none;
-  user-select: none;
 }
 
+/* Responsive Design */
+@media (max-width: 768px) {
+  .container {
+    padding: 1rem;
+  }
 
-button.confirm-btn:hover {
-  background-color: #6b7280;
-  transform: translateY(-1px);
-}
+  .countdown-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
 
-button.confirm-btn:focus {
-  outline: 2px solid #60a5fa;
-  outline-offset: 2px;
-}
+  .action-buttons {
+    flex-direction: column;
+  }
 
-button.confirm-btn:active {
-  transform: translateY(0);
-}
+  .status-header {
+    flex-direction: column;
+    gap: 1rem;
+    text-align: center;
+  }
 
-/* Loading and Error States */
-div.text-red-500 {
-  color: #ef4444;
-  font-size: 1rem;
+  .details-grid {
+    grid-template-columns: 1fr;
+  }
 }

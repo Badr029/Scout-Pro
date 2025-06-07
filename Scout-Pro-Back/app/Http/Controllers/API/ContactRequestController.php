@@ -66,9 +66,12 @@ class ContactRequestController extends Controller
             // Create notification for the player
             $this->createContactRequestNotification($scout, $player);
 
+            // Create pending notification for the scout
+            $this->createContactRequestStatusNotification($scout, 'pending');
+
             return response()->json([
                 'status' => 'success',
-                'message' => 'Your contact request has been sent successfully. You will be notified when the player responds.',
+                'message' => 'Your contact request has been sent successfully and is pending administrative review. You will be notified once it has been processed.',
                 'data' => $contactRequest
             ], 201);
 

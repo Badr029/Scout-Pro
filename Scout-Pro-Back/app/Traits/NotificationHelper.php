@@ -23,16 +23,21 @@ trait NotificationHelper
 
     public function createContactRequestNotification(User $scout, User $player)
     {
-        return Notification::create([
-            'user_id' => $player->id,
-            'actor_id' => $scout->id,
-            'type' => 'contact_request',
-            'message' => "Scout {$scout->first_name} {$scout->last_name} requested your contact information",
-            'data' => [
-                'scout_id' => $scout->id,
-                'scout_name' => $scout->first_name . ' ' . $scout->last_name
-            ]
-        ]);
+        // Only create notification if the player has a premium membership
+        if ($player->player && $player->player->membership === 'premium') {
+            return Notification::create([
+                'user_id' => $player->id,
+                'actor_id' => $scout->id,
+                'type' => 'contact_request',
+                'message' => "A scout from {$scout->scout->organization} has requested your contact information",
+                'data' => [
+                    'scout_id' => $scout->id,
+                    'scout_name' => $scout->first_name . ' ' . $scout->last_name,
+                    'organization' => $scout->scout->organization
+                ]
+            ]);
+        }
+        return null;
     }
 
     public function createLikeNotification(User $liker, User $contentOwner, string $contentType)
@@ -94,12 +99,19 @@ trait NotificationHelper
 
     public function createContactRequestStatusNotification(User $scout, string $status)
     {
+        $message = $status === 'approved'
+            ? "Your contact request has been approved! Please check your email for the player's contact details."
+            : ($status === 'rejected'
+                ? "Your contact request has been rejected. Please check your email for more information."
+                : "Your contact request is pending review. We will notify you once it has been processed.");
+
         return Notification::create([
             'user_id' => $scout->id,
-            'type' => 'contact_request',
-            'message' => "Your contact request has been {$status}. Please check your email for details.",
+            'type' => 'contact_request_status',
+            'message' => $message,
             'data' => [
-                'status' => $status
+                'status' => $status,
+                'updated_at' => now()->toDateTimeString()
             ]
         ]);
     }
@@ -157,5 +169,17 @@ trait NotificationHelper
                 $this->createNewEventNotification($player, $eventData, false);
             }
         }
+    }
+
+    public function createSubscriptionDeactivationNotification(User $user)
+    {
+        return Notification::create([
+            'user_id' => $user->id,
+            'type' => 'subscription_deactivated',
+            'message' => "Your subscription plan has been deactivated. Please contact support for assistance.",
+            'data' => [
+                'deactivated_at' => now()->toDateTimeString()
+            ]
+        ]);
     }
 }

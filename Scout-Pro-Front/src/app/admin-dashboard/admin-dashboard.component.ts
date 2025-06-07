@@ -320,18 +320,14 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
-    console.log('=== COMPONENT INITIALIZATION ===');
-    console.log('1. Starting component initialization');
+    // Check if user is admin
+    const user = this.authService.getCurrentUser();
+    if (!user || user.user_type !== 'admin') {
+      this.router.navigate(['/login']);
+      return;
+    }
 
-    // Initialize default values
-    console.log('2. Initial payment stats:', this.paymentStats);
-    console.log('3. Initial subscription stats:', this.subscriptionStats);
-
-    // Load payment and subscription stats first
-    this.loadPaymentStats();
-    this.loadSubscriptionStats();
-
-    // Load other stats
+    // Load initial data
     this.loadStats();
     this.loadCharts();
     this.loadContactRequests();
@@ -339,7 +335,24 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     this.loadPlans();
     this.loadSubscriptions();
     this.loadPayments();
+    this.loadPaymentStats();
+    this.loadSubscriptionStats();
     this.loadUsers();
+    this.loadVideos();
+
+    // Initialize event form
+    this.eventForm = this.fb.group({
+      title: ['', [Validators.required, Validators.minLength(5)]],
+      description: [''],
+      date: ['', Validators.required],
+      time: ['', Validators.required],
+      location: ['', Validators.required],
+      organizer_contact: ['', [Validators.required, Validators.email]],
+      target_audience: ['public', Validators.required]
+    });
+
+    // Handle window resize
+    window.addEventListener('resize', this.onResize.bind(this));
   }
 
   ngOnDestroy() {

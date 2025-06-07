@@ -86,24 +86,37 @@ export class AuthService {
   login(credentials: { email: string; password: string }): Observable<LoginResponse> {
     return this.http.post<LoginResponse>(`${this.apiUrl}/login`, credentials).pipe(
       tap((response) => {
+        console.log('Login Response:', response);
+
+        // First store the token and basic info
         this.setToken(response.access_token);
         this.setUserType(response.user_type);
         this.setSetupCompleted(response.setup_completed);
 
-        // Store user data if available
-        if (response.user_data) {
-          localStorage.setItem('user_data', JSON.stringify({
-            id: response.user_data.id,
-            first_name: response.user_data.first_name,
-            last_name: response.user_data.last_name,
-            email: response.user_data.email,
-            user_type: response.user_type,
-            membership: response.user_data.membership,
-            profile_image: response.user_data.profile_image
-          }));
-        }
+        // Store complete user data
+        const userData = {
+          id: response.user_data?.id,
+          first_name: response.user_data?.first_name,
+          last_name: response.user_data?.last_name,
+          email: response.user_data?.email,
+          user_type: response.user_type, // Use the user_type from the main response
+          membership: response.user_data?.membership,
+          profile_image: response.user_data?.profile_image
+        };
+        console.log('Storing user data:', userData);
+        localStorage.setItem('user_data', JSON.stringify(userData));
 
-        this.handleLoginRedirect(response.user_type, response.setup_completed);
+        // Verify data was stored
+        const storedUser = this.getCurrentUser();
+        console.log('Stored user data:', storedUser);
+
+        // Only redirect if we have valid user data
+        if (storedUser && storedUser.user_type) {
+          console.log('About to redirect with:', { userType: storedUser.user_type, setupCompleted: response.setup_completed });
+          this.handleLoginRedirect(storedUser.user_type, response.setup_completed);
+        } else {
+          console.error('Failed to store user data properly');
+        }
       })
     );
   }
@@ -219,8 +232,21 @@ export class AuthService {
   }
 
   handleLoginRedirect(userType: string, setupCompleted: boolean): void {
+    console.log('handleLoginRedirect called with:', { userType, setupCompleted });
+
+    // Double check user type
+    const currentUser = this.getCurrentUser();
+    if (!currentUser || currentUser.user_type !== userType) {
+      console.error('User type mismatch or missing user data');
+      return;
+    }
+
     if (userType === 'admin') {
-      this.router.navigate(['/admin-dashboard']);
+      console.log('Redirecting to admin dashboard');
+      this.router.navigate(['/admin-dashboard']).then(
+        success => console.log('Navigation result:', success),
+        error => console.error('Navigation error:', error)
+      );
     } else if (!setupCompleted) {
       if (userType === 'player') {
         this.router.navigate(['/register-player']);
@@ -255,19 +281,25 @@ export class AuthService {
   }
 
   getCurrentUser(): any {
-    const userType = this.getUserType();
-    const userData = localStorage.getItem('user_data');
-    const parsedUserData = userData ? JSON.parse(userData) : null;
+    try {
+      const userData = localStorage.getItem('user_data');
+      if (!userData) {
+        console.log('No user data found in localStorage');
+        return null;
+      }
 
-    if (!parsedUserData) {
+      const parsedUserData = JSON.parse(userData);
+      if (!parsedUserData || !parsedUserData.user_type) {
+        console.log('Invalid user data structure:', parsedUserData);
+        return null;
+      }
+
+      console.log('Retrieved user data:', parsedUserData);
+      return parsedUserData;
+    } catch (error) {
+      console.error('Error getting current user:', error);
       return null;
     }
-
-    return {
-      id: parsedUserData.id,
-      user_type: userType,
-      ...parsedUserData
-    };
   }
 
   // Add new method to check subscription status

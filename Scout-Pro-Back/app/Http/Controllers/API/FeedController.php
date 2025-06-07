@@ -335,17 +335,17 @@ class FeedController extends Controller
             )
             ->leftJoin('scouts', 'users.id', '=', 'scouts.user_id')
             ->where('users.user_type', 'scout')
-            ->where(function($q) use ($query) {
+                ->where(function($q) use ($query) {
                 $q->where('users.first_name', 'LIKE', "%{$query}%")
                   ->orWhere('users.last_name', 'LIKE', "%{$query}%")
                   ->orWhere('users.email', 'LIKE', "%{$query}%")
-                  ->orWhere('scouts.organization', 'LIKE', "%{$query}%")
+                      ->orWhere('scouts.organization', 'LIKE', "%{$query}%")
                   ->orWhere('scouts.position_title', 'LIKE', "%{$query}%")
                   ->orWhere('scouts.city', 'LIKE', "%{$query}%")
                   ->orWhere('scouts.country', 'LIKE', "%{$query}%")
                   ->orWhere(DB::raw("CONCAT(users.first_name, ' ', users.last_name)"), 'LIKE', "%{$query}%")
                   ->orWhere('users.user_type', 'LIKE', "%{$query}%"); // This will match "scout" in user_type
-            });
+                });
 
             // Apply filters for players if user is a scout and filters are provided
             if ($userType === 'scout' && !empty($filters)) {

@@ -86,6 +86,7 @@ export class LoginPageComponent {
 
     this.authService.login(this.formData).subscribe({
       next: (response) => {
+        console.log('Login response:', response);
         this.loading = false;
         this.successMessage = response.message || 'Login successful!';
 
@@ -94,6 +95,10 @@ export class LoginPageComponent {
           email: '',
           password: ''
         };
+
+        // Let the auth service handle the redirect
+        const user = this.authService.getCurrentUser();
+        console.log('Current user after login:', user);
       },
       error: (error) => {
         console.error('Login error:', error);

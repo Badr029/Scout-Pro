@@ -20,6 +20,8 @@ import { ScoutSubscriptionComponent } from './subscription/scout-subscription/sc
 import { SubscriptionComponent } from './subscription/subscription/subscription.component';
 import { AdminDashboardComponent } from './admin-dashboard/admin-dashboard.component';
 import { SubscriptionDetailComponent } from './subscription-detail/subscription-detail.component';
+import { AdminGuard } from './guards/admin.guard';
+import { NonAdminGuard } from './guards/non-admin.guard';
 
 export const routes: Routes = [
     {
@@ -38,7 +40,7 @@ export const routes: Routes = [
     {
         path: 'register-player',
         component: RegisterPlayerComponent,
-        canActivate: [AuthGuard]
+        canActivate: [AuthGuard, NonAdminGuard]
     },
     {
         path: 'login',
@@ -59,27 +61,27 @@ export const routes: Routes = [
     {
         path: 'profile',
         component: ProfileComponent,
-        canActivate: [AuthGuard, ScoutGuard]
+        canActivate: [AuthGuard, NonAdminGuard, ScoutGuard]
     },
     {
         path: 'scout/profile',
         component: ScoutProfileComponent,
-        canActivate: [AuthGuard, ScoutGuard]
+        canActivate: [AuthGuard, NonAdminGuard, ScoutGuard]
     },
     {
         path: 'scout/profile/edit',
         component: ScoutEditComponent,
-        canActivate: [AuthGuard, ScoutGuard]
+        canActivate: [AuthGuard, NonAdminGuard, ScoutGuard]
     },
     {
         path: 'Edit',
         component: EditProfileComponent,
-        canActivate: [AuthGuard, ScoutGuard]
+        canActivate: [AuthGuard, NonAdminGuard, ScoutGuard]
     },
     {
         path: 'scout-register',
         component: ScoutRegisterComponent,
-        canActivate: [AuthGuard]
+        canActivate: [AuthGuard, NonAdminGuard]
     },
     {
         path: 'Register-Page',
@@ -88,61 +90,57 @@ export const routes: Routes = [
     {
         path: 'edit-profile',
         component: EditProfileComponent,
-        canActivate: [AuthGuard, ScoutGuard]
+        canActivate: [AuthGuard, NonAdminGuard, ScoutGuard]
     },
     {
         path: 'home-feed',
         component: HomeFeedComponent,
-        canActivate: [AuthGuard, ScoutGuard]
+        canActivate: [AuthGuard, NonAdminGuard]
     },
     {
         path: 'player/:id',
         component: PlayerViewComponent,
-        canActivate: [AuthGuard, ScoutGuard]
+        canActivate: [AuthGuard, NonAdminGuard, ScoutGuard]
     },
     {
         path: 'subscription',
         component: SubscriptionComponent,
-        canActivate: [AuthGuard]
+        canActivate: [AuthGuard, NonAdminGuard]
     },
     {
         path: 'event/:id',
         component: HomeFeedComponent,
-        canActivate: [AuthGuard, ScoutGuard]
-    },
-    {
-        path: 'welcome',
-        component: WelcomeComponent,
-        canActivate: [AuthGuard, ScoutGuard]
+        canActivate: [AuthGuard, NonAdminGuard, ScoutGuard]
     },
     {
         path: 'scout-edit',
         component: ScoutEditComponent,
-        canActivate: [AuthGuard, ScoutGuard]
+        canActivate: [AuthGuard, NonAdminGuard, ScoutGuard]
     },
     {
         path: 'scout/:id',
         component: ScoutViewComponent,
-        canActivate: [AuthGuard, ScoutGuard]
+        canActivate: [AuthGuard, NonAdminGuard, ScoutGuard]
     },
     {
         path: 'scout-subscription',
         component: ScoutSubscriptionComponent,
-        canActivate: [AuthGuard]
-    },
-    {
-        path: 'subscription',
-        component: SubscriptionComponent,
-        canActivate: [AuthGuard]
-    },
-    {
-        path: 'admin-dashboard',
-        component: AdminDashboardComponent,
-        canActivate: [AuthGuard]
+        canActivate: [AuthGuard, NonAdminGuard]
     },
     {
         path: 'subscription-detail',
         component: SubscriptionDetailComponent,
-        canActivate: [AuthGuard]
+        canActivate: [AuthGuard, NonAdminGuard]
     },
+    {
+        path: 'admin-dashboard',
+        component: AdminDashboardComponent,
+        canActivate: [AuthGuard, AdminGuard]
+    },
+    // Catch all unknown routes
+    {
+        path: '**',
+        component: WelcomeComponent,
+        canActivate: [AuthGuard, NonAdminGuard]
+    }
 ];

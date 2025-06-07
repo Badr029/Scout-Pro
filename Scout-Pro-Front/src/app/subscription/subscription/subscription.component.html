@@ -1,8 +1,8 @@
 <div class="subscription-container">
   <div class="page-header">
-    <button class="btn-back" (click)="goToHome()">
+    <button class="btn-back" (click)="goBack()">
       <i class="fas fa-arrow-left"></i>
-      Back to Home
+      Back
     </button>
   </div>
   <div>
@@ -211,6 +211,18 @@
         <span *ngIf="!loading">Upgrade to Premium</span>
         <span *ngIf="loading" class="spinner small"></span>
       </button>
+    </div>
+  </div>
+</div>
+
+<!-- Cancellation Confirmation Modal -->
+<div class="modal-overlay" *ngIf="showCancelConfirmation">
+  <div class="modal-content">
+    <h2>Cancel Subscription</h2>
+    <p>Are you sure you want to cancel your subscription? This will downgrade your account to the free plan.</p>
+    <div class="modal-actions">
+      <button class="btn btn-outline" (click)="showCancelConfirmation = false">No, Keep Subscription</button>
+      <button class="btn btn-danger" (click)="confirmCancel()">Yes, Cancel Subscription</button>
     </div>
   </div>
 </div>

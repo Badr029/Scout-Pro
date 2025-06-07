@@ -4,6 +4,7 @@ import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
 import { AuthService } from '../../auth.service';
+import { Location } from '@angular/common';
 
 @Component({
   selector: 'app-subscription',
@@ -20,6 +21,7 @@ export class SubscriptionComponent implements OnInit {
   error: string = '';
   success: string = '';
   userType: string = '';
+  showCancelConfirmation: boolean = false;
 
   paymentInfo = {
     cardNumber: '',
@@ -53,20 +55,21 @@ export class SubscriptionComponent implements OnInit {
   constructor(
     private router: Router,
     private http: HttpClient,
-    private authService: AuthService
+    private authService: AuthService,
+    private location: Location
   ) {
     this.userType = localStorage.getItem('user_type') || '';
   }
 
   ngOnInit() {
-    
+
     // if (this.userType === 'player') {
     //   this.checkPlayerMembership();
     // } else {
     //   this.checkSubscriptionStatus();
     // }
     this.fetchPlanPrices();
-    
+
     this.currentPlan =localStorage.getItem('membership')
     this.currentPlanType = localStorage.getItem('plan_type')
     console.log('currentPlanType' , this.currentPlanType);
@@ -88,7 +91,7 @@ export class SubscriptionComponent implements OnInit {
             if (this.currentPlan === 'Premium') {
               if (response.data.plan_type && typeof response.data.plan_type === 'string') {
                 this.currentPlanType = response.data.plan_type.includes('Yearly') ? 'yearly' : 'monthly';
-                
+
               } else {
                 this.currentPlanType = 'unknown'; // fallback or handle differently
               }
@@ -245,11 +248,18 @@ export class SubscriptionComponent implements OnInit {
   }
 
   cancelSubscription(): void {
-    if (this.currentPlan !== 'Premium') {
-      this.error = 'No active Premium subscription to cancel.';
+    if (!this.currentPlan || this.currentPlan.toLowerCase() === 'free') {
+      this.error = 'No active paid subscription to cancel.';
       return;
     }
 
+    this.error = '';
+    this.success = '';
+    this.showCancelConfirmation = true;
+  }
+
+  confirmCancel(): void {
+    this.showCancelConfirmation = false;
     this.loading = true;
     this.error = '';
     this.success = '';
@@ -266,11 +276,7 @@ export class SubscriptionComponent implements OnInit {
       .subscribe({
         next: (response: any) => {
           this.loading = false;
-          this.currentPlan = 'Free';
-          this.currentPlanType = null;
-          this.selectedPlanType = null;
-          this.success = response.message || 'Subscription cancelled successfully.';
-          this.paymentInfo = { cardNumber: '', cardName: '', expiry: '', cvv: '' };
+          this.success = 'Subscription cancelled successfully.';
 
           // Update local storage
           if (this.userType === 'player') {
@@ -280,10 +286,22 @@ export class SubscriptionComponent implements OnInit {
             localStorage.setItem('subscription_active', 'false');
             localStorage.removeItem('plan_type');
           }
+
+          // Update component state
+          this.currentPlan = 'Free';
+          this.currentPlanType = null;
+          this.selectedPlanType = null;
+
+          // Reload subscription details
+          if (this.userType === 'player') {
+            this.checkPlayerMembership();
+          } else {
+            this.checkSubscriptionStatus();
+          }
         },
         error: (error) => {
           this.loading = false;
-          this.error = error.error?.message || 'Failed to cancel subscription. Please try again later.';
+          this.error = error.error?.message || 'Failed to cancel subscription.';
         }
       });
   }
@@ -331,7 +349,7 @@ export class SubscriptionComponent implements OnInit {
     this.paymentInfo.cardName = input;
   }
 
-  goToHome(): void {
-    this.router.navigate(['/home-feed']);
+  goBack(): void {
+    this.location.back();
   }
 }

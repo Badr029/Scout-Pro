@@ -81,8 +81,7 @@ export class ScoutSubscriptionComponent implements OnInit {
     this.http.get('http://localhost:8000/api/subscription/scout/status', { headers })
       .subscribe({
         next: (response: any) => {
-          const isActive = response.data?.active === true || response.subscription_active === true;
-          if (isActive) {
+          if (response.subscription_active) {
             // If subscription is active, redirect to home-feed
             this.router.navigate(['/home-feed']);
           } else {
@@ -92,7 +91,7 @@ export class ScoutSubscriptionComponent implements OnInit {
         },
         error: (error) => {
           console.error('Error checking subscription status:', error);
-          this.error = 'Failed to check subscription status';
+          this.error = error.error?.message || 'Failed to check subscription status';
           this.currentPlan = 'Free';
         }
       });

@@ -195,15 +195,21 @@ class AdminController extends Controller
                     'scout_name' => $scout->first_name,
                     'player_name' => $player->first_name . ' ' . $player->last_name,
                     'player_email' => $player->email,
-                    'player_phone' => $player->player->phone_number ?? 'Not provided', // Access through player relationship
+                    'player_phone' => $player->player->phone_number ?? 'Not provided',
                     'message' => $contactRequest->message
                 ]));
+
+                // Create notification for the scout
+                $this->createContactRequestStatusNotification($scout, 'approved');
             } else if ($request->status === 'rejected') {
                 Mail::to($scout->email)->send(new ContactRequestRejected([
                     'scout_name' => $scout->first_name,
                     'player_name' => $player->first_name . ' ' . $player->last_name,
                     'message' => $contactRequest->message
                 ]));
+
+                // Create notification for the scout
+                $this->createContactRequestStatusNotification($scout, 'rejected');
             }
 
             return response()->json([
@@ -584,6 +590,9 @@ class AdminController extends Controller
                     'subscription_expires_at' => now()
                 ]);
             }
+
+            // Create notification for the user
+            $this->createSubscriptionDeactivationNotification($user);
 
             DB::commit();
 
