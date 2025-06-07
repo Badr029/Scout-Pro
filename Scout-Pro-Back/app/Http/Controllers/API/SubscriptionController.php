@@ -183,17 +183,22 @@ public function upgrade(Request $request)
     ]);
 
         // Create or update subscription
-    $subscription = Subscription::updateOrCreate(
-        ['user_id' => $user->id],
-        [
-            'plan_id' => $plan->id,
-            'payment_id' => $payment->id,
-            'plan' => $plan->Name,
-                'active' => true,
-                'expires_at' => now()->addDays($plan->Duration),
-            'canceled_at' => null
-        ]
-    );
+       Subscription::where('user_id', $user->id)->where('active', true)->update([
+    'active' => false,
+    'canceled_at' => now()
+]);
+
+$subscription = Subscription::create([
+    'user_id' => $user->id,
+    'plan_id' => $plan->id,
+    'payment_id' => $payment->id,
+    'plan' => $plan->Name,
+    'active' => true,
+    'start_date' => now(),
+    'expires_at' => now()->addDays($plan->Duration),
+    'canceled_at' => null
+]);
+
 
         // Update player membership and subscription fields
     $player->update([
@@ -302,7 +307,6 @@ public function upgrade(Request $request)
         'message' => 'Subscription canceled successfully. You are now on the Free plan.'
     ]);
 }
-
     /**
      * Get all available subscription plans.
      */
@@ -787,28 +791,37 @@ public function upgrade(Request $request)
             ], 500);
         }
     }
-    public function manageSubscription($player_id)
+    public function manageSubscription()
 {
-    $player = Player::with('user.subscription')->findOrFail($player_id);
-    $subscription = $player->user->subscription;
+    $user = auth()->user();
+    $player = $user->player;
 
-    if (!$subscription) {
+    if (!$player || !$user->subscription) {
         return response()->json([
             'status' => 'success',
             'data' => null
         ]);
     }
 
+    $subscription = $user->subscription;
+
     $expiresAt = Carbon::parse($subscription->expires_at);
     $now = Carbon::now();
 
     $totalMinutes = $now->diffInMinutes($expiresAt, false);
 
-    $daysLeft = intdiv($totalMinutes, 1440); // 1440 minutes in a day
-    $hoursLeft = intdiv($totalMinutes % 1440, 60); // remaining hours
+    $daysLeft = intdiv($totalMinutes, 1440);
+    $hoursLeft = intdiv($totalMinutes % 1440, 60);
 
     $daysLeft = max($daysLeft, 0);
     $hoursLeft = max($hoursLeft, 0);
+    if($subscription->active==1){
+        $status="Active";
+    }elseif($subscription->active==0){
+        $status="Deactivated";
+
+    }
+
 
     return response()->json([
         'status' => 'success',
@@ -818,90 +831,11 @@ public function upgrade(Request $request)
             'expires_at' => $expiresAt->toDateString(),
             'days_left' => $daysLeft,
             'hours_left' => $hoursLeft,
+            'created_at' => $subscription->created_at->toDateTimeString(),
+            'status'=>$status,
+
         ]
     ]);
 }
 
-    /**
-     * Check subscription status for a specific player
-     */
-    public function checkPlayerSubscriptionStatus($playerId)
-    {
-        $player = Player::findOrFail($playerId);
-        $subscription = Subscription::where('user_id', $player->user_id)->latest()->first();
-
-        if (!$subscription) {
-            Player::where('id', $playerId)->update(['membership' => 'free']);
-            return response()->json([
-                'status' => 'no_subscription',
-                'membership' => 'free',
-                'days_remaining' => 0
-            ]);
-        }
-
-        $expires_at = $subscription->expires_at;
-        $now = now();
-
-        if ($expires_at && $expires_at <= $now) {
-            Player::where('id', $playerId)->update(['membership' => 'free']);
-            return response()->json([
-                'status' => 'expired',
-                'membership' => 'free',
-                'days_remaining' => 0
-            ]);
-        }
-        $days_remaining = $now->diffInDays($expires_at);
-
-        return response()->json([
-            'status' => 'active',
-            'membership' => 'Premium',
-            'days_remaining' => $days_remaining
-        ]);
-    }
-
-    /**
-     * Check current user's subscription status and send expiry notifications
-     */
-    public function checkCurrentUserSubscriptionStatus()
-    {
-        $user = Auth::user();
-        $subscription = $user->subscription;
-
-        if ($subscription && $subscription->active) {
-            $daysLeft = now()->diffInDays($subscription->expires_at);
-
-            // Notify user when subscription is about to expire (7 days before)
-            if ($daysLeft <= 7) {
-                $this->createSubscriptionNotification(
-                    $user,
-                    "Your subscription will expire in {$daysLeft} days. Please renew to continue enjoying premium features.",
-                    [
-                        'days_left' => $daysLeft,
-                        'expires_at' => $subscription->expires_at
-                    ]
-                );
-            }
-
-            return response()->json([
-                'status' => 'success',
-                'data' => [
-                    'active' => true,
-                    'days_left' => $daysLeft,
-                    'expires_at' => $subscription->expires_at
-                ]
-            ]);
-        }
-
-        return response()->json([
-            'status' => 'success',
-            'data' => [
-                'active' => false,
-                'days_left' => 0,
-                'expires_at' => null
-            ]
-        ]);
-    }
-
 }
-
-

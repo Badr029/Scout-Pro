@@ -103,6 +103,8 @@ export class ProfileComponent implements OnInit, OnDestroy {
   showLikesModal = false;
   selectedPostLikes: any[] = [];
   viewedVideos = new Set<number>();
+  isPlayer = false;
+isPremiumPlayer = false;
 
   constructor(
     private router: Router,
@@ -114,6 +116,14 @@ export class ProfileComponent implements OnInit, OnDestroy {
     console.log('Profile component initialized');
     this.fetchPlayerProfile();
     this.fetchPlayerVideos();
+     const userType = localStorage.getItem('user_type');
+  const membership = localStorage.getItem('membership');
+
+  this.isPlayer = userType === 'player';
+  this.isPremiumPlayer = membership === 'premium';
+
+  console.log('isPlayer:', this.isPlayer);
+  console.log('isPremiumPlayer:', this.isPremiumPlayer);
 
     // Handle videos array early to avoid NgFor issues if it's not an array
     if (this.videos && !Array.isArray(this.videos)) {
@@ -474,6 +484,9 @@ export class ProfileComponent implements OnInit, OnDestroy {
 
   goToSubscription() {
     this.router.navigate(['/subscription']);
+  }
+  goToDetails(){
+    this.router.navigate(['/subscription-detail']);
   }
 
   calculateAge(dateOfBirth: string): number {

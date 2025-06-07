@@ -1,0 +1,239 @@
+/* Container for the entire layout */
+.container {
+ max-width: 700px;
+  margin: 2rem auto;
+  margin-top:5%;
+  padding: 1.5rem;
+  font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  color: #e0e0e0;
+  background: #1e1e1e;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.container:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+}
+
+/* Page Header for Back Button */
+.page-header {
+  margin-bottom: 1rem;
+}
+
+/* Back Button */
+.btn-back {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: none;
+  border: none;
+  color: #adb5bd;
+  font-size: 0.95rem;
+  cursor: pointer;
+  margin-bottom: 1.2rem;
+}
+
+.btn-back:hover {
+  color: #5d9de2;
+}
+
+.btn-back i {
+  font-size: 1.25rem; /* Slightly larger icon for visibility */
+}
+
+/* Subscription Details and Time Remaining Sections */
+section {
+  margin-bottom: 1.5rem;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+h2 {
+   font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+  color: #4f7df9;
+  letter-spacing: -0.025rem;
+}
+
+p {
+   font-size: 1rem;
+  line-height: 1.5;
+  margin: 0.5rem 0;
+  color: #d1d5db;
+}
+
+p strong {
+font-weight: 600;
+  margin-right: 0.5rem;
+  color: #f3f4f6;}
+
+/* Buttons */
+button.bg-red-500 {
+  background-color: #b91c1c; /* bright red */
+  color: #ffffff;
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+  outline: none;
+  user-select: none;
+  margin-left: 22%; /* remove margin-left */
+  flex: none; /* fix width in flexbox */
+}
+
+button.bg-red-500:hover {
+  background-color: #6b7280;
+  transform: translateY(-1px);
+}
+
+button.bg-red-500:focus {
+  outline: 2px solid #60a5fa;
+  outline-offset: 2px;
+}
+
+button.bg-red-500:active {
+  transform: translateY(0);
+}
+
+/* Upgrade button styles */
+button.upgrade {
+  background-color: #5b92e9; /* Tailwind gray-500 */
+  color: white;
+  margin-left:5px;
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+  outline: none;
+  user-select: none;
+  flex: none;
+}
+
+button.upgrade:hover {
+  background-color: #6b7280; /* blue */
+  color: white;
+  transform: translateY(-1px);
+}
+
+button.upgrade:focus {
+  outline: 2px solid #3a86ff;
+  outline-offset: 2px;
+}
+
+button.upgrade:active {
+  transform: translateY(0);
+}
+
+/* Modal Overlay */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+/* Modal Box */
+.modal-box {
+  background-color: #2a2929;
+  padding: 1.5rem;
+  border-radius: 0.5rem;
+  width: 100%;
+  max-width: 400px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.modal-box h3 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  color:white;
+}
+
+.modal-box p {
+  margin-bottom: 1.5rem;
+  color: rgb(255, 255, 255);
+}
+
+/* Modal Buttons */
+.modal-box .flex {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+}
+
+button.cancel-btn {
+  background-color: #6b7280;
+  color: #ffffff;
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+  outline: none;
+  user-select: none;
+}
+
+button.cancel-btn:hover {
+  background-color: #4b5563;
+  transform: translateY(-1px);
+}
+
+button.cancel-btn:focus {
+  outline: 2px solid #3a86ff;
+  outline-offset: 2px;
+}
+
+button.cancel-btn:active {
+  transform: translateY(0);
+}
+
+button.confirm-btn {
+  background-color: #b91c1c;
+  color: #ffffff;
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+  outline: none;
+  user-select: none;
+}
+
+
+button.confirm-btn:hover {
+  background-color: #6b7280;
+  transform: translateY(-1px);
+}
+
+button.confirm-btn:focus {
+  outline: 2px solid #60a5fa;
+  outline-offset: 2px;
+}
+
+button.confirm-btn:active {
+  transform: translateY(0);
+}
+
+/* Loading and Error States */
+div.text-red-500 {
+  color: #ef4444;
+  font-size: 1rem;
+}
