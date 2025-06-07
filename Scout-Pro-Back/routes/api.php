@@ -188,3 +188,10 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('/{id}', 'App\Http\Controllers\API\NotificationController@destroy');
     });
 });
+
+// Stats routes
+Route::get('/stats', [App\Http\Controllers\API\HomeController::class, 'getAllStats']);
+Route::get('/stats/players', [App\Http\Controllers\API\HomeController::class, 'playerCount']);
+Route::get('/stats/scouts', [App\Http\Controllers\API\HomeController::class, 'scoutCount']);
+Route::get('/stats/videos', [App\Http\Controllers\API\HomeController::class, 'videoCount']);
+Route::get('/stats/contacts', [App\Http\Controllers\API\HomeController::class, 'contactRequestCount']);

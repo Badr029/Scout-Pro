@@ -1,0 +1,281 @@
+<div class="dynamic-welcome-page">
+  <!-- Hero Section with Animated Background -->
+  <div class="hero-container">
+    <div class="container">
+      <div class="row">
+        <div class="col">
+          <div class="hero-content" [@slideInUp]>
+            <div class="hero-badge">
+              🚀 The Future of Football Scouting is Here
+            </div>
+
+            <h1 class="hero-title">
+              <span class="gradient-text">Transform Your Football Dreams</span>
+              <br>Into Professional Reality
+            </h1>
+
+            <p class="hero-subtitle">
+              Join thousands of players and scouts who are already changing the game.
+              <strong>Connect. Showcase. Get Discovered.</strong>
+            </p>
+
+            <div class="hero-actions">
+              <button class="cta-primary" (click)="navigateToRegister()">
+                Start Your Journey
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M5 12h14m-7-7 7 7-7 7"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="col">
+          <div class="hero-visual" [@fadeInRight]>
+            <div class="phone-mockup">
+              <div class="phone-screen">
+                <video #demoVideo autoplay muted loop playsinline class="demo-video" preload="auto">
+                  <source src="assets/videos/feed-demo.mp4" type="video/mp4">
+                  <img src="assets/screenshots/feed-page.png" alt="Scout-Pro App Demo" class="fallback-image">
+                </video>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="animated-background">
+      <div class="floating-elements">
+        <div class="floating-ball ball-1">⚽</div>
+        <div class="floating-ball ball-2">🥅</div>
+        <div class="floating-ball ball-3">🏆</div>
+        <div class="floating-ball ball-4">⭐</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stats Section -->
+  <section class="stats-section" [@slideInUp]>
+    <div class="container">
+      <h2 class="section-title">Powering Football Dreams Worldwide</h2>
+      <div class="stats-grid">
+        <div class="stat-card" *ngFor="let stat of statsDisplay; let i = index">
+          <div class="stat-icon">
+            <div class="pulse-animation"></div>
+            <ng-container [ngSwitch]="i">
+              <svg *ngSwitchCase="0" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+                <circle cx="9" cy="7" r="4"/>
+                <path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>
+              </svg>
+              <svg *ngSwitchCase="1" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                <circle cx="12" cy="7" r="4"/>
+              </svg>
+              <svg *ngSwitchCase="2" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon points="23 7 16 12 23 17 23 7"/>
+                <rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
+              </svg>
+              <svg *ngSwitchCase="3" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                <circle cx="9" cy="7" r="4"/>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>
+              </svg>
+            </ng-container>
+          </div>
+          <div class="stat-number">
+            <span #scoutCounter *ngIf="i === 0">{{stat.number}}</span>
+            <span #playerCounter *ngIf="i === 1">{{stat.number}}</span>
+            <span #videoCounter *ngIf="i === 2">{{stat.number}}</span>
+            <span #connectionCounter *ngIf="i === 3">{{stat.number}}</span>
+            {{stat.suffix}}
+          </div>
+          <div class="stat-label">{{stat.label}}</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Dynamic Features Showcase -->
+  <section class="features-showcase">
+    <div class="container">
+      <div class="section-header" [@slideInUp]>
+        <h2 class="section-title">Experience the Power of Scout-Pro</h2>
+        <p class="section-subtitle">Revolutionary features that connect talent with opportunity</p>
+      </div>
+
+      <div class="slideshow-container">
+        <div class="feature-slides">
+          <div class="feature-slide"
+               [class.active]="currentSlide === i"
+               *ngFor="let feature of features; let i = index">
+            <div class="feature-content">
+              <div class="feature-info" [@fadeInLeft]>
+                <div class="feature-icon">
+                  <ng-container [ngSwitch]="feature.icon">
+                    <svg *ngSwitchCase="'search'" width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <circle cx="11" cy="11" r="8"/>
+                      <path d="m21 21-4.35-4.35"/>
+                    </svg>
+                    <svg *ngSwitchCase="'video'" width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <polygon points="23 7 16 12 23 17 23 7"/>
+                      <rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
+                    </svg>
+                    <svg *ngSwitchCase="'user'" width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                      <circle cx="12" cy="7" r="4"/>
+                    </svg>
+                    <svg *ngSwitchCase="'filter'" width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
+                    </svg>
+                    <svg *ngSwitchCase="'calendar'" width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                      <line x1="16" y1="2" x2="16" y2="6"/>
+                      <line x1="8" y1="2" x2="8" y2="6"/>
+                      <line x1="3" y1="10" x2="21" y2="10"/>
+                    </svg>
+                  </ng-container>
+                </div>
+                <h3 class="feature-title">{{feature.title}}</h3>
+                <p class="feature-description">{{feature.description}}</p>
+
+                <div class="feature-highlights">
+                  <div class="highlight" *ngIf="feature.icon === 'search'">
+                    ✨ Connect with 1000+ verified scouts
+                  </div>
+                  <div class="highlight" *ngIf="feature.icon === 'video'">
+                    📱 Upload HD videos instantly
+                  </div>
+                  <div class="highlight" *ngIf="feature.icon === 'user'">
+                    🏆 Showcase your achievements
+                  </div>
+                  <div class="highlight" *ngIf="feature.icon === 'filter'">
+                    🔍 AI-powered talent matching
+                  </div>
+                  <div class="highlight" *ngIf="feature.icon === 'calendar'">
+                    📅 Join exclusive tournaments
+                  </div>
+                </div>
+              </div>
+
+              <div class="feature-image" [@fadeInRight]>
+                <div class="image-container">
+                  <img [src]="feature.image" [alt]="feature.title" class="screenshot">
+                  <div class="image-overlay">
+                    <div class="play-button" *ngIf="feature.icon === 'video'">
+                      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polygon points="5,3 19,12 5,21 5,3"/>
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Slide Navigation -->
+        <div class="slide-controls">
+          <button class="slide-btn prev" (click)="prevSlide()">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M15 18l-6-6 6-6"/>
+            </svg>
+          </button>
+
+          <div class="slide-indicators">
+            <button class="indicator"
+                    [class.active]="currentSlide === i"
+                    (click)="goToSlide(i)"
+                    *ngFor="let feature of features; let i = index">
+            </button>
+          </div>
+
+          <button class="slide-btn next" (click)="nextSlide()">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M9 18l6-6-6-6"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Success Stories / Testimonials -->
+  <section class="testimonials-section" [@slideInUp]>
+    <div class="container">
+      <div class="section-header">
+        <h2 class="section-title">Success Stories That Inspire</h2>
+        <p class="section-subtitle">Real people, real results, real dreams achieved</p>
+      </div>
+
+      <div class="testimonials-slider">
+        <div class="testimonial-card" [class.active]="currentTestimonial === i" *ngFor="let testimonial of testimonials; let i = index">
+          <div class="testimonial-content">
+            <div class="quote-icon">"</div>
+            <p class="testimonial-text">{{testimonial.text}}</p>
+            <div class="testimonial-author">
+              <div class="author-avatar">{{testimonial.avatar}}</div>
+              <div class="author-info">
+                <h4 class="author-name">{{testimonial.name}}</h4>
+                <p class="author-role">{{testimonial.role}}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Call to Action Section -->
+  <section class="final-cta">
+    <div class="cta-background">
+      <div class="cta-pattern"></div>
+    </div>
+
+    <div class="container">
+      <div class="cta-content" [@zoomIn]>
+        <h2 class="cta-title">
+          Your Football Journey Starts Now
+        </h2>
+        <p class="cta-subtitle">
+          Don't let your talent go unnoticed. Join Scout-Pro today and take the first step towards your professional football career.
+        </p>
+
+        <div class="cta-features">
+          <div class="cta-feature">
+            <div class="cta-feature-icon">⚡</div>
+            <span>Instant Registration</span>
+          </div>
+          <div class="cta-feature">
+            <div class="cta-feature-icon">🎯</div>
+            <span>Direct Scout Access</span>
+          </div>
+          <div class="cta-feature">
+            <div class="cta-feature-icon">🏆</div>
+            <span>Premium Opportunities</span>
+          </div>
+        </div>
+
+        <div class="cta-actions">
+          <button class="cta-primary-large" (click)="navigateToRegister()">
+            <span>Join Scout-Pro Now</span>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M5 12h14m-7-7 7 7-7 7"/>
+            </svg>
+          </button>
+
+          <div class="cta-guarantee">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M9 12l2 2 4-4"/>
+              <path d="M21 12c-1 0-3-1-3-3s2-3 3-3 3 1 3 3-2 3-3 3"/>
+              <path d="M3 12c1 0 3-1 3-3s-2-3-3-3-3 1-3 3 2 3 3 3"/>
+              <path d="M3 12c0 6 6 9 9 9s9-3 9-9"/>
+            </svg>
+            What are you waiting for? Join Scout-Pro today and take the first step towards your professional football career.
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>

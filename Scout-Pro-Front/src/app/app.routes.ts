@@ -13,7 +13,6 @@ import { EmailVerificationComponent } from './email-verification/email-verificat
 import { AuthGuard } from './guards/auth.guard';
 import { ScoutGuard } from './guards/scout.guard';
 import { ScoutProfileComponent } from './Scout/profile/profile.component';
-import { WelcomeComponent } from './welcome/welcome.component';
 import { ScoutEditComponent } from './Scout/profile/scout-edit/scout-edit.component';
 import { ScoutViewComponent } from './scout-view/scout-view.component';
 import { ScoutSubscriptionComponent } from './subscription/scout-subscription/scout-subscription.component';
@@ -26,12 +25,13 @@ import { NonAdminGuard } from './guards/non-admin.guard';
 export const routes: Routes = [
     {
         path: '',
-        redirectTo: 'welcome',
+        loadComponent: () => import('./dynamic-welcome/dynamic-welcome.component').then(m => m.DynamicWelcomeComponent),
         pathMatch: 'full'
     },
     {
         path: 'welcome',
-        component: WelcomeComponent
+        redirectTo: '',
+        pathMatch: 'full'
     },
     {
         path: 'register',
@@ -140,7 +140,7 @@ export const routes: Routes = [
     // Catch all unknown routes
     {
         path: '**',
-        component: WelcomeComponent,
-        canActivate: [AuthGuard, NonAdminGuard]
+        redirectTo: '',
+        pathMatch: 'full'
     }
 ];
