@@ -1338,6 +1338,35 @@ export class HomeFeedComponent implements OnInit, OnDestroy {
     // as we already have them loaded
   }
 
+  scrollToFeedContent() {
+    // Switch to feed view if not already there
+    this.activeView = 'feed';
+
+    // Close any open panels
+    this.showSearchPanel = false;
+    this.showFeedFilter = false;
+    this.showAccountMenu = false;
+    this.showNotificationPanel = false;
+    this.showRightPanel = false;
+
+    // Allow sidebar to collapse
+    this.sidebarExpanded = false;
+
+    // Scroll to feed content
+    setTimeout(() => {
+      const feedContainer = document.querySelector('.reels-container');
+      if (feedContainer) {
+        feedContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } else {
+        // If feed container not found, scroll to feed container
+        const mainFeedContainer = document.querySelector('.feed-container');
+        if (mainFeedContainer) {
+          mainFeedContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }
+    }, 100);
+  }
+
   // Add method to get event status class
   getEventStatusClass(event: EventItem): string {
     if (event.status === 'pending' && event.is_organizer) {

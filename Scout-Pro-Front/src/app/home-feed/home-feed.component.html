@@ -2,7 +2,7 @@
   <aside class="left-sidebar" [class.expanded]="sidebarExpanded" (mouseenter)="expandSidebar()" (mouseleave)="collapseSidebar()">
     <div class="logo">{{ sidebarExpanded ? 'Scout Pro' : 'SP' }}</div>
     <nav class="nav-links">
-      <a routerLink="/home" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
+      <a href="#" (click)="scrollToFeedContent(); $event.preventDefault()" [class.active]="activeView === 'feed'">
         <i class="bi bi-house-fill"></i>
         <span>Home</span>
       </a>

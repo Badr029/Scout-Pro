@@ -29,25 +29,33 @@ class ScoutController extends Controller
             }
 
             $contactedPlayers = ContactRequest::where('scout_id', $user->id)
-                ->with(['player.user'])
+                ->with(['player.player'])
                 ->get()
                 ->map(function ($contact) {
-                    $player = $contact->player;
+                    $playerUser = $contact->player;
+                    $playerProfile = $playerUser->player;
+
+                    if (!$playerProfile) {
+                        return null; // Skip if player profile not found
+                    }
+
                     return [
-                        'id' => $player->id,
-                        'user_id' => $player->user_id,
-                        'first_name' => $player->first_name,
-                        'last_name' => $player->last_name,
-                        'profile_image' => $player->profile_image,
-                        'position' => $player->position,
-                        'nationality' => $player->nationality,
-                        'current_city' => $player->current_city,
-                        'membership' => $player->membership ?? 'free',
+                        'id' => $playerProfile->id,
+                        'user_id' => $playerUser->id,
+                        'first_name' => $playerProfile->first_name,
+                        'last_name' => $playerProfile->last_name,
+                        'profile_image' => $playerProfile->profile_image,
+                        'position' => $playerProfile->position,
+                        'nationality' => $playerProfile->nationality,
+                        'current_city' => $playerProfile->current_city,
+                        'membership' => $playerProfile->membership ?? 'free',
                         'contact_date' => $contact->created_at->format('Y-m-d'),
                         'contact_status' => $contact->status,
                         'responded_at' => $contact->responded_at ? $contact->responded_at->format('Y-m-d') : null,
                     ];
-                });
+                })
+                ->filter() // Remove null entries
+                ->values(); // Reset array keys
 
             return response()->json([
                 'message' => 'Contacted players retrieved successfully',
