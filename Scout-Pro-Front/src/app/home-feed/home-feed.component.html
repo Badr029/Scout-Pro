@@ -21,10 +21,10 @@
       </a>
       <div class="profile-menu-container">
         <a href="#" (click)="toggleAccountMenu($event)" class="profile-link" [class.active]="showAccountMenu">
-          <img [src]="currentUser?.profile_image || getAvatarUrl(currentUser?.name?.split(' ')[0], currentUser?.name?.split(' ')[1])"
+          <img [src]="currentUser?.profile_image || getAvatarUrl(currentUser?.name)"
                [alt]="currentUser?.name"
                class="avatar-xs"
-               (error)="handleImageError($event, currentUser?.name?.split(' ')[0], currentUser?.name?.split(' ')[1])" />
+               (error)="handleImageError($event, currentUser?.name)">
           <span>{{ currentUser?.name || 'Profile' }}</span>
         </a>
         <div class="account-menu" [class.show]="showAccountMenu">
@@ -173,10 +173,10 @@
     <!-- Search Results -->
     <div class="search-results" *ngIf="!loading && searchResults.length > 0">
       <div *ngFor="let result of searchResults" class="player-card" [ngClass]="{'scout-card': result.type === 'scout'}">
-        <img [src]="result.profile_image || getAvatarUrl(result.first_name, result.last_name)"
+        <img [src]="result.profile_image || getAvatarUrl(result.first_name + ' ' + result.last_name)"
              [alt]="result.first_name + ' ' + result.last_name"
              class="player-avatar"
-             (error)="handleImageError($event, result.first_name, result.last_name)">
+             (error)="handleImageError($event, result.first_name + ' ' + result.last_name)">
         <div class="player-info">
           <div class="player-header">
             <h3 class="clickable" (click)="result.id === currentUser?.id ? goToProfile() : (result.type === 'scout' ? goToScoutProfile(result.scout_id) : goToPlayerProfile(result.user_id))">
@@ -322,10 +322,10 @@
         <div *ngFor="let post of feedData?.posts?.data" class="reel-card">
           <div class="reel-header">
             <div class="reel-user" (click)="post?.user?.id === currentUser?.id ? goToProfile() : goToPlayerProfile(post?.user?.id)">
-              <img [src]="getProfileImageUrl(post?.user?.profile_image)"
+              <img [src]="post?.user?.profile_image || getAvatarUrl(post?.user?.first_name + ' ' + post?.user?.last_name)"
                    class="avatar-sm"
                    [alt]="post?.user?.first_name + ' ' + post?.user?.last_name"
-                   (error)="handleImageError($event, post?.user?.first_name, post?.user?.last_name)">
+                   (error)="handleImageError($event, post?.user?.first_name + ' ' + post?.user?.last_name)">
               <div class="reel-user-info">
                 <div class="user-header">
                   <span class="username">
@@ -337,7 +337,7 @@
                 </div>
                 <span class="user-meta" *ngIf="post?.user?.player">
                   {{ post?.user?.player?.position }} •
-                  {{ post?.user?.player?.nationality || post?.user?.player?.region }}
+                  {{ post?.user?.player?.region }}
                 </span>
               </div>
             </div>
@@ -404,10 +404,10 @@
           <div class="reel-comments" *ngIf="post?.comments?.length > 0 && !showCommentBox[post?.id]">
             <div *ngFor="let comment of post?.comments?.slice(0, 2)" class="comment">
               <div class="comment-header">
-                <img [src]="getProfileImageUrl(comment?.user?.profile_image)"
+                <img [src]="comment?.user?.profile_image || getAvatarUrl(comment?.user?.first_name + ' ' + comment?.user?.last_name)"
                      class="comment-avatar"
                      [alt]="comment?.user?.first_name + ' ' + comment?.user?.last_name"
-                     (error)="handleImageError($event, comment?.user?.first_name, comment?.user?.last_name)"
+                     (error)="handleImageError($event, comment?.user?.first_name + ' ' + comment?.user?.last_name)"
                      (click)="goToUserProfile(comment?.user?.id)">
                 <span class="comment-user" (click)="goToUserProfile(comment?.user?.id)">
                   {{ comment?.user?.id === currentUser?.id ? 'You' : (comment?.user?.first_name + ' ' + comment?.user?.last_name) }}
@@ -433,24 +433,24 @@
             <div class="all-comments">
               <div *ngFor="let comment of post?.comments" class="comment">
                 <div class="comment-header">
-                  <img [src]="getProfileImageUrl(comment.user?.profile_image)"
+                  <img [src]="comment?.user?.profile_image || getAvatarUrl(comment?.user?.first_name + ' ' + comment?.user?.last_name)"
                        class="comment-avatar"
-                       [alt]="comment.user?.full_name"
-                       (error)="handleImageError($event, comment.user?.first_name, comment.user?.last_name)"
-                       (click)="goToUserProfile(comment.user?.id)">
-                  <span class="comment-user" (click)="goToUserProfile(comment.user?.id)">
-                    {{ comment.user?.isCurrentUser ? 'You' : comment.user?.full_name }}
+                       [alt]="comment?.user?.full_name"
+                       (error)="handleImageError($event, comment?.user?.first_name + ' ' + comment?.user?.last_name)"
+                       (click)="goToUserProfile(comment?.user?.id)">
+                  <span class="comment-user" (click)="goToUserProfile(comment?.user?.id)">
+                    {{ comment?.user?.isCurrentUser ? 'You' : comment?.user?.full_name }}
                   </span>
                 </div>
                 <div class="comment-content">
-                  <span class="comment-text">{{ comment.content }}</span>
-                  <button *ngIf="comment.user?.isCurrentUser"
+                  <span class="comment-text">{{ comment?.content }}</span>
+                  <button *ngIf="comment?.user?.isCurrentUser"
                           class="delete-comment-btn"
-                          (click)="deleteComment(post?.id, comment.id)">
+                          (click)="deleteComment(post?.id, comment?.id)">
                     <i class="bi bi-trash"></i>
                   </button>
                 </div>
-                <span class="comment-time">{{ comment.created_at | date:'short' }}</span>
+                <span class="comment-time">{{ comment?.created_at | date:'short' }}</span>
               </div>
             </div>
             <div class="add-comment">
@@ -733,10 +733,10 @@
     <div class="right-panel-content">
       <div class="profile-info">
         <a href="#" (click)="goToProfile(); $event.preventDefault()" class="profile-link">
-          <img [src]="currentUser?.profile_image || getAvatarUrl(currentUser?.name?.split(' ')[0], currentUser?.name?.split(' ')[1])"
+          <img [src]="currentUser?.profile_image || getAvatarUrl(currentUser?.name)"
                [alt]="currentUser?.name"
                class="avatar"
-               (error)="handleImageError($event, currentUser?.name?.split(' ')[0], currentUser?.name?.split(' ')[1])" />
+               (error)="handleImageError($event, currentUser?.name)">
           <div class="profile-name">{{ currentUser?.name || 'Profile' }}</div>
         </a>
       </div>
@@ -747,10 +747,10 @@
           <div *ngFor="let player of feedData?.trending_players"
                class="trending-item"
                (click)="player?.id === currentUser?.id ? goToProfile() : goToPlayerProfile(player?.id)">
-            <img [src]="getProfileImageUrl(player?.profile_image)"
+            <img [src]="player?.profile_image || getAvatarUrl(player?.name)"
                  class="avatar-sm"
                  [alt]="player?.name"
-                 (error)="handleImageError($event, player?.name?.split(' ')[0], player?.name?.split(' ')[1])">
+                 (error)="handleImageError($event, player?.name)">
             <div class="trending-info">
               <span class="trending-name">{{ player?.id === currentUser?.id ? 'You' : player?.name }}</span>
               <span class="trending-meta">{{ player?.position || 'No Position' }} • {{ player?.region || 'No Region' }}</span>
@@ -807,12 +807,12 @@
         <h4>You May Also Like</h4>
         <div class="recommendation-list">
           <div *ngFor="let player of premiumPlayers" class="recommendation-item" (click)="goToPlayerProfile(player?.id)">
-            <img [src]="player?.image || getAvatarUrl(player?.name?.split(' ')[0], player?.name?.split(' ')[1])"
+            <img [src]="player?.image || getAvatarUrl(player?.name)"
                  class="avatar-sm"
                  [alt]="player?.name"
-                 (error)="handleImageError($event, player?.name?.split(' ')[0], player?.name?.split(' ')[1])">
+                 (error)="handleImageError($event, player?.name)">
             <div class="recommendation-info">
-              <span class="recommendation-name">{{ player?.name || 'Unknown Player' }}</span>
+              <span class="recommendation-name">{{ player?.name }}</span>
               <span class="recommendation-meta">{{ player?.position || 'No Position' }} • {{ player?.region || 'No Region' }}</span>
             </div>
           </div>
@@ -903,10 +903,10 @@
       <div class="likes-list">
         <div *ngFor="let like of selectedPostLikes" class="like-item">
           <div class="like-user" (click)="like?.user?.id === currentUser?.id ? goToProfile() : (like?.user?.user_type === 'scout' ? goToScoutProfile(like?.user?.id) : goToPlayerProfile(like?.user?.id))">
-            <img [src]="like?.user?.profile_image || getAvatarUrl(like?.user?.first_name, like?.user?.last_name)"
+            <img [src]="like?.user?.profile_image || getAvatarUrl(like?.user?.first_name + ' ' + like?.user?.last_name)"
                  class="avatar-sm"
                  [alt]="like?.user?.full_name"
-                 (error)="handleImageError($event, like?.user?.first_name, like?.user?.last_name)">
+                 (error)="handleImageError($event, like?.user?.first_name + ' ' + like?.user?.last_name)">
             <div class="user-info">
               <div class="user-name">{{ like?.user?.full_name }}</div>
               <div class="user-details" *ngIf="like?.user?.user_type === 'player' && like?.user?.player">
