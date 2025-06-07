@@ -13,7 +13,8 @@ import { AuthService } from '../../auth.service';
   styleUrls: ['./subscription.component.scss']
 })
 export class SubscriptionComponent implements OnInit {
-  currentPlan: string = 'Free';
+  currentPlan: string | null = null
+  currentPlanType: string | null = null; // Track current plan type ('monthly' or 'yearly')
   selectedPlanType: string | null = null;
   loading: boolean = false;
   error: string = '';
@@ -39,8 +40,8 @@ export class SubscriptionComponent implements OnInit {
     },
     {
       name: 'Premium',
-      price: 0, // Will be updated from backend
-      yearlyPrice: 0, // Will be updated from backend
+      price: 0,
+      yearlyPrice: 0,
       features: [
         '🚀 Unlimited video uploads',
         '🎖 Premium badge on profile',
@@ -58,12 +59,19 @@ export class SubscriptionComponent implements OnInit {
   }
 
   ngOnInit() {
-    if (this.userType === 'player') {
-      this.checkPlayerMembership();
-    } else {
-      this.checkSubscriptionStatus();
-    }
+    
+    // if (this.userType === 'player') {
+    //   this.checkPlayerMembership();
+    // } else {
+    //   this.checkSubscriptionStatus();
+    // }
     this.fetchPlanPrices();
+    
+    this.currentPlan =localStorage.getItem('membership')
+    this.currentPlanType = localStorage.getItem('plan_type')
+    console.log('currentPlanType' , this.currentPlanType);
+    console.log(this.currentPlan);
+
   }
 
   private checkPlayerMembership() {
@@ -76,6 +84,15 @@ export class SubscriptionComponent implements OnInit {
         next: (response: any) => {
           if (response.status === 'success' && response.data) {
             this.currentPlan = response.data.membership === 'premium' ? 'Premium' : 'Free';
+            // Set current plan type if premium
+            if (this.currentPlan === 'Premium') {
+              if (response.data.plan_type && typeof response.data.plan_type === 'string') {
+                this.currentPlanType = response.data.plan_type.includes('Yearly') ? 'yearly' : 'monthly';
+                
+              } else {
+                this.currentPlanType = 'unknown'; // fallback or handle differently
+              }
+            }
           }
         },
         error: (error) => {
@@ -95,6 +112,10 @@ export class SubscriptionComponent implements OnInit {
         next: (response: any) => {
           if (response.status === 'success' && response.data) {
             this.currentPlan = response.data.plan;
+            // Set current plan type if premium
+            if (this.currentPlan === 'Premium') {
+              this.currentPlanType = response.data.plan_type.includes('Yearly') ? 'yearly' : 'monthly';
+            }
           }
         },
         error: (error) => {
@@ -112,11 +133,7 @@ export class SubscriptionComponent implements OnInit {
     this.http.get('http://localhost:8000/api/plans', { headers })
       .subscribe({
         next: (response: any) => {
-          console.log('Plans response:', response);
-
           if (response?.status === 'success' && response?.plans) {
-            console.log('Available plans:', response.plans);
-
             const monthlyPlan = response.plans.find((plan: any) =>
               plan.name === (this.userType === 'player' ? 'Player Monthly' : 'Scout Monthly')
             );
@@ -124,25 +141,12 @@ export class SubscriptionComponent implements OnInit {
               plan.name === (this.userType === 'player' ? 'Player Yearly' : 'Scout Yearly')
             );
 
-            console.log('Monthly plan:', monthlyPlan);
-            console.log('Yearly plan:', yearlyPlan);
-
             if (monthlyPlan) {
               this.subscriptionPlans[1].price = monthlyPlan.price;
-              console.log('Set monthly price:', this.subscriptionPlans[1].price);
-            } else {
-              console.warn('Monthly plan not found in response');
             }
-
             if (yearlyPlan) {
               this.subscriptionPlans[1].yearlyPrice = yearlyPlan.price;
-              console.log('Set yearly price:', this.subscriptionPlans[1].yearlyPrice);
-            } else {
-              console.warn('Yearly plan not found in response');
             }
-          } else {
-            console.warn('Invalid response format:', response);
-            this.error = 'Failed to load subscription plans: Invalid response format';
           }
         },
         error: (error) => {
@@ -153,11 +157,14 @@ export class SubscriptionComponent implements OnInit {
   }
 
   selectPlan(planType: string): void {
-    if (this.currentPlan !== 'Premium' || this.selectedPlanType !== planType) {
+    // Only allow selecting a different plan than current
+    if (this.currentPlan !== 'Premium' || this.currentPlanType !== planType) {
       this.selectedPlanType = planType;
       this.error = '';
       this.success = '';
     }
+        console.log('current PLan', planType);
+
   }
 
   upgradeSubscription(): void {
@@ -165,6 +172,11 @@ export class SubscriptionComponent implements OnInit {
       this.error = 'Please select a plan before upgrading.';
       return;
     }
+
+    // if (!this.validatePaymentInfo()) {
+    //   this.error = 'Please enter valid payment information.';
+    //   return;
+    // }
 
     this.loading = true;
     this.error = '';
@@ -184,9 +196,7 @@ export class SubscriptionComponent implements OnInit {
       'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
     });
 
-    const endpoint = this.userType === 'player' ?
-      'http://localhost:8000/api/player/membership/upgrade' :
-      'http://localhost:8000/api/subscription/scout/upgrade';
+    const endpoint = 'http://127.0.0.1:8000/api/subscription/upgrade'
 
     this.http.post(endpoint, payload, { headers })
       .subscribe({
@@ -194,38 +204,52 @@ export class SubscriptionComponent implements OnInit {
           this.loading = false;
           if (response.status === 'success') {
             this.currentPlan = 'Premium';
-            this.success = `Subscription upgraded to Premium (${this.selectedPlanType}) successfully!`;
+            this.currentPlanType = this.selectedPlanType;
+            this.success = `Successfully upgraded to Premium ${this.selectedPlanType} plan!`;
             this.paymentInfo = { cardNumber: '', cardName: '', expiry: '', cvv: '' };
 
-            // Update localStorage to reflect subscription status
+            // Update local storage
             if (this.userType === 'player') {
               localStorage.setItem('membership', 'premium');
+              localStorage.setItem('plan_type', this.selectedPlanType === 'monthly' ? 'monthly' : 'yearly');
             } else {
               localStorage.setItem('subscription_active', 'true');
+              localStorage.setItem('plan_type', this.selectedPlanType === 'monthly' ? 'monthly' : 'yearly');
             }
 
-            // Show success message and navigate after a short delay
+            // Navigate to profile after successful upgrade
             setTimeout(() => {
-              this.router.navigate(['/home-feed'])
-                .then(() => console.log('Navigation to home-feed successful'))
-                .catch(err => {
-                  console.error('Navigation failed:', err);
-                  this.error = 'Failed to redirect. Please try again.';
-                });
+              const userId = localStorage.getItem('user_id');
+              if (userId) {
+                this.router.navigate(['/profile', userId]);
+              } else {
+                this.router.navigate(['/profile']);
+              }
             }, 1500);
-          } else {
-            this.error = response.message || 'Subscription upgrade failed. Please try again.';
           }
         },
         error: (error) => {
           this.loading = false;
-          console.error('Payment error:', error);
           this.error = error.error?.message || 'Failed to process payment. Please try again later.';
         }
       });
   }
 
+  private validatePaymentInfo(): boolean {
+    return (
+      this.paymentInfo.cardNumber.replace(/\s/g, '').length === 16 &&
+      this.paymentInfo.cardName.trim().length > 0 &&
+      /^\d{2}\/\d{2}$/.test(this.paymentInfo.expiry) &&
+      /^\d{3,4}$/.test(this.paymentInfo.cvv)
+    );
+  }
+
   cancelSubscription(): void {
+    if (this.currentPlan !== 'Premium') {
+      this.error = 'No active Premium subscription to cancel.';
+      return;
+    }
+
     this.loading = true;
     this.error = '';
     this.success = '';
@@ -243,15 +267,18 @@ export class SubscriptionComponent implements OnInit {
         next: (response: any) => {
           this.loading = false;
           this.currentPlan = 'Free';
+          this.currentPlanType = null;
           this.selectedPlanType = null;
           this.success = response.message || 'Subscription cancelled successfully.';
           this.paymentInfo = { cardNumber: '', cardName: '', expiry: '', cvv: '' };
 
-          // Update localStorage
+          // Update local storage
           if (this.userType === 'player') {
             localStorage.setItem('membership', 'free');
+            localStorage.removeItem('plan_type');
           } else {
             localStorage.setItem('subscription_active', 'false');
+            localStorage.removeItem('plan_type');
           }
         },
         error: (error) => {
@@ -261,7 +288,7 @@ export class SubscriptionComponent implements OnInit {
       });
   }
 
-  // Card formatting methods
+  // Card formatting methods remain the same
   formatCardNumber(event: any): void {
     let input = event.target.value.replace(/\D/g, '');
     if (input.length > 16) {
@@ -304,24 +331,7 @@ export class SubscriptionComponent implements OnInit {
     this.paymentInfo.cardName = input;
   }
 
-  logout(): void {
-    this.loading = true;
-    this.authService.logout().then(() => {
-      this.loading = false;
-      // Navigation will be handled by the AuthService
-    }).catch(error => {
-      this.loading = false;
-      console.error('Logout error:', error);
-      this.error = 'Failed to logout. Please try again.';
-    });
-  }
-
   goToHome(): void {
-    this.router.navigate(['/home-feed'])
-      .then(() => console.log('Navigation to home-feed successful'))
-      .catch(err => {
-        console.error('Navigation failed:', err);
-        this.error = 'Failed to navigate to home. Please try again.';
-      });
+    this.router.navigate(['/home-feed']);
   }
 }

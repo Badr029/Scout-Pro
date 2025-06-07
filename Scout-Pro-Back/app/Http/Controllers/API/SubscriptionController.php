@@ -19,6 +19,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\SubscriptionInvoice;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+
 use App\Models\PlayerInvoice;
 use App\Mail\PlayerSubscriptionInvoice;
 
@@ -753,5 +755,39 @@ public function upgrade(Request $request)
             ], 500);
         }
     }
+    public function manageSubscription($player_id)
+{
+    $player = Player::with('user.subscription')->findOrFail($player_id);
+    $subscription = $player->user->subscription;
 
+    if (!$subscription) {
+        return response()->json([
+            'status' => 'success',
+            'data' => null
+        ]);
+    }
+
+    $expiresAt = Carbon::parse($subscription->expires_at);
+    $now = Carbon::now();
+
+    $totalMinutes = $now->diffInMinutes($expiresAt, false);
+
+    $daysLeft = intdiv($totalMinutes, 1440); // 1440 minutes in a day
+    $hoursLeft = intdiv($totalMinutes % 1440, 60); // remaining hours
+
+    $daysLeft = max($daysLeft, 0);
+    $hoursLeft = max($hoursLeft, 0);
+
+    return response()->json([
+        'status' => 'success',
+        'data' => [
+            'plan' => $subscription->plan,
+            'plan_type' => Str::contains(strtolower($subscription->plan), 'monthly') ? 'monthly' : 'yearly',
+            'expires_at' => $expiresAt->toDateString(),
+            'days_left' => $daysLeft,
+            'hours_left' => $hoursLeft,
+        ]
+    ]);
+}
+  
 }

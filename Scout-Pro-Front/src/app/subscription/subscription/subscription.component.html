@@ -31,7 +31,7 @@
       class="plan-card"
       [class.active]="currentPlan === 'Free'"
       [class.selected]="selectedPlanType === 'free'"
-      (click)="selectPlan('free')"
+      (click)="selectPlan('free'); upgradeSubscription()"
     >
       <div class="plan-header">
         <h2>Free</h2>
@@ -53,43 +53,44 @@
 
     <!-- Monthly Premium Plan -->
     <div
-      class="plan-card premium"
-      [class.active]="currentPlan === 'Premium' && selectedPlanType === 'monthly'"
-      [class.selected]="selectedPlanType === 'monthly'"
-      (click)="selectPlan('monthly')"
+  class="plan-card premium"
+  [class.active]="currentPlan === 'premium' && currentPlanType === 'monthly'"
+  [class.selected]="selectedPlanType === 'monthly'"
+  (click)="selectPlan('monthly'); upgradeSubscription()"
+>
+  <div class="plan-ribbon">Recommended</div>
+  <div class="plan-header">
+    <h2>Premium</h2>
+    <p class="price">EGP {{ subscriptionPlans[1].price }} <span>/month</span></p>
+  </div>
+  <div class="plan-features">
+    <ul>
+      <li *ngFor="let feature of subscriptionPlans[1].features">
+        <i class="fi fi-br-check"></i> {{ feature }}
+      </li>
+    </ul>
+  </div>
+  <div class="plan-footer">
+  <div *ngIf="currentPlan === 'premium' && currentPlanType === 'monthly'">
+    <button class="btn btn-current" disabled>Current Plan</button>
+    <button
+      class="btn btn-outline"
+      (click)="cancelSubscription(); $event.stopPropagation()"
+      [disabled]="loading"
     >
-      <div class="plan-ribbon">Recommended</div>
-      <div class="plan-header">
-        <h2>Premium</h2>
-        <p class="price">EGP {{ subscriptionPlans[1].price }} <span>/month</span></p>
-      </div>
-      <div class="plan-features">
-        <ul>
-          <li *ngFor="let feature of subscriptionPlans[1].features">
-            <i class="fi fi-br-check"></i> {{ feature }}
-          </li>
-        </ul>
-      </div>
-      <div class="plan-footer">
-        <div *ngIf="currentPlan === 'Premium' && selectedPlanType === 'monthly'">
-          <button class="btn btn-current" disabled>Current Plan</button>
-          <button
-            class="btn btn-outline"
-            (click)="cancelSubscription(); $event.stopPropagation()"
-            [disabled]="loading"
-          >
-            Cancel
-          </button>
-        </div>
-      </div>
-    </div>
+      Cancel
+    </button>
+  </div>
+</div>
 
-    <!-- Yearly Premium Plan -->
+</div>
+
+
     <div
       class="plan-card premium"
-      [class.active]="currentPlan === 'Premium' && selectedPlanType === 'yearly'"
+      [class.active]="currentPlan === 'premium' && currentPlanType === 'yearly'"
       [class.selected]="selectedPlanType === 'yearly'"
-      (click)="selectPlan('yearly')"
+      (click)="selectPlan('yearly'); upgradeSubscription()"
     >
       <div class="plan-header">
         <h2>Premium</h2>
@@ -103,7 +104,7 @@
         </ul>
       </div>
       <div class="plan-footer">
-        <div *ngIf="currentPlan === 'Premium' && selectedPlanType === 'yearly'">
+        <div *ngIf="currentPlan === 'premium' && currentPlanType === 'yearly'">
           <button class="btn btn-current" disabled>Current Plan</button>
           <button
             class="btn btn-outline"
