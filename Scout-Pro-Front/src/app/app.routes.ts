@@ -19,6 +19,7 @@ import { ScoutViewComponent } from './scout-view/scout-view.component';
 import { ScoutSubscriptionComponent } from './subscription/scout-subscription/scout-subscription.component';
 import { SubscriptionComponent } from './subscription/subscription/subscription.component';
 import { AdminDashboardComponent } from './admin-dashboard/admin-dashboard.component';
+import { SubscriptionDetailComponent } from './subscription-detail/subscription-detail.component';
 
 export const routes: Routes = [
     {
@@ -137,6 +138,11 @@ export const routes: Routes = [
     {
         path: 'admin-dashboard',
         component: AdminDashboardComponent,
+        canActivate: [AuthGuard]
+    },
+    {
+        path: 'subscription-detail',
+        component: SubscriptionDetailComponent,
         canActivate: [AuthGuard]
     },
 ];
