@@ -148,7 +148,7 @@ button.upgrade:active {
 
 /* Modal Box */
 .modal-box {
-  background-color: #ffffff;
+  background-color: #2a2929;
   padding: 1.5rem;
   border-radius: 0.5rem;
   width: 100%;
@@ -160,11 +160,12 @@ button.upgrade:active {
   font-size: 1.125rem;
   font-weight: 600;
   margin-bottom: 1rem;
+  color:white;
 }
 
 .modal-box p {
   margin-bottom: 1.5rem;
-  color: rgb(35, 35, 35);
+  color: rgb(255, 255, 255);
 }
 
 /* Modal Buttons */
