@@ -99,6 +99,10 @@ class ProfileController extends Controller
                 'bio'                => 'nullable|string|max:1000',
             ]);
 
+            $profilePhotoPath = $request->hasFile('profile_image')
+            ? $request->file('profile_image')->store('players/profile_image', 'public')
+            : null;
+            $validatedData['profile_image'] = $profilePhotoPath;
             // Update user model
             User::where('id', $user->id)->update([
                 'first_name' => $validatedData['first_name'],
@@ -152,12 +156,10 @@ class ProfileController extends Controller
             ]);
 
             // Handle profile image upload
-            if ($request->hasFile('profile_image')) {
-                if ($scout->profile_image) {
-                    Storage::disk('public')->delete($scout->profile_image);
-                }
-                $validatedData['profile_image'] = $request->file('profile_image')->store('scouts/profile_image', 'public');
-            }
+            $profilePhotoPath = $request->hasFile('profile_image')
+            ? $request->file('profile_image')->store('scouts/profile_image', 'public')
+            : null;
+            $validatedData['profile_image'] = $profilePhotoPath;
 
             // Decode JSON fields
             $validatedData['scouting_regions'] = json_decode($validatedData['scouting_regions'], true);

@@ -44,7 +44,7 @@
     <!-- Profile Header -->
     <div class="profile-header">
       <div class="avatar-container">
-        <img *ngIf="scoutData.profile_image" [src]="'http://localhost:8000/storage/' + scoutData.profile_image" [alt]="scoutData.first_name">
+        <img *ngIf="scoutData.profile_image" [src]="getProfileImageUrl()" [alt]="scoutData.first_name">
         <div *ngIf="!scoutData.profile_image" class="no-image">{{ scoutData.first_name[0] }}{{ scoutData.last_name[0] }}</div>
       </div>
 
@@ -154,7 +154,7 @@
 
       <div class="search-results" *ngIf="!contactedPlayersLoading && contactedPlayers.length > 0">
         <div *ngFor="let player of contactedPlayers" class="player-card">
-          <img [src]="player.profile_image ? 'http://localhost:8000/storage/' + player.profile_image : getAvatarUrl(player.first_name, player.last_name)"
+          <img [src]="imageService.getProfileImageUrl(player)"
                [alt]="player.first_name + ' ' + player.last_name"
                class="player-avatar"
                (error)="handleImageError($event, player.first_name, player.last_name)">
@@ -186,18 +186,20 @@
       <div class="credentials-container">
         <div class="detail-group">
           <h3 class="detail-title">ID Proof</h3>
-          <div class="document-preview">
-            <img [src]="'http://localhost:8000/storage/' + scoutData.id_proof" alt="ID Proof">
+          <div class="document-preview" *ngIf="scoutData.id_proof_path">
+            <img [src]="getDocumentUrl(scoutData.id_proof_path)" alt="ID Proof">
           </div>
+          <p *ngIf="!scoutData.id_proof_path" class="no-document">No ID proof uploaded</p>
         </div>
 
         <div class="detail-group">
           <h3 class="detail-title">Certifications</h3>
-          <div class="certifications-grid">
+          <div class="certifications-grid" *ngIf="scoutData?.certifications && getArrayFromString(scoutData?.certifications).length > 0">
             <div *ngFor="let cert of getArrayFromString(scoutData?.certifications)" class="certification-item">
-              <img [src]="'http://localhost:8000/storage/' + cert" alt="Certification">
+              <img [src]="getDocumentUrl(cert)" alt="Certification">
             </div>
           </div>
+          <p *ngIf="!scoutData?.certifications || getArrayFromString(scoutData?.certifications).length === 0" class="no-document">No certifications uploaded</p>
         </div>
       </div>
     </div>

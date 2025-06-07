@@ -60,7 +60,7 @@ class AuthController extends Controller
             return response()->json(['message' => 'Incorrect Email or Password'], 401);
         }
 
-        $user = User::where('email', $request['email'])->firstOrFail();
+        $user = User::with(['player', 'scout'])->where('email', $request['email'])->firstOrFail();
 
         if ($user && $user->social_id && !$user->password) {
             return response()->json([
@@ -78,12 +78,33 @@ class AuthController extends Controller
         // Check if user has completed setup
         $setupCompleted = $user->hasCompletedSetup();
 
+        // Get user profile data including membership status
+        $userData = [
+            'id' => $user->id,
+            'first_name' => $user->first_name,
+            'last_name' => $user->last_name,
+            'email' => $user->email,
+            'user_type' => $user->user_type,
+            'profile_image' => null,
+            'membership' => 'free' // Default for all users
+        ];
+
+        // Load profile data based on user type
+        if ($user->user_type === 'player' && $user->player) {
+            $userData['profile_image'] = $user->player->profile_image;
+            $userData['membership'] = $user->player->membership ?? 'free';
+        } else if ($user->user_type === 'scout' && $user->scout) {
+            $userData['profile_image'] = $user->scout->profile_image;
+            $userData['membership'] = $user->scout->subscription_active ? 'premium' : 'free';
+        }
+
         return response()->json([
             "message" => "Login successful",
             'access_token' => $token,
             'token_type' => 'Bearer',
             'user_type' => $user->user_type,
-            'setup_completed' => $setupCompleted
+            'setup_completed' => $setupCompleted,
+            'user_data' => $userData
         ]);
     }
 
@@ -116,13 +137,14 @@ class AuthController extends Controller
 
         try {
             // Check if user exists by social_id and provider first
-            $user = User::where('social_id', $request->socialId)
+            $user = User::with(['player', 'scout'])
+                        ->where('social_id', $request->socialId)
                         ->where('provider', 'GOOGLE')
                         ->first();
 
             // If not found by social_id, check by email
             if (!$user) {
-                $user = User::where('email', $request->email)->first();
+                $user = User::with(['player', 'scout'])->where('email', $request->email)->first();
             }
 
             // If user doesn't exist and no user_type provided, return special response
@@ -186,12 +208,33 @@ class AuthController extends Controller
                 $token = $user->createToken('auth_token')->plainTextToken;
                 $setupCompleted = $user->hasCompletedSetup();
 
+                // Get user profile data including membership status
+                $userData = [
+                    'id' => $user->id,
+                    'first_name' => $user->first_name,
+                    'last_name' => $user->last_name,
+                    'email' => $user->email,
+                    'user_type' => $user->user_type,
+                    'profile_image' => null,
+                    'membership' => 'free' // Default for all users
+                ];
+
+                // Load profile data based on user type
+                if ($user->user_type === 'player' && $user->player) {
+                    $userData['profile_image'] = $user->player->profile_image;
+                    $userData['membership'] = $user->player->membership ?? 'free';
+                } else if ($user->user_type === 'scout' && $user->scout) {
+                    $userData['profile_image'] = $user->scout->profile_image;
+                    $userData['membership'] = $user->scout->subscription_active ? 'premium' : 'free';
+                }
+
                 return response()->json([
                     "message" => "Login successful",
                     'access_token' => $token,
                     'token_type' => 'Bearer',
                     'user_type' => $user->user_type,
-                    'setup_completed' => $setupCompleted
+                    'setup_completed' => $setupCompleted,
+                    'user_data' => $userData
                 ]);
             }
 

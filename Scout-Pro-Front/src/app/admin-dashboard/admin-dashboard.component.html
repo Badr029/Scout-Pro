@@ -761,21 +761,21 @@
         <div class="scout-documents">
           <div class="document-section">
             <h6>ID Proof</h6>
-            <div class="document-preview" *ngIf="selectedScoutDocuments.id_proof_path">
-              <img [src]="getDocumentUrl(selectedScoutDocuments.id_proof_path)" alt="ID Proof" class="document-image">
-              <a [href]="getDocumentUrl(selectedScoutDocuments.id_proof_path)" target="_blank" class="btn btn-primary mt-2">
+            <div class="document-preview" *ngIf="selectedScoutDocuments.id_proof">
+              <img [src]="selectedScoutDocuments.id_proof" alt="ID Proof" class="document-image">
+              <a [href]="selectedScoutDocuments.id_proof" target="_blank" class="btn btn-primary mt-2">
                 <i class="fas fa-external-link-alt mr-2"></i>Open Full Size
               </a>
             </div>
-            <p *ngIf="!selectedScoutDocuments.id_proof_path" class="text-muted">No ID proof uploaded</p>
+            <p *ngIf="!selectedScoutDocuments.id_proof" class="text-muted">No ID proof uploaded</p>
           </div>
 
           <div class="document-section">
             <h6>Certifications</h6>
             <div class="certifications-grid" *ngIf="selectedScoutDocuments.certifications?.length">
               <div class="certification-item" *ngFor="let cert of selectedScoutDocuments.certifications">
-                <img [src]="getDocumentUrl(cert)" alt="Certification" class="document-image">
-                <a [href]="getDocumentUrl(cert)" target="_blank" class="btn btn-primary mt-2">
+                <img [src]="cert" alt="Certification" class="document-image">
+                <a [href]="cert" target="_blank" class="btn btn-primary mt-2">
                   <i class="fas fa-external-link-alt mr-2"></i>Open Full Size
                 </a>
               </div>
@@ -827,8 +827,10 @@
       <div *ngIf="!loadingVideos && !videoError" class="videos-grid">
         <div *ngFor="let video of videos" class="video-card">
           <div class="video-thumbnail" (click)="viewVideoDetails(video.id)">
-            <img [src]="video.thumbnail" [alt]="video.title">
-            <span class="video-duration">{{ video.duration }}</span>
+            <video [src]="video.file_path" [poster]="video.thumbnail" preload="metadata">
+              <img [src]="video.thumbnail" [alt]="video.title" *ngIf="video.thumbnail">
+            </video>
+            <span class="video-duration" *ngIf="video.duration">{{ formatDuration(video.duration) }}</span>
           </div>
           <div class="video-info">
             <h3 class="video-title" (click)="viewVideoDetails(video.id)">{{ video.title }}</h3>
@@ -901,9 +903,9 @@
                     <p><strong>Upload Date:</strong> {{ selectedVideo.created_at | date }}</p>
                   </div>
 
-                  <div class="stats-section">
+                  <div class="video-stats-section">
                     <h4>Statistics</h4>
-                    <div class="stats-grid">
+                    <div class="video-stats-grid">
                       <div class="stat-item">
                         <i class="fas fa-eye"></i>
                         <span>{{ selectedVideo.views }} Views</span>

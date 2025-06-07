@@ -152,6 +152,7 @@ interface VideoStats {
   comments_count: number;
   status: string;
   thumbnail: string;
+  file_path: string;
   duration: string;
   created_at: string;
   user: {
@@ -1292,6 +1293,29 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
       minimumFractionDigits: 0,
       maximumFractionDigits: 0
     }).format(value);
+  }
+
+  formatDuration(duration: string | null): string {
+    if (!duration) return '';
+
+    // If duration is already in MM:SS or HH:MM:SS format, return as is
+    if (duration.includes(':')) {
+      return duration;
+    }
+
+    // If duration is in seconds, convert to MM:SS or HH:MM:SS
+    const seconds = parseInt(duration);
+    if (isNaN(seconds)) return duration;
+
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const remainingSeconds = seconds % 60;
+
+    if (hours > 0) {
+      return `${hours}:${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+    } else {
+      return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+    }
   }
 
   // Add these methods

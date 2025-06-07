@@ -112,18 +112,67 @@ isPremiumPlayer = false;
     private authService: AuthService
   ) {}
 
+  private updateMembershipStatus() {
+    // First try to get from user_data stored during login
+    try {
+      const userData = localStorage.getItem('user_data');
+      if (userData) {
+        const parsed = JSON.parse(userData);
+        if (parsed.membership) {
+          this.isPremiumPlayer = parsed.membership === 'premium';
+          console.log('Membership from stored user_data:', parsed.membership);
+          return;
+        }
+      }
+    } catch (error) {
+      console.error('Error parsing user_data:', error);
+    }
+
+    // If not found in user_data, check if playerData is already loaded
+    if (this.playerData?.membership) {
+      this.isPremiumPlayer = this.playerData.membership === 'premium';
+      console.log('Membership from playerData:', this.playerData.membership);
+    } else {
+      // Will be set when fetchPlayerProfile completes
+      this.isPremiumPlayer = false;
+      console.log('Membership will be updated after profile fetch');
+    }
+  }
+
+  private updateStoredUserData() {
+    if (!this.playerData) return;
+
+    try {
+      const userData = localStorage.getItem('user_data');
+      if (userData) {
+        const parsed = JSON.parse(userData);
+        // Update with fresh data from profile
+        parsed.membership = this.playerData.membership || 'free';
+        parsed.profile_image = this.playerData.profile_image;
+
+        localStorage.setItem('user_data', JSON.stringify(parsed));
+        localStorage.setItem('membership', parsed.membership);
+
+        console.log('Updated stored user data with fresh profile info');
+      }
+    } catch (error) {
+      console.error('Error updating stored user data:', error);
+    }
+  }
+
   ngOnInit() {
     console.log('Profile component initialized');
     this.fetchPlayerProfile();
     this.fetchPlayerVideos();
-     const userType = localStorage.getItem('user_type');
-  const membership = localStorage.getItem('membership');
 
-  this.isPlayer = userType === 'player';
-  this.isPremiumPlayer = membership === 'premium';
+    const userType = localStorage.getItem('user_type');
+    this.isPlayer = userType === 'player';
 
-  console.log('isPlayer:', this.isPlayer);
-  console.log('isPremiumPlayer:', this.isPremiumPlayer);
+    // Get membership from user_data object or wait for profile fetch
+    this.updateMembershipStatus();
+
+    console.log('isPlayer:', this.isPlayer);
+    console.log('isPremiumPlayer:', this.isPremiumPlayer);
 
     // Handle videos array early to avoid NgFor issues if it's not an array
     if (this.videos && !Array.isArray(this.videos)) {
@@ -181,6 +230,12 @@ isPremiumPlayer = false;
 
             // Process and normalize JSON fields that might come in different formats
             this.normalizeProfileData();
+
+            // Update membership status now that we have fresh profile data
+            this.updateMembershipStatus();
+
+            // Also update stored user data to keep it in sync
+            this.updateStoredUserData();
 
             // UI displays are now updated automatically through Angular bindings
             console.log('Profile data normalized, UI will update automatically');
@@ -443,6 +498,16 @@ isPremiumPlayer = false;
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = Math.floor(seconds % 60);
     return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+  }
+
+  getVideoUrl(video: Video): string {
+    // Construct the video URL from the file_path
+    if (video.file_path) {
+      return video.file_path.startsWith('http')
+        ? video.file_path
+        : `http://localhost:8000/storage/${video.file_path}`;
+    }
+    return video.url || '';
   }
 
   deleteVideo(video: Video) {
@@ -833,35 +898,21 @@ isPremiumPlayer = false;
     video.thumbnailError = true;
     // Remove the failed image
     const img = event.target as HTMLImageElement;
-    img.style.display = 'none';
+    if (img) {
+      img.style.display = 'none';
+    }
   }
 
   onVideoMetadataLoaded(event: Event, video: Video) {
     const videoElement = event.target as HTMLVideoElement;
-    // Get a frame from the video as a thumbnail
-    try {
-      const canvas = document.createElement('canvas');
-      canvas.width = videoElement.videoWidth;
-      canvas.height = videoElement.videoHeight;
-      const ctx = canvas.getContext('2d');
-      if (ctx) {
-        ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
-        // Convert the frame to a data URL and use it as the thumbnail
-        const thumbnailDataUrl = canvas.toDataURL('image/jpeg');
-        video.thumbnail_url = thumbnailDataUrl;
-        video.thumbnailError = false;
-
-        // Clean up
-        canvas.remove();
-      }
-    } catch (error) {
-      console.error('Failed to generate thumbnail from video:', error);
-    }
 
     // Update the video duration if not already set
-    if (!video.duration && videoElement.duration) {
+    if (!video.duration && videoElement.duration && isFinite(videoElement.duration)) {
       video.duration = videoElement.duration;
     }
+
+    // The video element will now show the first frame automatically
+    // No need to manually generate thumbnails since we're using the video as preview
   }
 
   likeVideo(videoId: number) {

@@ -225,20 +225,12 @@
             </button>
           </div>
           <div class="video-thumbnail" (click)="playVideo(video)">
-            <img [src]="video.thumbnail_url"
-                 [alt]="video.title"
-                 (error)="handleThumbnailError($event, video)"
-                 class="thumbnail-img">
+            <video [src]="video.url || getVideoUrl(video)" [poster]="video.thumbnail_url" preload="metadata" (loadedmetadata)="onVideoMetadataLoaded($event, video)">
+              <img [src]="video.thumbnail_url" [alt]="video.title" *ngIf="video.thumbnail_url">
+            </video>
             <div class="play-overlay">
               <span class="play-icon">▶</span>
               <span class="duration" *ngIf="video.duration">{{ formatDuration(video.duration) }}</span>
-            </div>
-            <!-- Fallback preview when thumbnail fails -->
-            <div *ngIf="!video.thumbnail_url || video.thumbnailError" class="video-preview-fallback">
-              <video [src]="video.url" preload="metadata" (loadedmetadata)="onVideoMetadataLoaded($event, video)">
-                Your browser does not support the video tag.
-              </video>
-              <div class="fallback-title">{{ video.title || 'Untitled Video' }}</div>
             </div>
           </div>
           <div class="video-info">
@@ -497,7 +489,11 @@
     <div class="modal-body">
       <p>Are you sure you want to delete this video? This action cannot be undone.</p>
       <div class="video-preview" *ngIf="videoToDelete">
-        <img [src]="videoToDelete.thumbnail_url || 'assets/default-thumbnail.jpg'" [alt]="videoToDelete.title">
+        <div class="video-thumbnail-small">
+          <video [src]="getVideoUrl(videoToDelete)" [poster]="videoToDelete.thumbnail_url" preload="metadata">
+            <img [src]="videoToDelete.thumbnail_url" [alt]="videoToDelete.title" *ngIf="videoToDelete.thumbnail_url">
+          </video>
+        </div>
         <h4>{{ videoToDelete.title || 'Untitled Video' }}</h4>
       </div>
     </div>

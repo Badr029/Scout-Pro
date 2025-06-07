@@ -5,6 +5,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../auth.service';
 import { ApiService } from '../../api.service';
+import { ImageService } from '../../shared/services/image.service';
 
 interface ScoutProfile {
   username: string;
@@ -22,9 +23,13 @@ interface ScoutProfile {
   preferred_roles: string[] | string;
   clubs_worked_with: string;
   linkedin_url?: string;
-  id_proof: string;
+  id_proof?: string; // For admin API response
+  id_proof_path?: string; // For profile API response
   certifications: string[] | string;
-  provider?: string; // 'google' or null/undefined for regular accounts
+  provider?: string; // 'GOOGLE' or null/undefined for regular accounts
+  user_id?: number;
+  email?: string;
+  user_type?: string;
 }
 
 interface ContactedPlayer {
@@ -70,7 +75,8 @@ export class ScoutProfileComponent implements OnInit, OnDestroy {
     private router: Router,
     private http: HttpClient,
     private authService: AuthService,
-    private apiService: ApiService
+    private apiService: ApiService,
+    public imageService: ImageService
   ) {}
 
   ngOnInit() {
@@ -367,5 +373,13 @@ export class ScoutProfileComponent implements OnInit, OnDestroy {
 
   toggleShowPassword() {
     this.showPassword = !this.showPassword;
+  }
+
+  getProfileImageUrl(): string {
+    return this.imageService.getProfileImageUrl(this.scoutData);
+  }
+
+  getDocumentUrl(documentPath: string): string {
+    return this.imageService.getDocumentUrl(documentPath);
   }
 }

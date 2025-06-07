@@ -100,11 +100,14 @@ export class AuthService {
           last_name: response.user_data?.last_name,
           email: response.user_data?.email,
           user_type: response.user_type, // Use the user_type from the main response
-          membership: response.user_data?.membership,
+          membership: response.user_data?.membership || 'free', // Default to 'free' if not provided
           profile_image: response.user_data?.profile_image
         };
         console.log('Storing user data:', userData);
         localStorage.setItem('user_data', JSON.stringify(userData));
+
+        // Also store membership as a separate key for backward compatibility
+        localStorage.setItem('membership', userData.membership);
 
         // Verify data was stored
         const storedUser = this.getCurrentUser();
@@ -132,15 +135,19 @@ export class AuthService {
 
           // Store additional user data if available
           if (response.user_data) {
-            localStorage.setItem('user_data', JSON.stringify({
+            const userData = {
               id: response.user_data.id,
               first_name: response.user_data.first_name,
               last_name: response.user_data.last_name,
               email: response.user_data.email,
               user_type: response.user_type,
-              membership: response.user_data.membership,
+              membership: response.user_data.membership || 'free',
               profile_image: response.user_data.profile_image
-            }));
+            };
+            localStorage.setItem('user_data', JSON.stringify(userData));
+
+            // Also store membership as a separate key for backward compatibility
+            localStorage.setItem('membership', userData.membership);
           }
 
           // Handle redirection after successful login

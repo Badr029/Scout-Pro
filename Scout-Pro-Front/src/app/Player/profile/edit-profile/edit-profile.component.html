@@ -20,7 +20,7 @@
         <div class="profile-picture">
             <img [src]="playerData.profile_image ? 'http://localhost:8000/storage/' + playerData.profile_image : 'https://ui-avatars.com/api/?name=' + playerData.first_name + '+' + playerData.last_name" alt="Profile Picture" id="profile-image">
             <button class="change-photo-btn" (click)="openPhotoUpload()">Change Photo</button>
-            <input type="file" id="photo-upload" accept="image/*" style="display: none;" (change)="onProfileImageChange($event)">
+            <input type="file" id="photo-upload" accept="image/jpeg,image/png,image/jpg" style="display: none;" (change)="onProfileImageChange($event)">
         </div>
 
         <div *ngIf="successMessage" class="success-message">

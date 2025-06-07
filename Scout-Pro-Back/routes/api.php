@@ -62,6 +62,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('scout/contacted-players', [ScoutController::class, 'getContactedPlayers']);
     Route::put('player/profile/update', [ProfileController::class, 'update']);
     Route::put('scout/profile/update', [ProfileController::class, 'update']);
+
+    // New scout profile update routes
+    Route::put('scout/profile/update-data', [ScoutController::class, 'updateProfile']);
+    Route::post('scout/profile/update-photo', [ScoutController::class, 'updateProfileImage']);
+
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::delete('/delete',[ProfileController::class , 'delete']);
 

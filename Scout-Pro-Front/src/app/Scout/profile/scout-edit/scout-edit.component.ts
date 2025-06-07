@@ -38,6 +38,7 @@ export class ScoutEditComponent implements OnInit {
   };
   private apiUrl = 'http://localhost:8000/api';
   newProfileImage: File | null = null;
+  imagePreviewUrl: string | null = null;
 
   // New properties for multi-select
   newRegion: string = '';
@@ -189,8 +190,47 @@ export class ScoutEditComponent implements OnInit {
   onProfileImageChange(event: Event) {
     const file = (event.target as HTMLInputElement).files?.[0];
     if (file) {
+      // Validate file type and size
+      if (!file.type.match(/^image\/(jpeg|png|jpg)$/)) {
+        this.error = 'Please upload a valid image file (JPEG, PNG)';
+        return;
+      }
+      if (file.size > 2 * 1024 * 1024) { // 2MB limit
+        this.error = 'Image size should not exceed 2MB';
+        return;
+      }
+
+      // Clear any previous errors
+      this.error = null;
+
       this.newProfileImage = file;
+      // Create a preview URL
+      const reader = new FileReader();
+      reader.onload = () => {
+        this.imagePreviewUrl = reader.result as string;
+      };
+      reader.readAsDataURL(file);
     }
+  }
+
+  getProfileImageUrl(): string {
+    // If there's a preview URL (new image selected), use it
+    if (this.imagePreviewUrl) {
+      return this.imagePreviewUrl;
+    }
+
+    // If there's an existing profile image, construct the storage URL
+    if (this.scoutData.profile_image) {
+      // Check if it's already a full URL (preview data)
+      if (this.scoutData.profile_image.startsWith('data:')) {
+        return this.scoutData.profile_image;
+      }
+      // Otherwise construct storage URL
+      return `http://localhost:8000/storage/${this.scoutData.profile_image}`;
+    }
+
+    // Default avatar
+    return `https://ui-avatars.com/api/?name=${encodeURIComponent((this.scoutData.first_name || '') + ' ' + (this.scoutData.last_name || ''))}`;
   }
 
   async saveChanges() {
@@ -198,7 +238,7 @@ export class ScoutEditComponent implements OnInit {
     this.error = null;
 
     try {
-      // First, handle profile image update if there's a new image
+      // First update profile image if changed
       if (this.newProfileImage) {
         await this.updateProfileImage();
       }
@@ -206,16 +246,20 @@ export class ScoutEditComponent implements OnInit {
       // Then update other profile data
       await this.updateProfileData();
 
+      // Clear preview and file input after successful save
+      this.imagePreviewUrl = null;
+      this.newProfileImage = null;
+      const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+      if (fileInput) {
+        fileInput.value = '';
+      }
+
       this.loading = false;
       this.router.navigate(['/scout/profile']);
     } catch (error: any) {
-      console.error('Error updating profile:', error);
       this.loading = false;
-      if (error.error?.errors) {
-        this.error = Object.values(error.error.errors).flat().join('\n');
-      } else {
-        this.error = error.message || 'Failed to update profile';
-      }
+      this.error = error.error?.message || 'Failed to update profile';
+      console.error('Profile update error:', error);
     }
   }
 
@@ -233,7 +277,9 @@ export class ScoutEditComponent implements OnInit {
       this.http.post(`${this.apiUrl}/scout/profile/update-photo`, formData, { headers })
         .subscribe({
           next: (response: any) => {
-            this.scoutData.profile_image = response.data.profile_image;
+            if (this.scoutData && response.data?.profile_image) {
+              this.scoutData.profile_image = response.data.profile_image;
+            }
             resolve();
           },
           error: (error) => reject(error)
@@ -261,9 +307,12 @@ export class ScoutEditComponent implements OnInit {
     console.log('Sending profile update data:', dataToSend);
 
     return new Promise((resolve, reject) => {
-      this.http.put(`${this.apiUrl}/scout/profile/update`, dataToSend, { headers })
+      this.http.put(`${this.apiUrl}/scout/profile/update-data`, dataToSend, { headers })
         .subscribe({
-          next: () => resolve(),
+          next: (response: any) => {
+            console.log('Profile updated successfully:', response);
+            resolve();
+          },
           error: (error) => {
             console.error('Profile update error:', error);
             console.error('Error response:', error.error);

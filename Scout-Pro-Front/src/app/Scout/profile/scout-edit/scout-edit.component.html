@@ -16,9 +16,9 @@
 
         <!-- Profile Picture -->
         <div class="profile-picture">
-            <img [src]="scoutData.profile_image ? 'http://localhost:8000/storage/' + scoutData.profile_image : 'https://ui-avatars.com/api/?name=' + scoutData.first_name + '+' + scoutData.last_name" alt="Profile Picture">
+            <img [src]="getProfileImageUrl()" alt="Profile Picture">
             <button class="change-photo-btn" (click)="openPhotoUpload()">Change Photo</button>
-            <input type="file" accept="image/*" style="display: none;" (change)="onProfileImageChange($event)">
+            <input type="file" accept="image/jpeg,image/png,image/jpg" style="display: none;" (change)="onProfileImageChange($event)">
         </div>
 
         <form (ngSubmit)="saveChanges()" #scoutForm="ngForm">

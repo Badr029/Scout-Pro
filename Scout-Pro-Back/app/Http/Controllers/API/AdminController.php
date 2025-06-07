@@ -872,15 +872,16 @@ class AdminController extends Controller
         try {
             $query = Video::with(['user' => function($query) {
                 $query->select('id', 'first_name', 'last_name', 'email');
-            }]);
+            }])
+            ->withCount(['views', 'likes', 'comments']);
 
             // Apply sorting
             if ($request->has('sort_by') && in_array($request->sort_by, ['views', 'likes'])) {
                 $order = $request->get('order', 'desc');
                 if ($request->sort_by === 'views') {
-                    $query->withCount('views')->orderBy('views_count', $order);
+                    $query->orderBy('views_count', $order);
                 } else {
-                    $query->withCount('likes')->orderBy('likes_count', $order);
+                    $query->orderBy('likes_count', $order);
                 }
             } else {
                 $query->orderBy('created_at', 'desc');
@@ -890,11 +891,13 @@ class AdminController extends Controller
                 return [
                     'id' => $video->id,
                     'title' => $video->title,
-                    'views' => $video->views()->count(),
-                    'likes' => $video->likes()->count(),
-                    'comments' => $video->comments()->count(),
+                    'views' => $video->views_count,
+                    'likes' => $video->likes_count,
+                    'comments' => $video->comments_count,
+                    'comments_count' => $video->comments_count, // Add this for frontend compatibility
                     'status' => $video->status,
                     'thumbnail' => $video->thumbnail ? url('storage/' . $video->thumbnail) : null,
+                    'file_path' => $video->file_path ? url('storage/' . $video->file_path) : null,
                     'duration' => $video->duration,
                     'created_at' => $video->created_at,
                     'user' => [
