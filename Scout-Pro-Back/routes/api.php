@@ -162,6 +162,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('admin/user-subscriptions', [AdminController::class, 'getUserSubscriptions']);
         Route::put('admin/user-subscriptions/{userId}', [AdminController::class, 'updateUserSubscription']);
         Route::put('admin/user-subscriptions/{userId}/deactivate', [AdminController::class, 'deactivateUserSubscription']);
+        Route::put('admin/user-subscriptions/{userId}/reactivate', [AdminController::class, 'reactivateUserSubscription']);
+        Route::put('admin/user-subscriptions/{userId}/cancel', [AdminController::class, 'cancelUserSubscription']);
         Route::get('admin/payment-history', [AdminController::class, 'getPaymentHistory']);
 
         // User Management Routes

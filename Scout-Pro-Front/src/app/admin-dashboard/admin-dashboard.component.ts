@@ -878,6 +878,10 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   }
 
   deactivateSubscription(userId: number, userType: string) {
+    if (!confirm('Are you sure you want to deactivate this subscription? This will immediately end the user\'s subscription and downgrade them to free tier.')) {
+      return;
+    }
+
     this.loadingSubscription.subscriptions = true;
     this.subscriptionError.subscriptions = '';
 
@@ -891,13 +895,83 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
       .subscribe({
         next: (response: any) => {
           if (response.status === 'success') {
+            this.successMessage = 'Subscription deactivated successfully';
             this.loadSubscriptions(); // Reload the subscriptions list
+            setTimeout(() => {
+              this.successMessage = null;
+            }, 3000);
           }
           this.loadingSubscription.subscriptions = false;
         },
         error: (error) => {
           console.error('Error deactivating subscription:', error);
           this.subscriptionError.subscriptions = 'Failed to deactivate subscription';
+          this.loadingSubscription.subscriptions = false;
+        }
+      });
+  }
+
+  reactivateSubscription(userId: number, userType: string) {
+    if (!confirm('Are you sure you want to reactivate this subscription? This will restore the user\'s premium access.')) {
+      return;
+    }
+
+    this.loadingSubscription.subscriptions = true;
+    this.subscriptionError.subscriptions = '';
+
+    const payload = {
+      user_id: userId,
+      user_type: userType
+    };
+
+    this.http.put<any>(`${this.API_URL}/admin/user-subscriptions/${userId}/reactivate`, payload, { headers: this.getHeaders() })
+      .subscribe({
+        next: (response: any) => {
+          if (response.status === 'success') {
+            this.successMessage = 'Subscription reactivated successfully';
+            this.loadSubscriptions(); // Reload the subscriptions list
+            setTimeout(() => {
+              this.successMessage = null;
+            }, 3000);
+          }
+          this.loadingSubscription.subscriptions = false;
+        },
+        error: (error) => {
+          console.error('Error reactivating subscription:', error);
+          this.subscriptionError.subscriptions = 'Failed to reactivate subscription';
+          this.loadingSubscription.subscriptions = false;
+        }
+      });
+  }
+
+  cancelSubscription(userId: number, userType: string) {
+    if (!confirm('Are you sure you want to cancel this subscription? The user will retain access until their current billing period expires.')) {
+      return;
+    }
+
+    this.loadingSubscription.subscriptions = true;
+    this.subscriptionError.subscriptions = '';
+
+    const payload = {
+      user_id: userId,
+      user_type: userType
+    };
+
+    this.http.put<any>(`${this.API_URL}/admin/user-subscriptions/${userId}/cancel`, payload, { headers: this.getHeaders() })
+      .subscribe({
+        next: (response: any) => {
+          if (response.status === 'success') {
+            this.successMessage = 'Subscription cancelled successfully';
+            this.loadSubscriptions(); // Reload the subscriptions list
+            setTimeout(() => {
+              this.successMessage = null;
+            }, 3000);
+          }
+          this.loadingSubscription.subscriptions = false;
+        },
+        error: (error) => {
+          console.error('Error cancelling subscription:', error);
+          this.subscriptionError.subscriptions = 'Failed to cancel subscription';
           this.loadingSubscription.subscriptions = false;
         }
       });

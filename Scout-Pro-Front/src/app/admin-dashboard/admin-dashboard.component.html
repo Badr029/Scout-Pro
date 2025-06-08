@@ -580,15 +580,46 @@
                 </td>
                 <td>{{ formatDate(sub.expires_at) }}</td>
                 <td>
-                  <button
-                    class="deactivate-btn"
-                    (click)="deactivateSubscription(sub.user.id, sub.user.type)"
-                    *ngIf="sub.status.toLowerCase() === 'active'">
-                    Deactivate Plan
-                  </button>
-                  <span *ngIf="sub.status.toLowerCase() !== 'active'" class="status-badge inactive">
-                    Deactivated
-                  </span>
+                  <div class="action-buttons">
+                    <!-- Active subscription buttons -->
+                    <ng-container *ngIf="sub.status.toLowerCase() === 'active'">
+                      <button
+                        class="btn btn-warning btn-sm"
+                        (click)="cancelSubscription(sub.user.id, sub.user.type)"
+                        title="Cancel Plan">
+                        Cancel Plan
+                      </button>
+                      <button
+                        class="btn btn-danger btn-sm"
+                        (click)="deactivateSubscription(sub.user.id, sub.user.type)"
+                        title="Deactivate Immediately">
+                        Deactivate
+                      </button>
+                    </ng-container>
+
+                    <!-- Cancelled subscription buttons -->
+                    <ng-container *ngIf="sub.status.toLowerCase() === 'cancelled'">
+                      <button
+                        class="btn btn-success btn-sm"
+                        (click)="reactivateSubscription(sub.user.id, sub.user.type)"
+                        title="Reactivate Plan">
+                        Reactivate
+                      </button>
+                                             <span class="text-warning small">
+                         Expires: {{ formatDate(sub.expires_at) }}
+                       </span>
+                    </ng-container>
+
+                    <!-- Inactive subscription buttons -->
+                    <ng-container *ngIf="sub.status.toLowerCase() === 'inactive'">
+                      <button
+                        class="btn btn-success btn-sm"
+                        (click)="reactivateSubscription(sub.user.id, sub.user.type)"
+                        title="Reactivate Plan">
+                        Reactivate
+                      </button>
+                    </ng-container>
+                  </div>
                 </td>
               </tr>
             </tbody>

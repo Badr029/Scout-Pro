@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild, ElementRef, AfterViewInit, ViewEncapsulation } from '@angular/core';
+import { Component, OnInit, ViewChild, ElementRef, AfterViewInit, ViewEncapsulation, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { trigger, state, style, transition, animate, keyframes } from '@angular/animations';
@@ -115,6 +115,8 @@ export class DynamicWelcomeComponent implements OnInit, AfterViewInit {
       avatar: '👩‍💼'
     }
   ];
+
+  showBackToTop = false;
 
   constructor(
     private router: Router,
@@ -252,5 +254,18 @@ export class DynamicWelcomeComponent implements OnInit, AfterViewInit {
 
   prevSlide() {
     this.currentSlide = this.currentSlide === 0 ? this.features.length - 1 : this.currentSlide - 1;
+  }
+
+  @HostListener('window:scroll')
+  onWindowScroll() {
+    // Show back to top button when user scrolls down 500px
+    this.showBackToTop = window.scrollY > 500;
+  }
+
+  scrollToTop() {
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    });
   }
 }

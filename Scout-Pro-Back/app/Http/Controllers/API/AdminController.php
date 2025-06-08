@@ -414,6 +414,17 @@ class AdminController extends Controller
                 ->get()
                 ->map(function($subscription) {
                     $user = $subscription->user;
+
+                    // Determine status based on active status and canceled_at
+                    $status = 'Inactive';
+                    if ($subscription->active) {
+                        if ($subscription->canceled_at) {
+                            $status = 'Cancelled'; // Active but canceled - will expire
+                        } else {
+                            $status = 'Active';
+                        }
+                    }
+
                     return [
                         'id' => $subscription->id,
                         'user' => [
@@ -423,8 +434,9 @@ class AdminController extends Controller
                             'type' => $user->user_type
                         ],
                         'plan' => $subscription->plan,
-                        'status' => $subscription->active ? 'Active' : 'Inactive',
+                        'status' => $status,
                         'expires_at' => $subscription->expires_at,
+                        'canceled_at' => $subscription->canceled_at,
                         'created_at' => $subscription->created_at,
                         'payment' => $subscription->payment ? [
                             'amount' => $subscription->payment->amount,
@@ -575,7 +587,8 @@ class AdminController extends Controller
             // Update subscription record
             $subscription->update([
                 'active' => false,
-                'expires_at' => now()
+                'expires_at' => now(),
+                'canceled_at' => now()
             ]);
 
             // Update user-specific subscription fields
@@ -607,6 +620,136 @@ class AdminController extends Controller
                 'status' => 'error',
                 'message' => 'Error deactivating subscription'
             ], 500);
+        }
+    }
+
+    public function reactivateUserSubscription(Request $request, $userId)
+    {
+        try {
+            DB::beginTransaction();
+
+            $user = \App\Models\User::findOrFail($userId);
+            $subscription = \App\Models\Subscription::where('user_id', $userId)->first();
+
+            if (!$subscription) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'No subscription found for this user'
+                ], 404);
+            }
+
+            $plan = \App\Models\Plan::findOrFail($subscription->plan_id);
+
+            // Update subscription record
+            $subscription->update([
+                'active' => true,
+                'expires_at' => now()->addDays($plan->Duration),
+                'canceled_at' => null
+            ]);
+
+            // Update user-specific subscription fields
+            if ($user->user_type === 'scout') {
+                $user->scout->update([
+                    'subscription_active' => true,
+                    'subscription_expires_at' => $subscription->expires_at
+                ]);
+            } else {
+                $user->player->update([
+                    'membership' => 'premium',
+                    'subscription_expires_at' => $subscription->expires_at
+                ]);
+            }
+
+            // Create notification for the user
+            $this->createSubscriptionReactivationNotification($user);
+
+            DB::commit();
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Subscription reactivated successfully'
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error reactivating subscription: ' . $e->getMessage());
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Error reactivating subscription'
+            ], 500);
+        }
+    }
+
+    public function cancelUserSubscription(Request $request, $userId)
+    {
+        try {
+            DB::beginTransaction();
+
+            $user = \App\Models\User::findOrFail($userId);
+            $subscription = \App\Models\Subscription::where('user_id', $userId)->first();
+
+            if (!$subscription) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'No subscription found for this user'
+                ], 404);
+            }
+
+            // Update subscription record - mark as cancelled but keep it active until expiry
+            $subscription->update([
+                'canceled_at' => now()
+            ]);
+
+            // Create notification for the user about cancellation
+            $this->createSubscriptionCancellationNotification($user, $subscription->expires_at);
+
+            DB::commit();
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Subscription cancelled successfully. It will remain active until expiry date.'
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error cancelling subscription: ' . $e->getMessage());
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Error cancelling subscription'
+            ], 500);
+        }
+    }
+
+    // Helper methods for notifications
+    private function createSubscriptionReactivationNotification($user)
+    {
+        try {
+            \App\Models\Notification::create([
+                'user_id' => $user->id,
+                'type' => 'subscription_reactivated',
+                'title' => 'Subscription Reactivated',
+                'message' => 'Your subscription has been reactivated by our admin team.',
+                'is_read' => false,
+                'created_at' => now(),
+                'updated_at' => now()
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error creating reactivation notification: ' . $e->getMessage());
+        }
+    }
+
+    private function createSubscriptionCancellationNotification($user, $expiryDate)
+    {
+        try {
+            \App\Models\Notification::create([
+                'user_id' => $user->id,
+                'type' => 'subscription_cancelled',
+                'title' => 'Subscription Cancelled',
+                'message' => 'Your subscription has been cancelled. It will remain active until ' . $expiryDate->format('M d, Y') . '.',
+                'is_read' => false,
+                'created_at' => now(),
+                'updated_at' => now()
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error creating cancellation notification: ' . $e->getMessage());
         }
     }
 
