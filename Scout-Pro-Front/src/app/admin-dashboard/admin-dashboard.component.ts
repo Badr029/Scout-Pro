@@ -20,6 +20,7 @@ interface ContactRequest {
     profile?: {
       company: string;
       position: string;
+      city: string;
       region: string;
       profile_image: string | null;
     };
@@ -61,6 +62,7 @@ interface EventRequest {
     profile?: {
       company: string;
       region: string;
+      city: string;
       profile_image: string | null;
     };
   };

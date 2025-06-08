@@ -24,6 +24,8 @@ class Event extends Model
         'longitude',
         'image',
         'organizer_id',
+        'scout_organizer_id',
+        'admin_organizer_id',
         'organizer_type',
         'organizer_contact',
         'target_audience',

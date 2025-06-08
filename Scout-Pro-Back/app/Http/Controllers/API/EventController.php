@@ -63,7 +63,8 @@ class EventController extends Controller
                         'email' => $event->organizer_contact,
                         'profile' => [
                             'company' => 'ScoutPro',
-                            'region' => 'Global'
+                            'region' => 'Global',
+                            'city' => 'Global'
                         ]
                     ] : [
                         'id' => $event->organizer->id,
@@ -71,7 +72,8 @@ class EventController extends Controller
                         'email' => $event->organizer->email,
                         'profile' => $event->organizer->scout ? [
                             'company' => $event->organizer->scout->organization ?? 'N/A',
-                            'region' => $event->organizer->scout->scouting_regions ?? 'N/A'
+                            'region' => $event->organizer->scout->scouting_regions ?? 'N/A',
+                            'city' => $event->organizer->scout->city ?? 'N/A'
                         ] : null
                     ],
                     'is_organizer' => !$isAdminOrganizer && $event->organizer_id === $user?->id,
@@ -119,7 +121,9 @@ class EventController extends Controller
             'location' => $validated['location'],
             'image' => $imagePath,
             'organizer_id' => Auth::id(),
-            'organizer_type' => User::class,
+            'scout_organizer_id' => Auth::id() ?? null,
+            'admin_organizer_id' => Auth::id() ?? null,
+            'organizer_type' => $validated['organizer_type'] ?? User::class,
             'organizer_contact' => $validated['organizer_contact'],
             'target_audience' => $validated['target_audience'],
             'status' => 'pending',

@@ -1,0 +1,668 @@
+@use 'sass:color';
+
+// Color Variables
+$gray-800: #1f2937;
+$white: #ffffff;
+$white-opacity-30: rgba(255, 255, 255, 0.3);
+$white-opacity-20: rgba(255, 255, 255, 0.2);
+$orange-500: #f59e0b;
+$shadow-color: rgba(0, 0, 0, 0.1);
+$primary-color: #4f7df9;
+$primary-hover: #3867e0;
+$background-dark: #121212;
+$card-background: #1e1e1e;
+$premium-gradient-start: #1f1f1f;
+$premium-gradient-end: #2a2f47;
+$text-white: #ffffff;
+$text-light: #e0e0e0;
+$text-muted: #bbb;
+$border-dark: #2c2c2c;
+$success-green: #22c55e;
+$error-red: #ef4444;
+$active-border: $primary-color;
+$selected-background: rgba($primary-color, 0.1);
+$card-gradient-start: #2a2a2a;
+$card-gradient-end: #3a3a3a;
+
+// Mixins
+@mixin button-base {
+  display: inline-block;
+  padding: 0.6rem 1.2rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-align: center;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+@mixin input-base {
+  width: 50%;
+  height: 2.5rem;
+  border: none;
+  outline: none;
+  background-color: $gray-800;
+  color: $white;
+  font-size: 0.875rem;
+  font-weight: 600;
+  padding-left: 0.5rem;
+  caret-color: $orange-500;
+  border-radius: 4px;
+
+  &::placeholder {
+    color: $white-opacity-30;
+  }
+}
+
+// Main Container
+.subscription-container {
+  max-width: 1000px;
+  margin: 1.5rem auto;
+  padding: 0.75rem;
+  font-family: 'Inter', sans-serif;
+  color: $text-light;
+  background-color: $background-dark;
+
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+
+    h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: $text-white;
+      margin: 0;
+      margin-right: 30%;
+    }
+
+    .btn-logout {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      background-color: transparent;
+      border: 1px solid $border-dark;
+      border-radius: 6px;
+      color: $text-light;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+
+      &:hover {
+        background-color: rgba(255, 255, 255, 0.1);
+        color: $text-white;
+      }
+
+      i {
+        font-size: 1rem;
+      }
+    }
+  }
+
+  // Plans Container
+  .plans-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+
+  // Plan Card
+  .plan-card {
+    position: relative;
+    background: $card-background;
+    border-radius: 10px;
+    padding: 1.2rem;
+    box-shadow: 0 3px 15px rgba(0, 0, 0, 0.3);
+    transition: all 0.3s ease;
+    border: 1px solid $border-dark;
+    cursor: pointer;
+
+    &:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+    }
+
+    &.selected {
+      background: $selected-background;
+      border-color: $primary-color;
+    }
+
+    &.premium {
+      background: linear-gradient(140deg, $premium-gradient-start 0%, $premium-gradient-end 100%);
+
+      .plan-features li i {
+        color: $primary-color;
+      }
+    }
+
+    .plan-ribbon {
+      position: absolute;
+      top: -8px;
+      right: 15px;
+      background: $primary-color;
+      color: $text-white;
+      padding: 4px 12px;
+      border-radius: 3px;
+      font-size: 0.7rem;
+      font-weight: 600;
+    }
+
+    .plan-header {
+      text-align: center;
+      margin-bottom: 1rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 1px solid #333;
+
+      h2 {
+        margin: 0;
+        font-size: 1.4rem;
+        font-weight: 700;
+        color: $text-white;
+      }
+
+      .price {
+        font-size: 1.8rem;
+        font-weight: 800;
+        color: $text-white;
+        margin: 0.3rem 0 0;
+
+        span {
+          font-size: 0.9rem;
+          font-weight: 400;
+          color: $text-muted;
+        }
+      }
+    }
+
+    .plan-features {
+      li {
+        display: flex;
+        align-items: center;
+        margin-bottom: 0.6rem;
+        font-size: 0.85rem;
+        color: #d0d0d0;
+
+        i {
+          color: $success-green;
+          margin-right: 8px;
+          font-size: 0.7rem;
+        }
+      }
+    }
+
+    .plan-footer {
+      text-align: center;
+      margin-top: 0.75rem;
+    }
+  }
+
+  // Buttons
+  .btn {
+    @include button-base;
+
+    &-primary {
+      background: $primary-color;
+      color: $text-white;
+      align-items: center;
+
+      &:hover:not([disabled]) {
+        background-color: color.adjust($primary-color, $lightness: -10%);
+      }
+
+      &:active {
+        background-color: color.adjust($primary-color, $lightness: 20%);
+      }
+    }
+
+    &-outline {
+      background: transparent;
+      border: 1px solid #555;
+      color: #ccc;
+
+      &:hover:not([disabled]) {
+        background-color: #2a2a2a;
+      }
+    }
+
+    &-current {
+      background: #2f3c57;
+      color: $primary-color;
+      border: 1px solid $primary-color;
+      cursor: default;
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    &.wide {
+      width: 40%;
+      padding: 0.6rem;
+      padding-left: 0.8rem;
+      padding-right: 0.8rem;
+      margin-left: 8rem;
+      font-size: 0.8rem;
+      border-radius: 6px;
+      background-color: $primary-color;
+      color: $text-white;
+      font-weight: 600;
+      transition: background-color 0.3s ease;
+      border: none;
+
+      &:hover {
+        background-color: color.adjust($primary-color, $lightness: -10%);
+      }
+
+      &:disabled {
+        background-color: lighten($primary-color, 20%);
+      }
+    }
+  }
+
+  // Payment Section
+  .payment-section {
+    margin-top: 1.5rem;
+    padding: 1.5rem;
+    color: $text-white;
+    max-width: 420px;
+    margin-left: auto;
+    margin-right: auto;
+
+    h2 {
+      text-align: center;
+      margin-bottom: 1rem;
+      font-size: 1.5rem;
+      color: $text-white;
+    }
+  }
+
+  // Payment Card
+  .payment-card {
+    position: relative;
+    background: linear-gradient(140deg, $premium-gradient-start 0%, $premium-gradient-end 100%);
+    border-radius: 16px;
+    padding: 1.5rem;
+    box-shadow: 0 3px 15px rgba(0, 0, 0, 0.3);
+    width: 100%;
+    max-width: 360px;
+    margin: 0 auto;
+    color: $text-white;
+    overflow: hidden;
+
+    .card-chip {
+      width: 40px;
+      height: 30px;
+      background: linear-gradient(135deg, #d4af37 0%, #b8860b 100%);
+      border-radius: 4px;
+      position: absolute;
+      top: 1.5rem;
+      left: 1.5rem;
+      box-shadow: inset 0 0 4px rgba(0, 0, 0, 0.3);
+    }
+
+    .card-logo {
+      position: absolute;
+      top: 1.5rem;
+      right: 1.5rem;
+    }
+
+    .payment-form {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      margin-top: 4rem;
+
+      .form-group {
+        &.card-number input {
+          font-family: 'Courier New', Courier, monospace;
+          letter-spacing: 2px;
+          font-size: 1rem;
+        }
+
+        &.card-name input {
+          text-transform: uppercase;
+          font-size: 0.9rem;
+        }
+
+        &.card-details {
+          display: flex;
+          gap: 1rem;
+          flex-wrap: nowrap;
+
+          .expiry, .cvv {
+            flex: 1;
+
+            input {
+              font-size: 0.9rem;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // Form Elements
+  .form-control {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+    padding: 0.5rem 0.75rem;
+    color: $text-white;
+    font-size: 0.9rem;
+    transition: border-color 0.3s ease;
+
+    &::placeholder {
+      color: $text-muted;
+    }
+
+    &:focus {
+      border-color: $primary-color;
+      outline: none;
+      box-shadow: 0 0 0 2px rgba($primary-color, 0.2);
+    }
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+
+    label {
+      font-weight: 600;
+      margin-bottom: 0.3rem;
+      font-size: 0.8rem;
+      color: $text-white;
+    }
+  }
+
+  .form-row {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    padding-bottom: 15px;
+
+    &.card-details {
+      flex-wrap: nowrap;
+    }
+  }
+
+  .form-group.half {
+    flex: 1;
+    min-width: 100px;
+  }
+
+  // Back Button
+  .btn-back {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: none;
+    border: none;
+    color: $text-muted;
+    font-size: 0.9rem;
+    cursor: pointer;
+    margin-bottom: 1rem;
+    padding: 0.5rem 0;
+    transition: color 0.2s ease;
+
+    &:hover {
+      color: $primary-color;
+    }
+  }
+
+  // Spinner
+  .spinner {
+    display: inline-block;
+    width: 1.5rem;
+    height: 1.5rem;
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top-color: $text-white;
+    animation: spin 1s linear infinite;
+
+    &.small {
+      width: 16px;
+      height: 16px;
+      border: 2px solid $text-white;
+      border-top: 2px solid transparent;
+    }
+  }
+
+  // Status States
+  .loading-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+  }
+
+  .error-state {
+    background: #4b1c1e;
+    border: 1px solid #b91c1c;
+    padding: 1rem;
+    border-radius: 6px;
+    margin-bottom: 1rem;
+  }
+
+  .success-state {
+    background: #1d3c34;
+    border: 1px solid #4ade80;
+    padding: 1rem;
+    border-radius: 6px;
+    margin-bottom: 1rem;
+  }
+
+  .error-message {
+    color: #f87171;
+  }
+
+  .success-message {
+    color: #34d399;
+  }
+
+  // Credit Card Component
+  .card-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-around;
+    background-color: $gray-800;
+    padding: 1rem;
+    margin-bottom: 0.8rem;
+    border: 1px solid $white-opacity-30;
+    border-radius: 0.5rem;
+    box-shadow: 0 4px 6px $shadow-color;
+    max-width: 20rem;
+    margin-left: auto;
+    margin-right: auto;
+
+    .card-preview {
+      .card-front {
+    .header-row {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 0.75rem;
+
+      .card-name-input {
+        @include input-base;
+        flex-grow: 1;
+            margin-right: 0.75rem;
+      }
+
+      .card-logo-container {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        width: 3.5rem;
+        height: 2.25rem;
+        background-color: $gray-800;
+        border: 1px solid $white-opacity-20;
+        border-radius: 0.375rem;
+          }
+        }
+
+        .card-number-row {
+          margin-bottom: 0.75rem;
+
+      .card-number-input {
+        @include input-base;
+            width: 100%;
+          }
+      }
+
+        .card-details-row {
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+        gap: 0.5rem;
+
+          .expiry-container, .cvv-container {
+            label {
+              display: block;
+              font-size: 0.75rem;
+              color: $white-opacity-30;
+              margin-bottom: 0.25rem;
+            }
+
+            input {
+              @include input-base;
+            }
+          }
+
+          .expiry-input {
+            width: 48%;
+          }
+
+        .cvv-input {
+          width: 48%;
+          }
+        }
+      }
+    }
+  }
+
+  .payment-button-container {
+    margin-top: 1rem;
+    text-align: center;
+
+    .btn {
+      &.wide {
+        width: 40%;
+        padding: 0.6rem;
+        padding-left: 0.8rem;
+        padding-right: 0.8rem;
+        margin-left: 8rem;
+        font-size: 0.8rem;
+        border-radius: 6px;
+        background-color: $primary-color;
+        color: $text-white;
+        font-weight: 600;
+        transition: background-color 0.3s ease;
+        border: none;
+        justify-content: center;
+        align-items: center;
+        display: flex;
+
+        &:hover:not(:disabled) {
+          background-color: color.adjust($primary-color, $lightness: -10%);
+        }
+
+        &:disabled {
+          background-color: lighten($primary-color, 20%);
+          cursor: not-allowed;
+        }
+      }
+    }
+  }
+
+  // Responsive Styles
+  @media (max-width: 768px) {
+    .plans-container {
+      grid-template-columns: 1fr;
+      gap: 1rem;
+    }
+
+    .plan-card {
+      margin-bottom: 1rem;
+    }
+
+    .page-header {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 1rem;
+
+      h1 {
+        margin-right: 0;
+        margin-bottom: 0.5rem;
+      }
+    }
+
+    .payment-section {
+      padding: 1rem;
+    }
+
+    .payment-card {
+      max-width: 100%;
+      padding: 1rem;
+
+      .form-row.card-details {
+        flex-wrap: wrap;
+
+        .form-group.half {
+          min-width: 100%;
+        }
+      }
+    }
+
+    .card-container {
+      max-width: 100%;
+
+      .header-row {
+        flex-direction: column;
+        align-items: flex-start;
+
+        .card-logo-container {
+          align-self: flex-end;
+          margin-top: 0.5rem;
+        }
+      }
+
+      .details-row {
+        flex-direction: column;
+
+        .expiry-input,
+        .cvv-input {
+          width: 100%;
+        }
+      }
+    }
+  }
+}
+
+// Animations
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+// Add smooth transitions
+input {
+  transition: all 0.3s ease;
+}
+
+// Add focus styles
+input:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.1);
+}
