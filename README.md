@@ -1,5 +1,4 @@
 # Scout Pro Full Stack
-
 A comprehensive football scouting and talent management platform built with Laravel and Angular. Connect players with professional scouts, showcase talent through video profiles, and discover opportunities in the world of football.
 
 ## 🚀 Features
@@ -78,103 +77,6 @@ Scout-Pro-FullStack/
     └── routes/
                  └── api.php                  # API Routes
 ```
-
-## 📦 Dependencies
-
-### Backend Dependencies (Laravel/PHP)
-
-#### Production Dependencies
-```json
-{
-  "php": "^8.2",
-  "guzzlehttp/guzzle": "^7.9",
-  "laravel/framework": "^12.0",
-  "laravel/sanctum": "^4.0",
-  "laravel/socialite": "^5.20",
-  "laravel/tinker": "^2.10.1"
-}
-```
-
-#### Development Dependencies
-```json
-{
-  "fakerphp/faker": "^1.23",
-  "laravel/pail": "^1.2.2",
-  "laravel/pint": "^1.13",
-  "laravel/sail": "^1.41",
-  "mockery/mockery": "^1.6",
-  "nunomaduro/collision": "^8.6",
-  "phpunit/phpunit": "^11.5.3"
-}
-```
-
-**Key Backend Packages:**
-- **Laravel Framework 12.0** - Core PHP framework
-- **Laravel Sanctum** - API token authentication
-- **Laravel Socialite** - OAuth integration (Google, Facebook)
-- **Guzzle HTTP** - HTTP client for API requests
-- **Laravel Tinker** - Interactive PHP REPL
-- **PHPUnit** - Testing framework
-- **Laravel Pint** - PHP code style fixer
-- **Faker** - Generate fake data for testing
-
-### Frontend Dependencies (Angular/TypeScript)
-
-#### Production Dependencies
-```json
-{
-  "@abacritt/angularx-social-login": "^2.4.0",
-  "@angular/animations": "^19.2.0",
-  "@angular/common": "^19.2.0",
-  "@angular/compiler": "^19.2.0",
-  "@angular/core": "^19.2.0",
-  "@angular/forms": "^19.2.0",
-  "@angular/platform-browser": "^19.2.0",
-  "@angular/platform-browser-dynamic": "^19.2.0",
-  "@angular/router": "^19.2.0",
-  "@flaticon/flaticon-uicons": "^3.3.1",
-  "@fortawesome/fontawesome-free": "^6.7.2",
-  "@types/pusher-js": "^4.2.2",
-  "chart.js": "^4.4.9",
-  "gapi-script": "^1.2.0",
-  "ngx-toastr": "^19.0.0",
-  "pusher-js": "^8.4.0",
-  "rxjs": "~7.8.0",
-  "tslib": "^2.3.0",
-  "zone.js": "~0.15.0"
-}
-```
-
-#### Development Dependencies
-```json
-{
-  "@angular-devkit/build-angular": "^19.2.10",
-  "@angular/cli": "^19.2.10",
-  "@angular/compiler-cli": "^19.2.0",
-  "@types/google.maps": "^3.58.1",
-  "@types/jasmine": "~5.1.0",
-  "jasmine-core": "~5.6.0",
-  "karma": "~6.4.0",
-  "karma-chrome-launcher": "~3.2.0",
-  "karma-coverage": "~2.2.0",
-  "karma-jasmine": "~5.1.0",
-  "karma-jasmine-html-reporter": "~2.1.0",
-  "typescript": "~5.7.2"
-}
-```
-
-**Key Frontend Packages:**
-- **Angular 19.2** - Core frontend framework
-- **Chart.js** - Interactive charts and analytics
-- **FontAwesome** - Icon library
-- **Flaticon UI Icons** - Additional icon set
-- **NGX Toastr** - Toast notifications
-- **Angular Social Login** - OAuth integration
-- **Pusher.js** - Real-time notifications
-- **Google API Script** - Google services integration
-- **RxJS** - Reactive programming
-- **Jasmine & Karma** - Testing frameworks
-- **TypeScript 5.7** - Type-safe JavaScript
 
 ## 🛠️ Prerequisites
 
@@ -331,9 +233,6 @@ npm install -g @angular/cli@latest
 ### Additional System Dependencies
 
 ```bash
-# Install FFmpeg for video processing (Ubuntu/Debian)
-sudo apt update
-sudo apt install ffmpeg
 
 # Install FFmpeg (macOS with Homebrew)
 brew install ffmpeg
