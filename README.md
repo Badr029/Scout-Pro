@@ -282,6 +282,124 @@ Scout-Pro-FullStack/
 - **Jasmine & Karma** - Testing frameworks
 - **TypeScript 5.7** - Type-safe JavaScript
 
+## 🔧 Dependency Installation
+
+### Install Backend Dependencies
+
+```bash
+cd Scout-Pro-Back
+
+# Install all PHP dependencies via Composer
+composer install
+
+# Install specific packages (if needed individually)
+composer require laravel/sanctum
+composer require laravel/socialite
+composer require guzzlehttp/guzzle
+
+# Install development dependencies
+composer require --dev fakerphp/faker
+composer require --dev laravel/pint
+composer require --dev phpunit/phpunit
+composer require --dev mockery/mockery
+```
+
+### Install Frontend Dependencies
+
+```bash
+cd Scout-Pro-Front
+
+# Install all Node dependencies via npm
+npm install
+
+# Or using yarn
+yarn install
+
+# Install specific packages (if needed individually)
+npm install @angular/core@^19.2.0
+npm install @angular/router@^19.2.0
+npm install @fortawesome/fontawesome-free
+npm install chart.js
+npm install ngx-toastr
+npm install pusher-js
+npm install @abacritt/angularx-social-login
+
+# Install Angular CLI globally (if not already installed)
+npm install -g @angular/cli@latest
+```
+
+### Additional System Dependencies
+
+```bash
+# Install FFmpeg for video processing (Ubuntu/Debian)
+sudo apt update
+sudo apt install ffmpeg
+
+# Install FFmpeg (macOS with Homebrew)
+brew install ffmpeg
+
+# Install FFmpeg (Windows with Chocolatey)
+choco install ffmpeg
+
+# Verify FFmpeg installation
+ffmpeg -version
+```
+
+### Database Setup
+
+```bash
+# Create MySQL database
+mysql -u root -p
+CREATE DATABASE scout_pro;
+CREATE USER 'scout_user'@'localhost' IDENTIFIED BY 'your_password';
+GRANT ALL PRIVILEGES ON scout_pro.* TO 'scout_user'@'localhost';
+FLUSH PRIVILEGES;
+EXIT;
+
+# Or using PostgreSQL
+sudo -u postgres psql
+CREATE DATABASE scout_pro;
+CREATE USER scout_user WITH PASSWORD 'your_password';
+GRANT ALL PRIVILEGES ON DATABASE scout_pro TO scout_user;
+\q
+```
+
+### Update Dependencies
+
+```bash
+# Update backend dependencies
+cd Scout-Pro-Back
+composer update
+
+# Update frontend dependencies
+cd Scout-Pro-Front
+npm update
+
+# Check for outdated packages
+npm outdated
+composer outdated
+```
+
+### Install Additional Tools
+
+```bash
+# Install Laravel installer globally
+composer global require laravel/installer
+
+# Install useful Laravel packages
+cd Scout-Pro-Back
+composer require laravel/horizon          # Queue monitoring
+composer require spatie/laravel-permission # Role permissions
+composer require intervention/image        # Image manipulation
+
+# Install useful Angular packages
+cd Scout-Pro-Front
+npm install @angular/cdk                  # Component Dev Kit
+npm install @angular/material             # Material Design
+npm install ngx-spinner                   # Loading spinners
+npm install ng2-file-upload              # File uploads
+```
+
 ## 📦 Installation
 
 ### Backend Setup (Laravel)
@@ -311,7 +429,7 @@ Scout-Pro-FullStack/
    DB_CONNECTION=mysql
    DB_HOST=127.0.0.1
    DB_PORT=3306
-   DB_DATABASE=scout_pro
+   DB_DATABASE=scoutpro
    DB_USERNAME=your_username
    DB_PASSWORD=your_password
 
