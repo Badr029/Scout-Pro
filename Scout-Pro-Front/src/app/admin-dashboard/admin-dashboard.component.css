@@ -324,9 +324,48 @@
   margin-bottom: 30px;
 }
 
-.chart-container:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+/* Chart Container Modifications */
+.chart-container:first-of-type {
+  height: 300px;
+  margin-bottom: 2rem;
+}
+
+/* Subscription section chart containers with tables */
+.chart-container:has(.table-responsive) {
+  height: 500px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.chart-container:has(.table-responsive) h3 {
+  flex-shrink: 0;
+  margin-bottom: 1rem;
+}
+
+.chart-container:has(.table-responsive) .table-responsive {
+  flex: 1;
+  margin-top: 0;
+  min-height: 0;
+}
+
+/* Fallback for browsers that don't support :has() */
+.chart-container.subscription-chart {
+  height: 500px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.chart-container.subscription-chart h3 {
+  flex-shrink: 0;
+  margin-bottom: 1rem;
+}
+
+.chart-container.subscription-chart .table-responsive {
+  flex: 1;
+  margin-top: 0;
+  min-height: 0;
 }
 
 .error-message {
@@ -826,6 +865,8 @@
 
 .form-control {
   width: 100%;
+  max-width: 100%;  
+  box-sizing: border-box;
   padding: 8px 12px;
   border: 1px solid #333;
   border-radius: 4px;
@@ -880,11 +921,14 @@
 /* User Subscriptions and Payment History Tables */
 .table-responsive {
   overflow-x: auto;
+  overflow-y: auto;
   margin-top: 20px;
   background: #1E1E1E;
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
   border: 1px solid #333;
+  max-height: 350px;
+  flex: 1;
 }
 
 .table {

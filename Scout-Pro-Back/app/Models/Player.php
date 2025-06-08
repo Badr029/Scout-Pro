@@ -52,7 +52,7 @@ class Player extends Model
 
     public function videos()
     {
-        return $this->hasMany(Post::class)->whereNotNull('video_url');
+        return $this->hasMany(Video::class);
     }
 
     public function followers()
@@ -74,7 +74,7 @@ class Player extends Model
 
     public function getTotalViews()
     {
-        return $this->videos()->sum('views_count');
+        return $this->videos()->sum('views');
     }
 
     public function getTotalLikes()

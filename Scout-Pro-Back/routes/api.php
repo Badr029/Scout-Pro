@@ -18,12 +18,22 @@ use App\Http\Controllers\API\ScoutController;
 use App\Http\Controllers\API\AdminController;
 use App\Http\Controllers\API\ContactRequestController;
 use App\Http\Controllers\Admin\StatisticsController;
+use App\Http\Controllers\API\AdminAuthController;
 
 
 
     Route::post('register', [AuthController::class, 'register']);
     Route::post('login', [AuthController::class, 'login']);
     Route::post('auth/google/callback', [AuthController::class, 'handleGoogleCallback']);
+
+    // Admin authentication routes
+    Route::post('admin/login', [AdminAuthController::class, 'login']);
+    Route::middleware(['auth:sanctum', 'admin'])->group(function () {
+        Route::post('admin/logout', [AdminAuthController::class, 'logout']);
+        Route::get('admin/me', [AdminAuthController::class, 'me']);
+        Route::post('admin/change-password', [AdminAuthController::class, 'changePassword']);
+        Route::post('admin/update-profile', [AdminAuthController::class, 'updateProfile']);
+    });
     // Route::post('/login/facebook/callback', [AuthController::class, 'handleFacebookCallback']);
 
     // Email verification route (manually defined)

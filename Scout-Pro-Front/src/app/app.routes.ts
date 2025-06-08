@@ -21,12 +21,14 @@ import { AdminDashboardComponent } from './admin-dashboard/admin-dashboard.compo
 import { SubscriptionDetailComponent } from './subscription-detail/subscription-detail.component';
 import { AdminGuard } from './guards/admin.guard';
 import { NonAdminGuard } from './guards/non-admin.guard';
+import { GuestGuard } from './guards/guest.guard';
 
 export const routes: Routes = [
     {
         path: '',
         loadComponent: () => import('./dynamic-welcome/dynamic-welcome.component').then(m => m.DynamicWelcomeComponent),
-        pathMatch: 'full'
+        pathMatch: 'full',
+        canActivate: [GuestGuard]
     },
     {
         path: 'welcome',
@@ -44,7 +46,8 @@ export const routes: Routes = [
     },
     {
         path: 'login',
-        component: LoginPageComponent
+        component: LoginPageComponent,
+        canActivate: [GuestGuard]
     },
     {
         path: 'forgot-password',

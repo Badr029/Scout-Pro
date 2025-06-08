@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use App\Traits\NotificationHelper;
+use App\Models\Admin;
 
 class EventController extends Controller
 {
@@ -36,16 +37,18 @@ class EventController extends Controller
                 if ($user) {
                     $query->orWhere(function($q) use ($user) {
                         $q->where('status', 'pending')
-                          ->where('organizer_id', $user->id);
+                          ->where('organizer_id', $user->id)
+                          ->where('organizer_type', User::class);
                     });
                 }
             })
-            ->with(['organizer' => function($query) {
-                $query->select('id', 'first_name', 'last_name', 'email');
-            }])
+            ->with(['organizer'])
             ->orderBy('date', 'asc')
             ->get()
             ->map(function($event) use ($user) {
+                // Check if organizer is admin
+                $isAdminOrganizer = $event->organizer_type === Admin::class;
+
                 return [
                     'id' => $event->id,
                     'title' => $event->title,
@@ -54,12 +57,24 @@ class EventController extends Controller
                     'location' => $event->location,
                     'image' => $event->image ? url('storage/' . $event->image) : null,
                     'status' => $event->status,
-                    'organizer' => [
+                    'organizer' => $isAdminOrganizer ? [
+                        'id' => 0,
+                        'name' => 'ScoutPro',
+                        'email' => $event->organizer_contact,
+                        'profile' => [
+                            'company' => 'ScoutPro',
+                            'region' => 'Global'
+                        ]
+                    ] : [
                         'id' => $event->organizer->id,
                         'name' => $event->organizer->first_name . ' ' . $event->organizer->last_name,
-                        'email' => $event->organizer->email
+                        'email' => $event->organizer->email,
+                        'profile' => $event->organizer->scout ? [
+                            'company' => $event->organizer->scout->organization ?? 'N/A',
+                            'region' => $event->organizer->scout->scouting_regions ?? 'N/A'
+                        ] : null
                     ],
-                    'is_organizer' => $event->organizer_id === $user->id,
+                    'is_organizer' => !$isAdminOrganizer && $event->organizer_id === $user?->id,
                     'target_audience' => $event->target_audience
                 ];
             });
@@ -104,6 +119,7 @@ class EventController extends Controller
             'location' => $validated['location'],
             'image' => $imagePath,
             'organizer_id' => Auth::id(),
+            'organizer_type' => User::class,
             'organizer_contact' => $validated['organizer_contact'],
             'target_audience' => $validated['target_audience'],
             'status' => 'pending',

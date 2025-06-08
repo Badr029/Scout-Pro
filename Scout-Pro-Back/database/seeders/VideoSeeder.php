@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use App\Models\User;
+use App\Models\Player;
 use App\Models\Video;
 
 class VideoSeeder extends Seeder
@@ -73,24 +74,30 @@ class VideoSeeder extends Seeder
         ];
 
         foreach ($videos as $videoData) {
-            // Find the corresponding player
-            $player = $players->firstWhere('username', $videoData['username']);
-  if ($player) {
-                Video::create([
-                    'user_id' => $player->id,
-                    'title' => $videoData['title'],
-                    'description' => $videoData['description'],
-                    'file_path' => 'videos/' . $videoData['video_file'],
-                    'thumbnail' => null, // Will be generated when video is played
-                    'views' => rand(50, 500), // Random views between 50-500
-                    'status' => 'active',
-                    'created_at' => now()->subDays(rand(1, 30)), // Random creation date within last 30 days
-                    'updated_at' => now(),
-                ]);
+            // Find the corresponding user and player
+            $user = $players->firstWhere('username', $videoData['username']);
+            if ($user) {
+                $player = $user->player;
+                if ($player) {
+                    Video::create([
+                        'user_id' => $user->id,
+                        'player_id' => $player->id,
+                        'title' => $videoData['title'],
+                        'description' => $videoData['description'],
+                        'file_path' => 'videos/' . $videoData['video_file'],
+                        'thumbnail' => null, // Will be generated when video is played
+                        'views' => rand(0, 50), // Random views between 50-500
+                        'status' => 'active',
+                        'created_at' => now()->subDays(rand(1, 30)), // Random creation date within last 30 days
+                        'updated_at' => now(),
+                    ]);
 
-                echo "Created video for player: " . $player->first_name . " " . $player->last_name . "\n";
+                    echo "Created video for player: " . $user->first_name . " " . $user->last_name . " (Player ID: " . $player->id . ")\n";
+                } else {
+                    echo "Player record not found for user: " . $videoData['username'] . "\n";
+                }
             } else {
-                echo "Player not found for username: " . $videoData['username'] . "\n";
+                echo "User not found for username: " . $videoData['username'] . "\n";
             }
         }
     }

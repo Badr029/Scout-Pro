@@ -20,13 +20,17 @@ return new class extends Migration
             $table->string('latitude')->nullable();
             $table->string('longitude')->nullable();
             $table->string('image')->nullable();
-            $table->foreignId('organizer_id')->constrained('users')->onDelete('cascade');
+            $table->unsignedBigInteger('organizer_id');
+            $table->string('organizer_type'); // 'App\Models\User' or 'App\Models\Admin'
             $table->string('organizer_contact');
             $table->enum('target_audience', ['players', 'scouts', 'public']);
             $table->enum('status', ['pending', 'approved', 'rejected'])->default('pending');
             $table->text('rejection_reason')->nullable();
             $table->timestamp('responded_at')->nullable();
             $table->timestamps();
+
+            // Add indexes for better performance
+            $table->index(['organizer_id', 'organizer_type']);
         });
     }
 

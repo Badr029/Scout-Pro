@@ -43,9 +43,10 @@
     </div>
 
     <div class="sidebar-footer">
-      <button class="logout-btn" (click)="logout()">
-        <i class="fas fa-sign-out-alt"></i>
-        <span>Logout</span>
+      <button class="logout-btn" (click)="logout()" [disabled]="loggingOut">
+        <i class="fas fa-sign-out-alt" *ngIf="!loggingOut"></i>
+        <i class="fas fa-spinner fa-spin" *ngIf="loggingOut"></i>
+        <span>{{ loggingOut ? 'Logging out...' : 'Logout' }}</span>
       </button>
     </div>
   </div>

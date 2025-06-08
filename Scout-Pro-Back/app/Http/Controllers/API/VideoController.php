@@ -217,6 +217,7 @@ class VideoController extends Controller
             // Create video record
             $video = Video::create([
                 'user_id' => $user->id,
+                'player_id' => $player->id,
                 'title' => $title,
                 'description' => $request->description ?? '',
                 'file_path' => $videoPath,
@@ -575,6 +576,7 @@ class VideoController extends Controller
             // Create video record
             $video = Video::create([
                 'user_id' => $user->id,
+                'player_id' => $player->id,
                 'title' => $title,
                 'description' => $request->description ?? '',
                 'file_path' => $videoPath,

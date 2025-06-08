@@ -726,12 +726,25 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
       });
   }
 
+  loggingOut = false;
+
   async logout() {
+    if (this.loggingOut) return; // Prevent double-clicking
+
+    this.loggingOut = true;
+    console.log('Admin logout initiated...');
+
     try {
-      await this.authService.logout();
-      this.router.navigate(['/login']);
+      await this.authService.adminLogout();
+      console.log('Admin logout successful');
+      // No need to call router.navigate since adminLogout already handles redirect
     } catch (error) {
       console.error('Logout error:', error);
+      // Force redirect to login even if logout API fails
+      console.log('Forcing redirect to login');
+      window.location.href = '/login';
+    } finally {
+      this.loggingOut = false;
     }
   }
 

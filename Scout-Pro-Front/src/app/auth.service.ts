@@ -9,10 +9,25 @@ interface LoginResponse {
   message: string;
   access_token: string;
   token_type: string;
-  user_type: 'player' | 'scout';
-  setup_completed: boolean;
+  user_type: 'player' | 'scout' | 'admin';
+  setup_completed?: boolean;
   needs_registration?: boolean;
   user_data?: any;
+}
+
+interface AdminLoginResponse {
+  status: string;
+  message: string;
+  data: {
+    admin: {
+      id: number;
+      email: string;
+      role: string;
+      is_super_admin: boolean;
+    };
+    token: string;
+    token_type: string;
+  };
 }
 
 interface SocialLoginData {
@@ -91,7 +106,7 @@ export class AuthService {
         // First store the token and basic info
         this.setToken(response.access_token);
         this.setUserType(response.user_type);
-        this.setSetupCompleted(response.setup_completed);
+        this.setSetupCompleted(response.setup_completed ?? true);
 
         // Store complete user data
         const userData = {
@@ -113,13 +128,54 @@ export class AuthService {
         const storedUser = this.getCurrentUser();
         console.log('Stored user data:', storedUser);
 
-        // Only redirect if we have valid user data
-        if (storedUser && storedUser.user_type) {
-          console.log('About to redirect with:', { userType: storedUser.user_type, setupCompleted: response.setup_completed });
-          this.handleLoginRedirect(storedUser.user_type, response.setup_completed);
-        } else {
-          console.error('Failed to store user data properly');
+        // Don't auto-redirect for regular login - let the component handle it
+        console.log('Regular login successful, stored user data:', storedUser);
+      })
+    );
+  }
+
+  adminLogin(credentials: { email: string; password: string }): Observable<any> {
+    console.log('Attempting admin login with:', credentials.email);
+    return this.http.post<any>(`${this.apiUrl}/admin/login`, credentials, {
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      }
+    }).pipe(
+      tap((response) => {
+        console.log('Admin Login Response:', response);
+
+        if (response.status === 'success' && response.data) {
+          // Store admin token and data
+          this.setToken(response.data.token);
+          this.setUserType('admin');
+          this.setSetupCompleted(true); // Admins don't need setup
+
+          // Store admin user data
+          const adminData = {
+            id: response.data.admin.id,
+            email: response.data.admin.email,
+            user_type: 'admin',
+            role: response.data.admin.role,
+            is_super_admin: response.data.admin.is_super_admin
+          };
+
+          console.log('Storing admin data:', adminData);
+          localStorage.setItem('user_data', JSON.stringify(adminData));
+          localStorage.setItem('admin_role', response.data.admin.role);
+
+          // Redirect to admin dashboard
+          this.handleLoginRedirect('admin', true);
         }
+      }),
+      catchError(error => {
+        console.error('Admin login error details:', {
+          status: error.status,
+          statusText: error.statusText,
+          error: error.error,
+          url: error.url
+        });
+        return throwError(() => error);
       })
     );
   }
@@ -129,9 +185,9 @@ export class AuthService {
       tap((response) => {
         if (!response.needs_registration) {
           // Store the token and user type first
-        this.setToken(response.access_token);
-        this.setUserType(response.user_type);
-        this.setSetupCompleted(response.setup_completed);
+          this.setToken(response.access_token);
+          this.setUserType(response.user_type);
+          this.setSetupCompleted(response.setup_completed ?? false);
 
           // Store additional user data if available
           if (response.user_data) {
@@ -150,8 +206,8 @@ export class AuthService {
             localStorage.setItem('membership', userData.membership);
           }
 
-          // Handle redirection after successful login
-        this.handleLoginRedirect(response.user_type, response.setup_completed);
+          // Don't auto-redirect for social login - let the component handle it
+          console.log('Social login successful, letting component handle redirect');
         }
       }),
       catchError(error => {
@@ -206,6 +262,26 @@ export class AuthService {
       }
     } catch (error) {
       console.error('Logout error:', error);
+    } finally {
+      // Always clear storage and cookies, regardless of any errors
+      this.clearAllStorageAndCookies();
+
+      // Force reload the application to clear any remaining state
+      window.location.href = '/login';
+    }
+  }
+
+  async adminLogout(): Promise<void> {
+    const token = localStorage.getItem('auth_token');
+    const headers = token ? new HttpHeaders({ 'Authorization': `Bearer ${token}` }) : undefined;
+
+    try {
+      // Call admin logout endpoint if we have a token
+      if (headers) {
+        await this.http.post<any>(`${this.apiUrl}/admin/logout`, {}, { headers }).toPromise();
+      }
+    } catch (error) {
+      console.error('Admin logout error:', error);
     } finally {
       // Always clear storage and cookies, regardless of any errors
       this.clearAllStorageAndCookies();

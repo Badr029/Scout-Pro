@@ -182,6 +182,16 @@ export class ScoutRegisterComponent {
     }
   }
 
+  async logout() {
+    try {
+      await this.authService.logout();
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Force redirect to login even if logout API fails
+      this.router.navigate(['/login']);
+    }
+  }
+
   onSubmit() {
     this.loading = true;
     this.errorMessage = '';

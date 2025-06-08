@@ -24,6 +24,7 @@ class Event extends Model
         'longitude',
         'image',
         'organizer_id',
+        'organizer_type',
         'organizer_contact',
         'target_audience',
         'status',
@@ -42,11 +43,11 @@ class Event extends Model
     ];
 
     /**
-     * Get the organizer of the event.
+     * Get the organizer of the event (polymorphic relationship).
      */
-    public function organizer(): BelongsTo
+    public function organizer()
     {
-        return $this->belongsTo(User::class, 'organizer_id');
+        return $this->morphTo();
     }
 
     /**

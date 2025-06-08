@@ -6,6 +6,7 @@ use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use App\Models\Admin;
 
 class AdminMiddleware
 {
@@ -24,10 +25,12 @@ class AdminMiddleware
             }
 
             $user = Auth::user();
-            if ($user->user_type !== 'admin') {
-                Log::warning('Unauthorized admin access attempt', [
+
+            // Check if the authenticated user is an Admin (from admins table)
+            if (!($user instanceof Admin)) {
+                Log::warning('Unauthorized admin access attempt - not an admin user', [
                     'user_id' => $user->id,
-                    'user_type' => $user->user_type,
+                    'user_class' => get_class($user),
                     'ip' => $request->ip(),
                     'path' => $request->path()
                 ]);
@@ -35,10 +38,24 @@ class AdminMiddleware
                     'status' => 'error',
                     'message' => 'Unauthorized. Admin access required.'
                 ], 403);
-        }
+            }
+
+            // Check if admin is active
+            if (!$user->is_active) {
+                Log::warning('Inactive admin access attempt', [
+                    'admin_id' => $user->id,
+                    'ip' => $request->ip(),
+                    'path' => $request->path()
+                ]);
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Admin account is deactivated.'
+                ], 403);
+            }
 
             Log::info('Admin access granted', [
-                'user_id' => $user->id,
+                'admin_id' => $user->id,
+                'admin_role' => $user->role,
                 'path' => $request->path()
             ]);
 

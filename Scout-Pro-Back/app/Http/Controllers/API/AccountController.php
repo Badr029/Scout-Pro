@@ -46,29 +46,36 @@ class AccountController extends Controller
         }
 
         // Check if videos table exists before attempting to delete user videos
-        if (method_exists($user, 'videos') && Schema::hasTable('videos')) {
+        if (Schema::hasTable('videos') && $user->videos()->exists()) {
             $user->videos()->delete();
         }
 
         // Check if subscription table exists before attempting to delete
-        if (method_exists($user, 'subscription') && Schema::hasTable('subscriptions') && $user->subscription) {
-            $user->subscription->delete();
+        if (Schema::hasTable('subscriptions')) {
+            $subscription = $user->subscription;
+            if ($subscription) {
+                $subscription->delete();
+            }
         }
 
         // Check if comments table exists before attempting to delete
-        if (method_exists($user, 'comments') && Schema::hasTable('comments')) {
+        if (Schema::hasTable('comments') && $user->comments()->exists()) {
             $user->comments()->delete();
         }
 
         // Check if likes table exists before attempting to delete
-        if (method_exists($user, 'likes') && Schema::hasTable('likes')) {
+        if (Schema::hasTable('likes') && $user->likes()->exists()) {
             $user->likes()->delete();
         }
 
         // Check if followers table exists before attempting to detach
-        if (method_exists($user, 'followers') && Schema::hasTable('followers')) {
-            $user->followers()->detach();
-            $user->following()->detach();
+        if (Schema::hasTable('followers')) {
+            if ($user->followers()->exists()) {
+                $user->followers()->detach();
+            }
+            if ($user->following()->exists()) {
+                $user->following()->detach();
+            }
         }
 
         // Delete the user

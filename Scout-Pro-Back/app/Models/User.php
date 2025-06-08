@@ -23,7 +23,8 @@ class User extends Authenticatable implements MustVerifyEmail
         'social_id',
         'provider',
         'email_verified_at',
-        'setup_completed'
+        'setup_completed',
+        'main_id'
     ];
 
     protected $hidden = [
@@ -49,6 +50,14 @@ class User extends Authenticatable implements MustVerifyEmail
     public function sendEmailVerificationNotification()
     {
         $this->notify(new CustomVerifyEmail);
+    }
+
+    /**
+     * Get the account associated with this user.
+     */
+    public function account()
+    {
+        return $this->belongsTo(Account::class, 'main_id', 'main_id');
     }
 
     public function player()

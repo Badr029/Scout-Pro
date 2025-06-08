@@ -6,6 +6,7 @@ use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use App\Models\User;
 use App\Models\Player;
+use App\Models\Account;
 use Illuminate\Support\Facades\Hash;
 use Carbon\Carbon;
 
@@ -38,16 +39,16 @@ class PlayerSeeder extends Seeder
                     'height' => 185,
                     'weight' => 78,
                     'preferred_foot' => 'Right',
-                    'position' => 'Forward',
-                    'secondary_position' => ['Winger', 'Attacking Midfielder'],
+                    'position' => 'ST - Striker',
+                    'secondary_position' => ['CF - Center Forward', 'RW - Right Winger'],
                     'gender' => 'Male',
-                    'nationality' => 'British',
-                    'current_city' => 'Manchester',
-                    'current_club' => 'Manchester United',
-                    'previous_clubs' => ['Chelsea Youth', 'Brighton Academy'],
-                    'playing_style' => 'Pacey, direct runner with good finishing ability',
+                    'nationality' => 'Egyptian',
+                    'current_city' => 'Cairo',
+                    'current_club' => 'Al Ahly SC',
+                    'previous_clubs' => ['Al Masry SC', 'ENPPI SC'],
+                    'playing_style' => 'Pacey striker with excellent finishing ability and good movement in the box',
                     'transfer_status' => 'Available',
-                    'bio' => 'Young talented forward looking to make my mark in professional football. Strong in the air and clinical in front of goal.',
+                    'bio' => 'Young talented striker looking to make my mark in Egyptian Premier League. Strong in the air and clinical in front of goal.',
                     'membership' => 'premium',
                 ]
             ],
@@ -71,17 +72,17 @@ class PlayerSeeder extends Seeder
                     'phone_number' => '+1234567891',
                     'height' => 175,
                     'weight' => 72,
-                    'preferred_foot' => 'Right',
-                    'position' => 'Midfielder',
-                    'secondary_position' => ['Central Midfielder', 'Attacking Midfielder'],
+                    'preferred_foot' => 'Left',
+                    'position' => 'RW - Right Winger',
+                    'secondary_position' => ['LW - Left Winger', 'CAM - Attacking Midfielder'],
                     'gender' => 'Male',
-                    'nationality' => 'Portuguese',
-                    'current_city' => 'Porto',
-                    'current_club' => 'FC Porto',
-                    'previous_clubs' => ['Benfica Youth', 'Sporting CP Academy'],
-                    'playing_style' => 'Technical player with excellent ball control and passing range',
+                    'nationality' => 'Egyptian',
+                    'current_city' => 'Alexandria',
+                    'current_club' => 'Al Ittihad Alexandria',
+                    'previous_clubs' => ['El Mokawloon', 'Ghazl El Mahalla'],
+                    'playing_style' => 'Technical winger with excellent dribbling skills and pace on the flanks',
                     'transfer_status' => 'Available',
-                    'bio' => 'Creative midfielder with a passion for the beautiful game. Always looking to create chances and control the tempo.',
+                    'bio' => 'Creative winger with a passion for the beautiful game. Always looking to create chances and beat defenders with pace.',
                     'membership' => 'free',
                 ]
             ],
@@ -105,17 +106,17 @@ class PlayerSeeder extends Seeder
                     'phone_number' => '+1234567892',
                     'height' => 180,
                     'weight' => 75,
-                    'preferred_foot' => 'Left',
-                    'position' => 'Midfielder',
-                    'secondary_position' => ['Defensive Midfielder', 'Central Midfielder'],
+                    'preferred_foot' => 'Right',
+                    'position' => 'CM - Central Midfielder',
+                    'secondary_position' => ['CDM - Defensive Midfielder', 'CAM - Attacking Midfielder'],
                     'gender' => 'Male',
-                    'nationality' => 'English',
-                    'current_city' => 'London',
-                    'current_club' => 'Chelsea FC',
-                    'previous_clubs' => ['Arsenal Academy', 'West Ham Youth'],
-                    'playing_style' => 'Versatile midfielder with strong defensive work rate and good distribution',
+                    'nationality' => 'Egyptian',
+                    'current_city' => 'Giza',
+                    'current_club' => 'Zamalek SC',
+                    'previous_clubs' => ['Pyramids FC', 'Ceramica Cleopatra FC'],
+                    'playing_style' => 'Versatile midfielder with strong work rate and excellent passing range',
                     'transfer_status' => 'Available',
-                    'bio' => 'Hard-working midfielder who loves to break up play and start attacks. Never gives up and always fights for the team.',
+                    'bio' => 'Hard-working midfielder who loves to control the tempo and create opportunities. Never gives up and always fights for the team.',
                     'membership' => 'premium',
                 ]
             ],
@@ -140,14 +141,14 @@ class PlayerSeeder extends Seeder
                     'height' => 190,
                     'weight' => 82,
                     'preferred_foot' => 'Right',
-                    'position' => 'Defender',
-                    'secondary_position' => ['Centre-back', 'Right-back'],
+                    'position' => 'CB - Center Back',
+                    'secondary_position' => ['RB - Right Back', 'CDM - Defensive Midfielder'],
                     'gender' => 'Male',
-                    'nationality' => 'American',
-                    'current_city' => 'Los Angeles',
-                    'current_club' => 'LA Galaxy',
-                    'previous_clubs' => ['Inter Miami CF', 'Atlanta United'],
-                    'playing_style' => 'Strong aerial defender with good pace and leadership qualities',
+                    'nationality' => 'Egyptian',
+                    'current_city' => 'Port Said',
+                    'current_club' => 'National Bank SC',
+                    'previous_clubs' => ['Pharco FC', 'Tala\'ea El Gaish'],
+                    'playing_style' => 'Strong aerial defender with good leadership qualities and solid passing from the back',
                     'transfer_status' => 'Available',
                     'bio' => 'Solid defender who takes pride in keeping clean sheets. Strong in the air and a natural leader on the pitch.',
                     'membership' => 'free',
@@ -156,14 +157,23 @@ class PlayerSeeder extends Seeder
         ];
 
         foreach ($players as $playerData) {
-            // Create the user
+            // First create the account entry
+            $account = Account::create([
+                'email' => $playerData['user']['email'],
+                'password' => $playerData['user']['password'],
+                'role' => 'user',
+                'is_active' => true,
+            ]);
+
+            // Create the user with the main_id
+            $playerData['user']['main_id'] = $account->main_id;
             $user = User::create($playerData['user']);
 
             // Create the player profile
             $playerData['player']['user_id'] = $user->id;
             Player::create($playerData['player']);
 
-            echo "Created player: " . $user->first_name . " " . $user->last_name . "\n";
+            echo "Created player: " . $user->first_name . " " . $user->last_name . " with account ID: " . $account->main_id . "\n";
         }
     }
 }

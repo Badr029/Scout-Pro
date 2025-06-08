@@ -23,6 +23,7 @@ use Illuminate\Support\Facades\Validator;
 use App\Models\Event;
 use App\Models\Payment;
 use App\Models\Subscription;
+use App\Models\Admin;
 use App\Traits\NotificationHelper;
 
 class AdminController extends Controller
@@ -234,12 +235,12 @@ class AdminController extends Controller
     public function getEventRequests()
     {
         try {
-            $requests = \App\Models\Event::with(['organizerWithProfile'])
+            $requests = \App\Models\Event::with(['organizer'])
                 ->orderBy('created_at', 'desc')
                 ->get()
                 ->map(function($event) {
+                    $isAdminOrganizer = $event->organizer_type === Admin::class;
                     $organizer = $event->organizer;
-                    $scoutProfile = $organizer->scout;
 
                     return [
                         'id' => $event->id,
@@ -254,14 +255,23 @@ class AdminController extends Controller
                         'rejection_reason' => $event->rejection_reason,
                         'responded_at' => $event->responded_at,
                         'created_at' => $event->created_at,
-                        'organizer' => [
+                        'organizer' => $isAdminOrganizer ? [
+                            'id' => 0,
+                            'name' => 'ScoutPro',
+                            'email' => $event->organizer_contact,
+                            'profile' => [
+                                'company' => 'ScoutPro',
+                                'region' => 'Global',
+                                'profile_image' => null
+                            ]
+                        ] : [
                             'id' => $organizer->id,
                             'name' => $organizer->first_name . ' ' . $organizer->last_name,
                             'email' => $organizer->email,
-                            'profile' => $scoutProfile ? [
-                                'company' => $scoutProfile->organization,
-                                'region' => $scoutProfile->scouting_regions,
-                                'profile_image' => $scoutProfile->profile_image ? url('storage/' . $scoutProfile->profile_image) : null
+                            'profile' => $organizer->scout ? [
+                                'company' => $organizer->scout->organization,
+                                'region' => $organizer->scout->scouting_regions,
+                                'profile_image' => $organizer->scout->profile_image ? url('storage/' . $organizer->scout->profile_image) : null
                             ] : null
                         ]
                     ];
@@ -280,7 +290,7 @@ class AdminController extends Controller
     public function updateEventRequest($id, Request $request)
     {
         try {
-            $event = \App\Models\Event::with(['organizerWithProfile'])->findOrFail($id);
+            $event = \App\Models\Event::with(['organizer'])->findOrFail($id);
 
             // Validate request
             $request->validate([
@@ -293,47 +303,76 @@ class AdminController extends Controller
             $event->responded_at = now();
             $event->save();
 
-            // Send email notifications
-            $organizer = $event->organizer;
+            // Only send notifications for user-created events, not admin-created events
+            $isAdminOrganizer = $event->organizer_type === Admin::class;
+
+            if (!$isAdminOrganizer) {
+                $organizer = $event->organizer;
+
+                if ($request->status === 'approved') {
+                    Mail::to($organizer->email)->send(new EventRequestApproved([
+                        'organizer_name' => $organizer->first_name,
+                        'event_title' => $event->title,
+                        'event_date' => $event->date,
+                        'event_location' => $event->location
+                    ]));
+
+                    // Create notification for the scout
+                    $this->createEventRequestStatusNotification(
+                        $organizer,
+                        'approved',
+                        $event->title
+                    );
+                } else {
+                    Mail::to($organizer->email)->send(new EventRequestRejected([
+                        'organizer_name' => $organizer->first_name,
+                        'event_title' => $event->title,
+                        'rejection_reason' => $event->rejection_reason
+                    ]));
+
+                    // Create notification for the scout
+                    $this->createEventRequestStatusNotification(
+                        $organizer,
+                        'rejected',
+                        $event->title
+                    );
+                }
+            }
+
+            // Notify premium players about approved events (both admin and user created)
             if ($request->status === 'approved') {
-                Mail::to($organizer->email)->send(new EventRequestApproved([
-                    'organizer_name' => $organizer->first_name,
-                    'event_title' => $event->title,
-                    'event_date' => $event->date,
-                    'event_location' => $event->location
-                ]));
-
-                // Create notification for the scout
-                $this->createEventRequestStatusNotification(
-                    $organizer,
-                    'approved',
-                    $event->title
-                );
-
-                // Notify premium players about the new event
                 $this->notifyUsersAboutEvent([
                     'title' => $event->title,
                     'date' => $event->date,
                     'location' => $event->location,
                     'event_id' => $event->id
                 ], false);
-            } else {
-                Mail::to($organizer->email)->send(new EventRequestRejected([
-                    'organizer_name' => $organizer->first_name,
-                    'event_title' => $event->title,
-                    'rejection_reason' => $event->rejection_reason
-                ]));
-
-                // Create notification for the scout
-                $this->createEventRequestStatusNotification(
-                    $organizer,
-                    'rejected',
-                    $event->title
-                );
             }
 
             // Refresh the event to get updated relationships
             $event->refresh();
+
+            // Prepare organizer data based on type
+            $isAdminOrganizer = $event->organizer_type === Admin::class;
+            $organizerData = $isAdminOrganizer ? [
+                'id' => 0,
+                'name' => 'ScoutPro',
+                'email' => $event->organizer_contact,
+                'profile' => [
+                    'company' => 'ScoutPro',
+                    'region' => 'Global',
+                    'profile_image' => null
+                ]
+            ] : [
+                'id' => $event->organizer->id,
+                'name' => $event->organizer->first_name . ' ' . $event->organizer->last_name,
+                'email' => $event->organizer->email,
+                'profile' => $event->organizer->scout ? [
+                    'company' => $event->organizer->scout->organization,
+                    'region' => $event->organizer->scout->scouting_regions,
+                    'profile_image' => $event->organizer->scout->profile_image ? url('storage/' . $event->organizer->scout->profile_image) : null
+                ] : null
+            ];
 
             return response()->json([
                 'status' => 'success',
@@ -351,16 +390,7 @@ class AdminController extends Controller
                     'rejection_reason' => $event->rejection_reason,
                     'responded_at' => $event->responded_at,
                     'created_at' => $event->created_at,
-                    'organizer' => [
-                        'id' => $event->organizer->id,
-                        'name' => $event->organizer->first_name . ' ' . $event->organizer->last_name,
-                        'email' => $event->organizer->email,
-                        'profile' => $event->organizer->scout ? [
-                            'company' => $event->organizer->scout->organization,
-                            'region' => $event->organizer->scout->scouting_regions,
-                            'profile_image' => $event->organizer->scout->profile_image ? url('storage/' . $event->organizer->scout->profile_image) : null
-                        ] : null
-                    ]
+                    'organizer' => $organizerData
                 ]
             ]);
         } catch (\Exception $e) {
@@ -947,6 +977,7 @@ class AdminController extends Controller
             // Set status as approved since it's created by admin
             $eventData['status'] = 'approved';
             $eventData['organizer_id'] = Auth::id();
+            $eventData['organizer_type'] = Admin::class;
 
             // Create the event
             $event = Event::create($eventData);
