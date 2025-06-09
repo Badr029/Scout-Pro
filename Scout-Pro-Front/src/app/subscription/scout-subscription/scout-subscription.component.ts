@@ -1,9 +1,10 @@
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, NavigationEnd } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { AuthService } from '../../auth.service';
+import { filter } from 'rxjs/operators';
 
 @Component({
   selector: 'app-scout-subscription',
@@ -66,7 +67,27 @@ export class ScoutSubscriptionComponent implements OnInit {
     private router: Router,
     private http: HttpClient,
     private authService: AuthService
-  ) {}
+  ) {
+    // Subscribe to router events to check navigation
+    this.router.events.pipe(
+      filter(event => event instanceof NavigationEnd)
+    ).subscribe((event: any) => {
+      // List of restricted routes for scouts without subscription
+      const restrictedRoutes = [
+        '/welcome',
+        '/home-feed',
+        '/Player',
+        '/player-view',
+        '/Scout',
+        '/scout-view'
+      ];
+
+      // Check if the user is trying to access a restricted route
+      if (restrictedRoutes.some(route => event.url.startsWith(route))) {
+        this.checkSubscriptionForNavigation();
+      }
+    });
+  }
 
   ngOnInit() {
     this.checkSubscriptionStatus();
@@ -93,6 +114,27 @@ export class ScoutSubscriptionComponent implements OnInit {
           console.error('Error checking subscription status:', error);
           this.error = error.error?.message || 'Failed to check subscription status';
           this.currentPlan = 'Free';
+        }
+      });
+  }
+
+  private checkSubscriptionForNavigation() {
+    const headers = new HttpHeaders({
+      'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+    });
+
+    this.http.get('http://localhost:8000/api/subscription/scout/status', { headers })
+      .subscribe({
+        next: (response: any) => {
+          if (!response.subscription_active) {
+            // If no active subscription, redirect back to subscription page
+            this.router.navigate(['/scout-subscription']);
+          }
+        },
+        error: (error) => {
+          console.error('Error checking subscription status:', error);
+          // On error, redirect to subscription page as a safety measure
+          this.router.navigate(['/scout-subscription']);
         }
       });
   }

@@ -282,3 +282,79 @@ label {
 @keyframes spinner-border {
     to { transform: rotate(360deg); }
 }
+
+.remember-me {
+  margin: 15px 0;
+}
+
+.checkbox-container {
+  display: flex;
+  align-items: center;
+  position: relative;
+  padding-left: 30px;
+  cursor: pointer;
+  font-size: 14px;
+  color: #666;
+  user-select: none;
+}
+
+/* Hide the default checkbox */
+.checkbox-container input {
+  position: absolute;
+  opacity: 0;
+  cursor: pointer;
+  height: 0;
+  width: 0;
+}
+
+/* Custom checkbox */
+.checkmark {
+  position: absolute;
+  left: 0;
+  height: 15px;
+  width: 15px;
+  /* background-color: #fff; */
+  border: 2px solid #3a5bd9;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+/* On hover */
+.checkbox-container:hover input ~ .checkmark {
+  border-color: #2196F3;
+}
+
+/* When checked */
+.checkbox-container input:checked ~ .checkmark {
+  background-color: #2196F3;
+  border-color: #2196F3;
+}
+
+/* Checkmark/indicator */
+.checkmark:after {
+  content: "";
+  position: absolute;
+  display: none;
+  left: 4px;
+  top: 0px;
+  width: 4px;
+  height: 10px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+/* Show the checkmark when checked */
+.checkbox-container input:checked ~ .checkmark:after {
+  display: block;
+}
+
+/* Focus state */
+.checkbox-container input:focus ~ .checkmark {
+  box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.2);
+}
+
+/* Active state */
+.checkbox-container:active .checkmark {
+  transform: scale(0.95);
+}

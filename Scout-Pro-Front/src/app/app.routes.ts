@@ -22,6 +22,7 @@ import { SubscriptionDetailComponent } from './subscription-detail/subscription-
 import { AdminGuard } from './guards/admin.guard';
 import { NonAdminGuard } from './guards/non-admin.guard';
 import { GuestGuard } from './guards/guest.guard';
+import { SubscriptionGuard } from './guards/subscription.guard';
 
 export const routes: Routes = [
     {
@@ -64,22 +65,22 @@ export const routes: Routes = [
     {
         path: 'profile',
         component: ProfileComponent,
-        canActivate: [AuthGuard, NonAdminGuard, ScoutGuard]
+        canActivate: [AuthGuard, NonAdminGuard, ScoutGuard, SubscriptionGuard]
     },
     {
         path: 'scout/profile',
         component: ScoutProfileComponent,
-        canActivate: [AuthGuard, NonAdminGuard, ScoutGuard]
+        canActivate: [AuthGuard, NonAdminGuard, ScoutGuard, SubscriptionGuard]
     },
     {
         path: 'scout/profile/edit',
         component: ScoutEditComponent,
-        canActivate: [AuthGuard, NonAdminGuard, ScoutGuard]
+        canActivate: [AuthGuard, NonAdminGuard, ScoutGuard, SubscriptionGuard]
     },
     {
         path: 'Edit',
         component: EditProfileComponent,
-        canActivate: [AuthGuard, NonAdminGuard, ScoutGuard]
+        canActivate: [AuthGuard, NonAdminGuard, ScoutGuard, SubscriptionGuard]
     },
     {
         path: 'scout-register',
@@ -93,17 +94,17 @@ export const routes: Routes = [
     {
         path: 'edit-profile',
         component: EditProfileComponent,
-        canActivate: [AuthGuard, NonAdminGuard, ScoutGuard]
+        canActivate: [AuthGuard, NonAdminGuard, ScoutGuard, SubscriptionGuard]
     },
     {
         path: 'home-feed',
         component: HomeFeedComponent,
-        canActivate: [AuthGuard, NonAdminGuard]
+        canActivate: [AuthGuard, NonAdminGuard, SubscriptionGuard]
     },
     {
         path: 'player/:id',
         component: PlayerViewComponent,
-        canActivate: [AuthGuard, NonAdminGuard, ScoutGuard]
+        canActivate: [AuthGuard, NonAdminGuard, ScoutGuard, SubscriptionGuard]
     },
     {
         path: 'subscription',
@@ -113,17 +114,17 @@ export const routes: Routes = [
     {
         path: 'event/:id',
         component: HomeFeedComponent,
-        canActivate: [AuthGuard, NonAdminGuard, ScoutGuard]
+        canActivate: [AuthGuard, NonAdminGuard, ScoutGuard, SubscriptionGuard]
     },
     {
         path: 'scout-edit',
         component: ScoutEditComponent,
-        canActivate: [AuthGuard, NonAdminGuard, ScoutGuard]
+        canActivate: [AuthGuard, NonAdminGuard, ScoutGuard, SubscriptionGuard]
     },
     {
         path: 'scout/:id',
         component: ScoutViewComponent,
-        canActivate: [AuthGuard, NonAdminGuard, ScoutGuard]
+        canActivate: [AuthGuard, NonAdminGuard, ScoutGuard, SubscriptionGuard]
     },
     {
         path: 'scout-subscription',
@@ -133,7 +134,7 @@ export const routes: Routes = [
     {
         path: 'subscription-detail',
         component: SubscriptionDetailComponent,
-        canActivate: [AuthGuard, NonAdminGuard]
+        canActivate: [AuthGuard, NonAdminGuard, SubscriptionGuard]
     },
     {
         path: 'admin-dashboard',

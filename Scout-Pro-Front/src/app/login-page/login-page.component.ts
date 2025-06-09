@@ -29,6 +29,7 @@ export class LoginPageComponent {
   selectedUserType: 'player' | 'scout' | '' = '';
   pendingGoogleData: any = null;
   isAdminLogin = false;
+  rememberMe = false;
 
   constructor(
     private router: Router,
@@ -152,11 +153,25 @@ export class LoginPageComponent {
   }
 
   private tryRegularLogin() {
+    // Move any existing tokens to session storage if they exist in local storage
+    const existingToken = localStorage.getItem('auth_token');
+    if (existingToken) {
+      sessionStorage.setItem('auth_token', existingToken);
+      localStorage.removeItem('auth_token');
+    }
+
     this.authService.login(this.formData).subscribe({
       next: (response) => {
         console.log('Login response:', response);
         this.loading = false;
         this.successMessage = response.message || 'Login successful!';
+
+        // Store token based on remember me preference
+        if (this.rememberMe) {
+          localStorage.setItem('auth_token', response.access_token);
+        } else {
+          sessionStorage.setItem('auth_token', response.access_token);
+        }
 
         // Clear form
         this.formData = {
