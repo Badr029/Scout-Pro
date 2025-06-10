@@ -1,1 +1,6 @@
-<router-outlet></router-outlet>
+<!-- Main container with animation -->
+<div class="page-container">
+  <main [@routeAnimations]="prepareRoute(outlet)">
+    <router-outlet #outlet="outlet"></router-outlet>
+  </main>
+</div>

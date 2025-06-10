@@ -51,6 +51,14 @@ class Event extends Model
     {
         return $this->morphTo();
     }
+    public function scoutOrganizer()
+    {
+        return $this->belongsTo(Scout::class, 'scout_organizer_id');
+    }
+    public function adminOrganizer()
+    {
+        return $this->belongsTo(Admin::class, 'admin_organizer_id');
+    }
 
     /**
      * Get the organizer with their scout profile.

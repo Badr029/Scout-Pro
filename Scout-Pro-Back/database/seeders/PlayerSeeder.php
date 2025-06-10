@@ -56,7 +56,7 @@ class PlayerSeeder extends Seeder
                 'user' => [
                     'first_name' => 'Diego',
                     'last_name' => 'Silva',
-                    'username' => 'diego_silva',
+                    'username' => '65',
                     'email' => 'diego.silva@example.com',
                     'password' => Hash::make('password123'),
                     'user_type' => 'player',
