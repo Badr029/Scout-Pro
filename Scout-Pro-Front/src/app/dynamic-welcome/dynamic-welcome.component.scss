@@ -1256,8 +1256,7 @@ body {
   }
 
   .hero-visual {
-    order: -1;
-    margin-bottom: 40px;
+    display: none; // Hide hero-visual on mobile
   }
 
   .floating-ball {
@@ -1619,4 +1618,9 @@ body {
       color: var(--primary-blue);
     }
   }
+
+}
+.hero-logo {
+  width: 350px;
+  margin-bottom: 20px;
 }

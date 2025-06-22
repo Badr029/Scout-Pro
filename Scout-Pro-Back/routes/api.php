@@ -185,6 +185,16 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/admin/payment-stats', [StatisticsController::class, 'getPaymentStats']);
         Route::get('/admin/subscription-stats', [StatisticsController::class, 'getSubscriptionStats']);
 
+        // Report Management Routes
+        Route::get('admin/reports', [AdminController::class, 'getReports']);
+        Route::get('admin/reports/{id}', [AdminController::class, 'getReportDetails']);
+        Route::put('admin/reports/{id}', [AdminController::class, 'updateReportStatus']);
+
+        // Report Creation Routes
+        Route::post('/reports/video', [FeedController::class, 'reportVideo']);
+        Route::post('/reports/user', [FeedController::class, 'reportUser']);
+        Route::post('/reports/bug', [ProfileController::class, 'reportBug']);
+
     // Contact Request Routes
     Route::middleware(['auth:sanctum'])->group(function () {
         Route::post('/contact-requests', [ContactRequestController::class, 'store']);

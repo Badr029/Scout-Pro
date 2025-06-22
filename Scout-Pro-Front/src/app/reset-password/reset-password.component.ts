@@ -9,7 +9,10 @@ import { AuthService } from '../auth.service';
   standalone: true,
   imports: [CommonModule, FormsModule, RouterModule],
   templateUrl: './reset-password.component.html',
-  styleUrls: ['./reset-password.component.css']
+  styleUrls: [
+    './reset-password.component.css',
+    '../shared/styles/auth-background.scss'
+  ]
 })
 export class ResetPasswordComponent implements OnInit {
   formData = {
@@ -24,6 +27,10 @@ export class ResetPasswordComponent implements OnInit {
   successMessage = '';
   showPassword = false;
   showConfirmPassword = false;
+  validationErrors: { [key: string]: string[] } = {
+    password: [],
+    password_confirmation: []
+  };
 
   constructor(
     private authService: AuthService,
@@ -52,29 +59,65 @@ export class ResetPasswordComponent implements OnInit {
     }
   }
 
+  validatePassword(password: string): string[] {
+    const errors: string[] = [];
+
+    if (password.length < 8) {
+      errors.push('Password must be at least 8 characters long');
+    }
+    if (password.length > 64) {
+      errors.push('Password cannot exceed 64 characters');
+    }
+    if (!/[a-z]/.test(password)) {
+      errors.push('Password must contain at least one lowercase letter');
+    }
+    if (!/[A-Z]/.test(password)) {
+      errors.push('Password must contain at least one uppercase letter');
+    }
+    if (!/\d/.test(password)) {
+      errors.push('Password must contain at least one number');
+    }
+    if (!/[@$!%*?&]/.test(password)) {
+      errors.push('Password must contain at least one special character (@$!%*?&)');
+    }
+
+    return errors;
+  }
+
+  onPasswordChange() {
+    this.validationErrors['password'] = this.validatePassword(this.formData.password);
+    this.validatePasswordMatch();
+  }
+
+  onConfirmPasswordChange() {
+    this.validatePasswordMatch();
+    }
+
+  validatePasswordMatch() {
+    if (this.formData.password_confirmation && this.formData.password !== this.formData.password_confirmation) {
+      this.validationErrors['password_confirmation'] = ['Passwords do not match'];
+    } else {
+      this.validationErrors['password_confirmation'] = [];
+    }
+  }
+
   onSubmit() {
+    // Validate password before submission
+    const passwordErrors = this.validatePassword(this.formData.password);
+    if (passwordErrors.length > 0) {
+      this.validationErrors['password'] = passwordErrors;
+      return;
+    }
+
+    // Validate password match
+    this.validatePasswordMatch();
+    if (this.validationErrors['password_confirmation'].length > 0) {
+      return;
+    }
+
     this.loading = true;
     this.errorMessage = '';
     this.successMessage = '';
-
-    // Validation
-    if (!this.formData.password) {
-      this.errorMessage = 'Password is required';
-      this.loading = false;
-      return;
-    }
-
-    if (this.formData.password.length < 6) {
-      this.errorMessage = 'Password must be at least 6 characters long';
-      this.loading = false;
-      return;
-    }
-
-    if (this.formData.password !== this.formData.password_confirmation) {
-      this.errorMessage = 'Passwords do not match';
-      this.loading = false;
-      return;
-    }
 
     this.authService.resetPassword(this.formData).subscribe({
       next: (response) => {

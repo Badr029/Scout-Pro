@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, ViewEncapsulation } from '@angular/core';
+import { Component, OnInit, OnDestroy, ViewEncapsulation, ViewChild } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
@@ -8,6 +8,8 @@ import { FormsModule } from '@angular/forms';
 import { forkJoin, interval, Subscription } from 'rxjs';
 import { map, takeWhile } from 'rxjs/operators';
 import { ApiService } from '../api.service';
+import { FeedService } from '../services/feed.service';
+import { ReportModalComponent } from '../shared/components/report-modal/report-modal.component';
 
 export interface Player {
   user_id: number;
@@ -82,7 +84,7 @@ interface LikeResponse {
 @Component({
   selector: 'app-player-view',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, ReportModalComponent],
   templateUrl: './player-view.component.html',
   styleUrl: './player-view.component.css',
   encapsulation: ViewEncapsulation.None
@@ -113,7 +115,14 @@ export class PlayerViewComponent implements OnInit, OnDestroy {
   alertType: 'success' | 'error' | null = null;
   isScout: boolean = false;
 
+  // Report modal
+  showReportModal = false;
+  reportType: 'video' | 'user' | 'bug' = 'user';
+  reportItemId: number | null = null;
+
   private readonly BASE_API_URL = 'http://localhost:8000';
+
+  @ViewChild(ReportModalComponent) reportModal!: ReportModalComponent;
 
   constructor(
     private route: ActivatedRoute,
@@ -121,7 +130,8 @@ export class PlayerViewComponent implements OnInit, OnDestroy {
     private http: HttpClient,
     private authService: AuthService,
     private sanitizer: DomSanitizer,
-    private apiService: ApiService
+    private apiService: ApiService,
+    private feedService: FeedService
   ) {
     this.playerId = this.route.snapshot.paramMap.get('id');
   }
@@ -643,5 +653,47 @@ export class PlayerViewComponent implements OnInit, OnDestroy {
       this.alertMessage = null;
       this.alertType = null;
     }, 5000);
+  }
+
+  openReportModal(type: 'video' | 'user' | 'bug', itemId: number | null = null) {
+    this.reportType = type;
+    this.reportItemId = itemId;
+    this.showReportModal = true;
+  }
+
+  closeReportModal() {
+    this.showReportModal = false;
+    this.reportItemId = null;
+  }
+
+  handleReportSubmit(formData: any) {
+    if (!this.reportItemId) return;
+
+    this.feedService.submitReport({
+      type: this.reportType,
+      item_id: this.reportItemId,
+      reason: formData.reason,
+      description: formData.description,
+      browser_info: this.reportType === 'bug' ? formData.browser_info : undefined
+    }).subscribe({
+      next: (response) => {
+        console.log('Report submitted successfully:', response);
+        this.reportModal?.showMessage('Report submitted successfully', 'success');
+      },
+      error: (error) => {
+        console.error('Report submission error:', error);
+        let errorMessage = 'Failed to submit report. Please try again later.';
+        
+        if (error.status === 401) {
+          errorMessage = 'Authentication failed. Please log in again.';
+        } else if (error.status === 422) {
+          errorMessage = 'Invalid report data. Please check your input.';
+        } else if (error.error?.message) {
+          errorMessage = error.error.message;
+        }
+        
+        this.reportModal?.showMessage(errorMessage, 'error');
+      }
+    });
   }
 }

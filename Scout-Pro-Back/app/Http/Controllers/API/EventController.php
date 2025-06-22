@@ -121,8 +121,6 @@ class EventController extends Controller
             'location' => $validated['location'],
             'image' => $imagePath,
             'organizer_id' => Auth::id(),
-            'scout_organizer_id' => Auth::id() ?? null,
-            'admin_organizer_id' => Auth::id() ?? null,
             'organizer_type' => $validated['organizer_type'] ?? User::class,
             'organizer_contact' => $validated['organizer_contact'],
             'target_audience' => $validated['target_audience'],

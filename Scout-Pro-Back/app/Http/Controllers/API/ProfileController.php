@@ -11,6 +11,8 @@ use App\Models\Scout;
 use App\Models\Player;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
+use App\Models\Report;
+use Illuminate\Support\Facades\Log;
 
 class ProfileController extends Controller
 {
@@ -228,6 +230,61 @@ class ProfileController extends Controller
         }
 
         return response()->json(['message' => 'Invalid user type'], 400);
+    }
+
+    public function reportBug(Request $request)
+    {
+        try {
+            $request->validate([
+                'reason' => 'required|in:feature,display,performance,other',
+                'description' => 'required|string|max:1000',
+                'browser_info' => 'required|string'
+            ]);
+
+            $user = Auth::user();
+
+            // Map frontend reason to severity level
+            $severityMap = [
+                'feature' => 'medium',      // Feature not working - medium severity
+                'display' => 'low',         // Display issues - low severity
+                'performance' => 'high',    // Performance issues - high severity
+                'other' => 'medium'         // Other issues - medium severity by default
+            ];
+
+            $severity = $severityMap[$request->reason] ?? 'medium';
+
+            // Parse browser info if it's JSON string
+            $browserInfo = $request->browser_info;
+            if (is_string($browserInfo)) {
+                // Try to decode JSON, if it fails, keep as string
+                $decoded = json_decode($browserInfo, true);
+                if (json_last_error() === JSON_ERROR_NONE) {
+                    $browserInfo = $decoded;
+                }
+            }
+
+            // Create consolidated report
+            Report::create([
+                'report_type' => 'bug',
+                'reporter_id' => $user->id,
+                'status' => 'pending',
+                'severity' => $severity,
+                'page_url' => $browserInfo['url'] ?? request()->header('referer') ?? 'Unknown',
+                'description' => $request->description,
+                'browser_info' => is_array($browserInfo) ? $browserInfo : json_decode($browserInfo, true)
+            ]);
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Bug reported successfully'
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error reporting bug: ' . $e->getMessage());
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Error reporting bug'
+            ], 500);
+        }
     }
 }
 

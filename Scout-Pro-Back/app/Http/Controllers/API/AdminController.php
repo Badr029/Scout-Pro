@@ -25,6 +25,7 @@ use App\Models\Payment;
 use App\Models\Subscription;
 use App\Models\Admin;
 use App\Traits\NotificationHelper;
+use App\Models\Report;
 
 class AdminController extends Controller
 {
@@ -1210,6 +1211,179 @@ class AdminController extends Controller
                 'status' => 'error',
                 'message' => 'Error deleting comment'
             ], 500);
+        }
+    }
+
+    public function getReports(Request $request)
+    {
+        try {
+            Log::info('AdminController::getReports called', [
+                'request_params' => $request->all(),
+                'all_input' => $request->input(),
+                'type_filter' => $request->type,
+                'status_filter' => $request->status,
+                'type_input' => $request->input('type'),
+                'status_input' => $request->input('status'),
+                'type_empty_check' => $request->type === '',
+                'status_empty_check' => $request->status === ''
+            ]);
+
+            $query = Report::with(['reporter', 'video', 'reportedUser'])
+                ->orderBy('created_at', 'desc');
+
+            // Apply filters - only filter if value is not empty and not null
+            $typeFilter = $request->input('type');
+            $statusFilter = $request->input('status');
+
+            Log::info('Filter values', [
+                'type_filter_raw' => $typeFilter,
+                'status_filter_raw' => $statusFilter,
+                'type_is_empty' => empty($typeFilter),
+                'status_is_empty' => empty($statusFilter)
+            ]);
+
+            if (!empty($typeFilter)) {
+                $query->where('report_type', $typeFilter);
+                Log::info('Applied type filter', ['type' => $typeFilter]);
+            }
+
+            if (!empty($statusFilter)) {
+                $query->where('status', $statusFilter);
+                Log::info('Applied status filter', ['status' => $statusFilter]);
+            }
+
+            // Log the SQL query for debugging
+            Log::info('Final SQL Query', [
+                'sql' => $query->toSql(),
+                'bindings' => $query->getBindings()
+            ]);
+
+            $reports = $query->paginate(10);
+
+            // Format the data for frontend
+            $formattedReports = $reports->getCollection()->map(function($report) {
+                $formatted = [
+                    'id' => $report->id,
+                    'report_type' => $report->report_type,
+                    'status' => $report->status,
+                    'admin_notes' => $report->admin_notes,
+                    'resolved_at' => $report->resolved_at,
+                    'created_at' => $report->created_at,
+                    'reporter' => [
+                        'first_name' => $report->reporter ? $report->reporter->first_name : 'Unknown',
+                        'last_name' => $report->reporter ? $report->reporter->last_name : 'User'
+                    ]
+                ];
+
+                // Add specific report type data
+                if ($report->report_type === 'video') {
+                    $formatted['videoReport'] = [
+                        'reason' => $report->video_reason,
+                        'description' => $report->description,
+                        'video' => [
+                            'title' => $report->video ? $report->video->title : 'Unknown Video'
+                        ]
+                    ];
+                } elseif ($report->report_type === 'user') {
+                    $formatted['userReport'] = [
+                        'reason' => $report->user_reason,
+                        'description' => $report->description,
+                        'reportedUser' => [
+                            'first_name' => $report->reportedUser ? $report->reportedUser->first_name : 'Unknown',
+                            'last_name' => $report->reportedUser ? $report->reportedUser->last_name : 'User'
+                        ]
+                    ];
+                } elseif ($report->report_type === 'bug') {
+                    $formatted['bugReport'] = [
+                        'severity' => $report->severity,
+                        'page_url' => $report->page_url,
+                        'description' => $report->description,
+                        'browser_info' => $report->browser_info
+                    ];
+                }
+
+                return $formatted;
+            });
+
+            $paginationData = [
+                'data' => $formattedReports,
+                'total' => $reports->total(),
+                'current_page' => $reports->currentPage(),
+                'last_page' => $reports->lastPage(),
+                'per_page' => $reports->perPage(),
+                'from' => $reports->firstItem(),
+                'to' => $reports->lastItem()
+            ];
+
+            Log::info('Reports retrieved and formatted', [
+                'total' => $reports->total(),
+                'count' => $formattedReports->count(),
+                'current_page' => $reports->currentPage(),
+                'first_report' => $formattedReports->first()
+            ]);
+
+            return response()->json([
+                'status' => 'success',
+                'data' => $paginationData
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error fetching reports: ' . $e->getMessage());
+            Log::error('Stack trace: ' . $e->getTraceAsString());
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Error fetching reports: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function updateReportStatus(Request $request, $id)
+    {
+        try {
+            $report = Report::findOrFail($id);
+
+            $request->validate([
+                'status' => 'required|in:pending,in_review,resolved,rejected',
+                'admin_notes' => 'nullable|string'
+            ]);
+
+            $report->status = $request->status;
+            if ($request->has('admin_notes')) {
+                $report->admin_notes = $request->admin_notes;
+            }
+
+            if (in_array($request->status, ['resolved', 'rejected'])) {
+                $report->resolved_at = now();
+            }
+
+            $report->save();
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Report status updated successfully',
+                'data' => $report
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error updating report status: ' . $e->getMessage());
+            return response()->json(['message' => 'Error updating report status'], 500);
+        }
+    }
+
+    public function getReportDetails($id)
+    {
+        try {
+            $report = Report::with([
+                'reporter',
+                'video.user',
+                'reportedUser'
+            ])->findOrFail($id);
+
+            return response()->json([
+                'status' => 'success',
+                'data' => $report
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error fetching report details: ' . $e->getMessage());
+            return response()->json(['message' => 'Error fetching report details'], 500);
         }
     }
 }

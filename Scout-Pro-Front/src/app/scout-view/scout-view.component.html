@@ -13,6 +13,9 @@
         <button class="btn btn-primary" (click)="fetchScoutProfile()">Try Again</button>
     </div>
 
+    <!-- Notification -->
+    <div *ngIf="notification" class="notification">{{ notification }}</div>
+
 
     <!-- Profile Content -->
     <div *ngIf="!loading && !error && scoutData" class="profile-content">
@@ -43,6 +46,10 @@
                         (click)="toggleFollow()">
                         <i class="fas" [class.fa-user-plus]="!isFollowing" [class.fa-user-check]="isFollowing"></i>
                         {{ isFollowing ? 'Following' : 'Follow' }}
+                    </button>
+                    <button class="btn report-btn" (click)="openReportModal('user', scoutData.user_id)">
+                        <i class="fas fa-flag"></i>
+                        Report
                     </button>
                 </div>
             </div>
@@ -162,3 +169,13 @@
         </div>
     </div>
 </div>
+
+<!-- Report Modal -->
+<app-report-modal
+  #reportModal
+  *ngIf="showReportModal"
+  [type]="reportType"
+  [itemId]="reportItemId"
+  (close)="closeReportModal()"
+  (submit)="handleReportSubmit($event)">
+</app-report-modal>

@@ -1,0 +1,90 @@
+// Enhanced Color Variables - Premium Dark Theme
+:root {
+  --primary-blue: #3a86ff;
+  --primary-blue-dark: #2667cc;
+  --primary-blue-light: #5a9aff;
+  --dark-bg: #121212;
+  --dark-surface: #1e1e1e;
+  --accent-green: #4CAF50;
+  --accent-orange: #ff6b35;
+}
+
+.auth-background {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+  background: linear-gradient(135deg, var(--dark-bg) 0%, var(--dark-surface) 100%);
+  overflow: hidden;
+}
+
+.animated-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background:
+    radial-gradient(circle at 20% 80%, rgba(38, 103, 255, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(0, 208, 132, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 40% 40%, rgba(255, 107, 53, 0.05) 0%, transparent 50%);
+  animation: backgroundShift 20s ease-in-out infinite;
+}
+
+.floating-elements {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.floating-ball {
+  position: absolute;
+  font-size: 2rem;
+  animation: float 6s ease-in-out infinite;
+  opacity: 0.3;
+}
+
+.ball-1 {
+  top: 20%;
+  left: 10%;
+  animation-delay: 0s;
+}
+
+.ball-2 {
+  top: 60%;
+  right: 15%;
+  animation-delay: 1.5s;
+}
+
+.ball-3 {
+  bottom: 30%;
+  left: 20%;
+  animation-delay: 3s;
+}
+
+.ball-4 {
+  top: 40%;
+  right: 30%;
+  animation-delay: 4.5s;
+}
+
+@keyframes backgroundShift {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  25% { transform: translateY(-20px) rotate(90deg); }
+  50% { transform: translateY(-10px) rotate(180deg); }
+  75% { transform: translateY(-15px) rotate(270deg); }
+}
+
+@media (max-width: 768px) {
+  .floating-ball {
+    display: none;
+  }
+}

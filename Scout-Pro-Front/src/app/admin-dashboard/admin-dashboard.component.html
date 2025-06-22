@@ -40,6 +40,11 @@
         <i class="fas fa-film"></i>
         <span>Content Management</span>
       </a>
+
+      <a class="menu-item" [class.active]="currentSection === 'reports'" (click)="setSection('reports')">
+        <i class="fas fa-flag"></i>
+        <span>Reports</span>
+      </a>
     </div>
 
     <div class="sidebar-footer">
@@ -980,6 +985,106 @@
             </div>
           </div>
         </div>
+      </div>
+    </div>
+
+    <!-- Reports Section -->
+    <div *ngIf="currentSection === 'reports'" class="dashboard-content">
+      <h2>Reports Management</h2>
+
+      <!-- Error Message -->
+      <div *ngIf="error" class="alert alert-danger">
+        {{ error }}
+        <button class="btn btn-link" (click)="loadReports()">Retry</button>
+      </div>
+
+      <div class="filters-section">
+        <div class="filter-group">
+          <label>Type:</label>
+          <select [(ngModel)]="reportFilters.type" (change)="onReportFiltersChange()">
+            <option value="">All</option>
+            <option value="video">Video Reports</option>
+            <option value="user">User Reports</option>
+            <option value="bug">Bug Reports</option>
+          </select>
+        </div>
+
+        <div class="filter-group">
+          <label>Status:</label>
+          <select [(ngModel)]="reportFilters.status" (change)="onReportFiltersChange()">
+            <option value="">All</option>
+            <option value="pending">Pending</option>
+            <option value="in_review">In Review</option>
+            <option value="resolved">Resolved</option>
+            <option value="rejected">Rejected</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="reports-grid">
+        <div *ngFor="let report of reports" class="report-card">
+          <div class="report-header">
+            <span class="report-id">#{{ report.id }}</span>
+            <span class="report-type" [ngClass]="report.report_type">{{ report.report_type }}</span>
+            <span class="report-status" [ngClass]="report.status">{{ report.status }}</span>
+          </div>
+
+          <div class="report-content">
+            <div class="reporter-info">
+              <span>Reported by: {{ report.reporter.first_name }} {{ report.reporter.last_name }}</span>
+              <span>Date: {{ report.created_at | date }}</span>
+            </div>
+
+            <div class="report-details" [ngSwitch]="report.report_type">
+              <div *ngSwitchCase="'video'" class="video-report">
+                <p><strong>Video:</strong> {{ report.videoReport?.video?.title }}</p>
+                <p><strong>Reason:</strong> {{ report.videoReport?.reason }}</p>
+                <p>{{ report.videoReport?.description }}</p>
+              </div>
+
+              <div *ngSwitchCase="'user'" class="user-report">
+                <p><strong>Reported User:</strong> {{ report.userReport?.reportedUser?.first_name }} {{ report.userReport?.reportedUser?.last_name }}</p>
+                <p><strong>Reason:</strong> {{ report.userReport?.reason }}</p>
+                <p>{{ report.userReport?.description }}</p>
+              </div>
+
+              <div *ngSwitchCase="'bug'" class="bug-report">
+                <p><strong>Severity:</strong> {{ report.bugReport?.severity }}</p>
+                <p><strong>Page:</strong> {{ report.bugReport?.page_url }}</p>
+                <p>{{ report.bugReport?.description }}</p>
+              </div>
+            </div>
+
+            <div class="admin-actions">
+              <div class="status-update">
+                <select [(ngModel)]="report.newStatus" [disabled]="report.status === 'resolved' || report.status === 'rejected'">
+                  <option value="pending">Pending</option>
+                  <option value="in_review">In Review</option>
+                  <option value="resolved">Resolved</option>
+                  <option value="rejected">Rejected</option>
+                </select>
+                <button (click)="updateReportStatus(report)" [disabled]="report.status === report.newStatus || report.status === 'resolved' || report.status === 'rejected'">
+                  Update Status
+                </button>
+              </div>
+
+              <div class="admin-notes">
+                <textarea [(ngModel)]="report.newNotes" placeholder="Add admin notes..."></textarea>
+                <button (click)="saveAdminNotes(report)" [disabled]="!report.newNotes">Save Notes</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div *ngIf="!reports.length" class="no-reports">
+        No reports found matching the selected filters.
+      </div>
+
+      <div class="pagination" *ngIf="totalPages > 1">
+        <button (click)="changePage(currentPage - 1)" [disabled]="currentPage === 1">Previous</button>
+        <span>Page {{ currentPage }} of {{ totalPages }}</span>
+        <button (click)="changePage(currentPage + 1)" [disabled]="currentPage === totalPages">Next</button>
       </div>
     </div>
   </div>

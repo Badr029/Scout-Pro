@@ -1,4 +1,4 @@
-import { Component, ViewEncapsulation, OnInit, OnDestroy } from '@angular/core';
+import { Component, ViewEncapsulation, OnInit, OnDestroy, ViewChild } from '@angular/core';
 import { Router } from '@angular/router';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
@@ -6,6 +6,8 @@ import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../auth.service';
 import { ApiService } from '../../api.service';
 import { ImageService } from '../../shared/services/image.service';
+import { FeedService } from '../../services/feed.service';
+import { ReportModalComponent } from '../../shared/components/report-modal/report-modal.component';
 
 interface ScoutProfile {
   username: string;
@@ -50,7 +52,7 @@ interface ContactedPlayer {
 @Component({
   selector: 'app-scout-profile',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, ReportModalComponent],
   templateUrl: './profile.component.html',
   styleUrls: ['./profile.component.css'],
   encapsulation: ViewEncapsulation.None
@@ -71,12 +73,20 @@ export class ScoutProfileComponent implements OnInit, OnDestroy {
   showPassword = false;
   Array = Array;
 
+  // Report modal
+  showReportModal = false;
+  reportType: 'video' | 'user' | 'bug' = 'bug';
+  reportItemId: number | null = null;
+
+  @ViewChild(ReportModalComponent) reportModal: ReportModalComponent | undefined;
+
   constructor(
     private router: Router,
     private http: HttpClient,
     private authService: AuthService,
     private apiService: ApiService,
-    public imageService: ImageService
+    public imageService: ImageService,
+    private feedService: FeedService
   ) {}
 
   ngOnInit() {
@@ -174,7 +184,13 @@ export class ScoutProfileComponent implements OnInit, OnDestroy {
   }
 
   async logout() {
-    await this.authService.logout();
+    try {
+      await this.authService.logout();
+      // Handle successful logout (e.g., redirect to login page)
+    } catch (error) {
+      console.error('Error during logout:', error);
+      // Handle logout error
+    }
   }
 
   showDeleteAccountModal() {
@@ -311,22 +327,21 @@ export class ScoutProfileComponent implements OnInit, OnDestroy {
     }
   };
 
+  togglePasswordVisibility() {
+    this.showPassword = !this.showPassword;
+  }
+
+  editProfile() {
+    // Implement edit profile logic
+  }
+
   ngOnDestroy() {
     document.removeEventListener('click', this.handleClickOutside);
   }
 
   getArrayFromString(value: string | string[] | null | undefined): string[] {
     if (!value) return [];
-    if (Array.isArray(value)) return value;
-    if (typeof value === 'string') {
-      try {
-        const parsed = JSON.parse(value);
-        return Array.isArray(parsed) ? parsed : [parsed];
-      } catch {
-        return value.split(',').map(item => item.trim());
-      }
-    }
-    return [];
+    return Array.isArray(value) ? value : [value];
   }
 
   goToHome() {
@@ -371,10 +386,6 @@ export class ScoutProfileComponent implements OnInit, OnDestroy {
     }
   }
 
-  toggleShowPassword() {
-    this.showPassword = !this.showPassword;
-  }
-
   getProfileImageUrl(): string {
     return this.imageService.getProfileImageUrl(this.scoutData);
   }
@@ -382,4 +393,49 @@ export class ScoutProfileComponent implements OnInit, OnDestroy {
   getDocumentUrl(documentPath: string): string {
     return this.imageService.getDocumentUrl(documentPath);
   }
+
+  openReportModal(type: 'video' | 'user' | 'bug', itemId: number | null = null) {
+    this.reportType = type;
+    this.reportItemId = itemId;
+    this.showReportModal = true;
+  }
+
+  closeReportModal() {
+    this.showReportModal = false;
+    this.reportItemId = null;
+  }
+
+  handleReportSubmit(formData: any) {
+    if (!this.reportItemId && this.reportType !== 'bug') {
+      this.reportModal?.showMessage('Invalid report data', 'error');
+      return;
+    }
+
+    this.feedService.submitReport({
+      type: this.reportType,
+      item_id: this.reportItemId || 0,
+      reason: formData.reason,
+      description: formData.description,
+      browser_info: this.reportType === 'bug' ? formData.browser_info : undefined
+    }).subscribe({
+      next: () => {
+        this.reportModal?.showMessage('Report submitted successfully', 'success');
+      },
+      error: (error) => {
+        console.error('Report submission error:', error);
+        let errorMessage = 'Failed to submit report. Please try again later.';
+
+        if (error.status === 401) {
+          errorMessage = 'Authentication failed. Please log in again.';
+        } else if (error.status === 422) {
+          errorMessage = 'Invalid report data. Please check your input.';
+        } else if (error.error?.message) {
+          errorMessage = error.error.message;
+        }
+
+        this.reportModal?.showMessage(errorMessage, 'error');
+      }
+    });
+  }
 }
+

@@ -1207,8 +1207,6 @@ textarea.form-control {
     padding-bottom: 1rem;
 }
 
-
-
 /* Reel Card Styles */
 .reel-card {
     background: #2d2d2d;
@@ -1656,3 +1654,12 @@ textarea.form-control {
 .btn-show-password i {
     font-size: 1rem;
 }
+.action-btn.report-btn {
+    color: var(--gray);
+    margin-left: auto;
+}
+
+.action-btn.report-btn:hover {
+    color: var(--danger);
+}
+

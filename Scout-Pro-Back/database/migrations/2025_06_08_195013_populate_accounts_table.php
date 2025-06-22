@@ -15,14 +15,9 @@ return new class extends Migration
         // First, populate accounts table with existing users
         $users = DB::table('users')->get();
         foreach ($users as $user) {
-            // Skip users with no password (social login users)
-            if (empty($user->password)) {
-                continue;
-            }
-
             $accountId = DB::table('accounts')->insertGetId([
                 'email' => $user->email,
-                'password' => $user->password,
+                'password' => $user->password, // Can be null for social login users
                 'role' => 'user',
                 'is_active' => true,
                 'created_at' => $user->created_at ?? now(),
@@ -59,11 +54,17 @@ return new class extends Migration
      */
     public function down(): void
     {
+        // Disable foreign key checks temporarily
+        DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+
         // Clear main_id from users and admins
         DB::table('users')->update(['main_id' => null]);
         DB::table('admins')->update(['main_id' => null]);
 
         // Clear accounts table
         DB::table('accounts')->truncate();
+
+        // Re-enable foreign key checks
+        DB::statement('SET FOREIGN_KEY_CHECKS=1;');
     }
 };

@@ -1,9 +1,11 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { AuthService } from '../auth.service';
 import { CommonModule } from '@angular/common';
 import { ApiService } from '../api.service';
+import { FeedService } from '../services/feed.service';
+import { ReportModalComponent } from '../shared/components/report-modal/report-modal.component';
 
 interface ScoutProfile {
   id?: string;
@@ -30,7 +32,7 @@ interface ScoutProfile {
 @Component({
   selector: 'app-scout-view',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, ReportModalComponent],
   templateUrl: './scout-view.component.html',
   styleUrls: ['./scout-view.component.scss']
 })
@@ -42,12 +44,21 @@ export class ScoutViewComponent implements OnInit {
   isFollowing: boolean = false;
   followLoading: boolean = false;
 
+  // Report modal
+  showReportModal = false;
+  reportType: 'video' | 'user' | 'bug' = 'user';
+  reportItemId: number | null = null;
+  notification = '';
+
+  @ViewChild(ReportModalComponent) reportModal!: ReportModalComponent;
+
   constructor(
     private route: ActivatedRoute,
     private router: Router,
     private http: HttpClient,
     private authService: AuthService,
-    private apiService: ApiService
+    private apiService: ApiService,
+    private feedService: FeedService
   ) {}
 
   ngOnInit(): void {
@@ -169,5 +180,58 @@ export class ScoutViewComponent implements OnInit {
 
   goToHome(): void {
     this.router.navigate(['/home-feed']);
+  }
+
+  openReportModal(type: 'video' | 'user' | 'bug', itemId: number | null = null) {
+    this.reportType = type;
+    this.reportItemId = itemId;
+    this.showReportModal = true;
+  }
+
+  closeReportModal() {
+    this.showReportModal = false;
+    this.reportItemId = null;
+  }
+
+  handleReportSubmit(formData: any) {
+    if (!this.reportItemId) {
+      this.reportModal?.showMessage('Invalid report data', 'error');
+      return;
+    }
+
+    this.feedService.submitReport({
+      type: this.reportType,
+      item_id: this.reportItemId,
+      reason: formData.reason,
+      description: formData.description,
+      browser_info: this.reportType === 'bug' ? formData.browser_info : undefined
+    }).subscribe({
+      next: (response) => {
+        console.log('Report submitted successfully:', response);
+        this.reportModal?.showMessage('Report submitted successfully', 'success');
+      },
+      error: (error) => {
+        console.error('Report submission error:', error);
+        let errorMessage = 'Failed to submit report. Please try again later.';
+        
+        if (error.status === 401) {
+          errorMessage = 'Authentication failed. Please log in again.';
+        } else if (error.status === 422) {
+          errorMessage = 'Invalid report data. Please check your input.';
+        } else if (error.error?.message) {
+          errorMessage = error.error.message;
+        }
+        
+        this.reportModal?.showMessage(errorMessage, 'error');
+      }
+    });
+  }
+
+  showNotification(message: string) {
+    // Add notification property if it doesn't exist
+    this.notification = message;
+    setTimeout(() => {
+      this.notification = '';
+    }, 3000);
   }
 }

@@ -12,7 +12,7 @@ import { AuthService } from '../auth.service';
   templateUrl: './login-page.component.html',
   styleUrls: [
     './login-page.component.css',
-    '../shared/styles/auth-background.css'
+    '../shared/styles/auth-background.scss'
   ]
 })
 export class LoginPageComponent {
@@ -291,9 +291,21 @@ export class LoginPageComponent {
 
   private handleLoginRedirect(response: any) {
     console.log('Handling login redirect with response:', response);
+    console.log('Response type:', typeof response);
+    console.log('Response keys:', Object.keys(response || {}));
+    console.log('Access token:', response?.access_token);
+    console.log('User type:', response?.user_type);
+    console.log('Setup completed:', response?.setup_completed);
+    console.log('User data:', response?.user_data);
 
-    if (!response || !response.access_token) {
-      console.error('Invalid response for redirect:', response);
+    if (!response) {
+      console.error('No response provided');
+      this.errorMessage = 'Invalid login response. Please try again.';
+      return;
+    }
+
+    if (!response.access_token) {
+      console.error('No access token in response:', response);
       this.errorMessage = 'Invalid login response. Please try again.';
       return;
     }

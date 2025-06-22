@@ -17,16 +17,11 @@ body::before {
     left: 0;
     right: 0;
     bottom: 0;
-    background:
-        linear-gradient(rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.85)),
-        url('/assets/images/background.jpg') center center/cover no-repeat;
     z-index: -1;
 }
 
 body {
-    background:
-    linear-gradient(rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.85)),
-        url('/assets/WhatsApp%20Image%202025-05-02%20at%2022.17.46_f8c08b38.jpg');
+  background: transparent;
 background-size: cover;
 background-attachment: fixed;
 display: flex;
@@ -360,18 +355,20 @@ textarea {
 
 /* Form Actions Container */
 .form-actions {
-    position: sticky;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    background: rgba(30, 30, 30, 0.95);
-    backdrop-filter: blur(10px);
-    padding: 20px;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
-    z-index: 100;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+  position: sticky;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background: transparent;
+  -webkit-backdrop-filter: blur(10px);
+  /* backdrop-filter: blur(10px); */
+  padding: 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  z-index: 100;
+  display: flex
+;
+  justify-content: center;
+  align-items: center;
 }
 
 /* Submit Button */

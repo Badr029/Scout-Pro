@@ -32,7 +32,7 @@ interface PlayerFormData {
   templateUrl: './register-player.component.html',
   styleUrls: [
     './register-player.component.css',
-    '../shared/styles/auth-background.css'
+    '../shared/styles/auth-background.scss'
   ]
 })
 export class RegisterPlayerComponent {

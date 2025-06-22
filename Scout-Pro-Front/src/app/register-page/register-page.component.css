@@ -18,9 +18,7 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background:
-        linear-gradient(rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.85)),
-        url('/assets/WhatsApp%20Image%202025-05-02%20at%2022.17.46_f8c08b38.jpg') center center/cover no-repeat;
+
     z-index: -1;
 }
 
@@ -30,8 +28,7 @@
     align-items: center;
     justify-content: center;
     min-height: 100vh;
-    background: linear-gradient(rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.85)),
-                url('/assets/WhatsApp%20Image%202025-05-02%20at%2022.17.46_f8c08b38.jpg');
+
     background-size: cover;
     background-attachment: fixed;
     padding: 20px;
@@ -400,7 +397,7 @@ select {
     text-align: center;
     backdrop-filter: blur(10px);
     border-radius: 12px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+
 }
 
 .user-type-slider:not(.selected) {
@@ -513,7 +510,7 @@ select {
     padding: 2rem;
     backdrop-filter: blur(10px);
     border-radius: 12px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+
 }
 
 @keyframes fadeInUp {
@@ -580,4 +577,79 @@ select {
 
 .toggle-password i {
     font-size: 16px;
+}
+
+.password-validation {
+    margin-top: 8px;
+    padding: 10px;
+    border-radius: 4px;
+    background-color: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.validation-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.validation-item {
+    display: flex;
+    align-items: center;
+    color: #ff4d4d;
+    font-size: 0.85rem;
+    margin-bottom: 4px;
+    padding: 4px 0;
+}
+
+.validation-item:last-child {
+    margin-bottom: 0;
+}
+
+.validation-item i {
+    margin-right: 8px;
+    font-size: 0.9rem;
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+    position: relative;
+}
+
+.password-input {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.password-input input {
+    width: 100%;
+    padding: 12px 40px 12px 15px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    background-color: rgba(255, 255, 255, 0.05);
+    color: #fff;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+}
+
+.password-input input:focus {
+    border-color: #3a86ff;
+    box-shadow: 0 0 0 2px rgba(58, 134, 255, 0.2);
+    outline: none;
+}
+
+.toggle-password {
+    position: absolute;
+    right: 10px;
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.5);
+    cursor: pointer;
+    padding: 5px;
+    transition: color 0.3s ease;
+}
+
+.toggle-password:hover {
+    color: #fff;
 }

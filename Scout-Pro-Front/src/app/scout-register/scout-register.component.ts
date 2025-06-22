@@ -35,7 +35,7 @@ interface ScoutFormData {
   templateUrl: './scout-register.component.html',
   styleUrls: [
     './scout-register.component.css',
-    '../shared/styles/auth-background.css'
+    '../shared/styles/auth-background.scss'
   ]
 })
 export class ScoutRegisterComponent {

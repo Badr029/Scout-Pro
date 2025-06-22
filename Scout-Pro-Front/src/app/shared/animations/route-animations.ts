@@ -15,3 +15,4 @@ export const routeAnimations = trigger('routeAnimations', [
     ], { optional: true })
   ])
 ]);
+ 

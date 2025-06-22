@@ -23,6 +23,10 @@
           <i class="fas fa-crown"></i> Upgrade to Premium
         </div>
         <div class="settings-divider"></div>
+        <div class="settings-menu-item" (click)="openReportModal('bug')">
+          <i class="fas fa-bug"></i> Report a Bug
+        </div>
+        <div class="settings-divider"></div>
         <div class="settings-menu-item" (click)="logout()">
           <i class="fas fa-sign-out-alt"></i> Logout
         </div>
@@ -438,6 +442,9 @@
             <i class="bi bi-chat"></i>
             <span class="action-count">{{ selectedVideo.comments_count || 0 }}</span>
           </button>
+          <button class="action-btn report-btn" (click)="openReportModal('video', selectedVideo.id)">
+            <i class="fas fa-flag"></i>
+          </button>
           <div class="views-count">
             <i class="bi bi-eye"></i> {{ selectedVideo.views || 0 }}
           </div>
@@ -524,5 +531,14 @@
     </div>
   </div>
 </div>
+
+<!-- Report Modal -->
+<app-report-modal
+  *ngIf="showReportModal"
+  [type]="reportType"
+  [itemId]="reportItemId"
+  (close)="closeReportModal()"
+  (submit)="handleReportSubmit($event)">
+</app-report-modal>
 
 <!-- Script removed - tab functionality is handled by Angular -->

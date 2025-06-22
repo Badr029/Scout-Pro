@@ -5,6 +5,7 @@ import { Router, RouterModule } from '@angular/router';
 import { SocialAuthService, GoogleLoginProvider, SocialUser, GoogleSigninButtonModule } from '@abacritt/angularx-social-login';
 import { AuthService } from '../auth.service';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { OnInit } from '@angular/core';
 
 interface RegisterFormData {
   user_type: string;
@@ -13,7 +14,7 @@ interface RegisterFormData {
   username: string;
   email: string;
   password: string;
-  confirmPassword: string;
+  password_confirmation: string;
 }
 
 @Component({
@@ -21,18 +22,21 @@ interface RegisterFormData {
   standalone: true,
   imports: [CommonModule, FormsModule, GoogleSigninButtonModule, RouterModule],
   templateUrl: './register-page.component.html',
-  styleUrls: ['./register-page.component.css'],
+  styleUrls: [
+    './register-page.component.css',
+    '../shared/styles/auth-background.scss'
+  ],
   schemas: [CUSTOM_ELEMENTS_SCHEMA]
 })
-export class RegisterPageComponent {
-  formData: RegisterFormData = {
+export class RegisterPageComponent implements OnInit {
+  formData = {
     user_type: '',
     first_name: '',
     last_name: '',
     username: '',
     email: '',
     password: '',
-    confirmPassword: ''
+    password_confirmation: ''
   };
 
   loading = false;
@@ -41,7 +45,10 @@ export class RegisterPageComponent {
   showPassword = false;
   showConfirmPassword = false;
   socialUserType: 'player' | 'scout' | '' = '';
-  validationErrors: { [key: string]: string[] } = {};
+  validationErrors: { [key: string]: string[] } = {
+    password: [],
+    password_confirmation: []
+  };
 
   constructor(
     private router: Router,
@@ -59,6 +66,11 @@ export class RegisterPageComponent {
     });
   }
 
+  ngOnInit() {
+    // Reset user type on component initialization
+    this.resetUserType();
+  }
+
   // Add method to reset user type
   private resetUserType() {
     this.formData.user_type = '';
@@ -71,25 +83,83 @@ export class RegisterPageComponent {
     this.errorMessage = '';
   }
 
-  togglePasswordVisibility() {
+  togglePassword() {
     this.showPassword = !this.showPassword;
   }
 
-  toggleConfirmPasswordVisibility() {
+  toggleConfirmPassword() {
     this.showConfirmPassword = !this.showConfirmPassword;
   }
 
+  validatePassword(password: string): string[] {
+    const errors: string[] = [];
+
+    if (password.length < 8) {
+      errors.push('Password must be at least 8 characters long');
+    }
+    if (password.length > 64) {
+      errors.push('Password cannot exceed 64 characters');
+    }
+    if (!/[a-z]/.test(password)) {
+      errors.push('Password must contain at least one lowercase letter');
+    }
+    if (!/[A-Z]/.test(password)) {
+      errors.push('Password must contain at least one uppercase letter');
+    }
+    if (!/\d/.test(password)) {
+      errors.push('Password must contain at least one number');
+    }
+    if (!/[@$!%*?&]/.test(password)) {
+      errors.push('Password must contain at least one special character (@$!%*?&)');
+    }
+
+    return errors;
+  }
+
+  onPasswordChange() {
+    this.validationErrors['password'] = this.validatePassword(this.formData.password);
+    this.validatePasswordMatch();
+  }
+
+  onConfirmPasswordChange() {
+    this.validatePasswordMatch();
+  }
+
+  validatePasswordMatch() {
+    if (this.formData.password_confirmation && this.formData.password !== this.formData.password_confirmation) {
+      this.validationErrors['password_confirmation'] = ['Passwords do not match'];
+    } else {
+      this.validationErrors['password_confirmation'] = [];
+    }
+  }
+
   onSubmit() {
+    // Validate password before submission
+    const passwordErrors = this.validatePassword(this.formData.password);
+    if (passwordErrors.length > 0) {
+      this.validationErrors['password'] = passwordErrors;
+      return;
+    }
+
+    // Validate password match
+    this.validatePasswordMatch();
+    if (this.validationErrors['password_confirmation'].length > 0) {
+      return;
+    }
+
     // Reset messages and errors
     this.errorMessage = '';
     this.successMessage = '';
-    this.validationErrors = {};
+    this.validationErrors = {
+      password: [],
+      password_confirmation: []
+    };
     this.loading = true;
 
     // Create API request data with password_confirmation
     const apiData = {
       ...this.formData,
-      password_confirmation: this.formData.confirmPassword
+      password_confirmation: this.formData.password_confirmation
     };
 
     this.http.post('http://localhost:8000/api/register', apiData)
@@ -106,7 +176,7 @@ export class RegisterPageComponent {
             username: '',
             email: '',
             password: '',
-            confirmPassword: ''
+            password_confirmation: ''
           };
 
           // Redirect to login after success
@@ -145,7 +215,7 @@ export class RegisterPageComponent {
         return !!value && this.validateEmail(value) && value.length <= 255;
       case 'password':
         return !!value && value.length >= 6;
-      case 'confirmPassword':
+      case 'password_confirmation':
         return !!value && value === this.formData.password;
       default:
         return true;

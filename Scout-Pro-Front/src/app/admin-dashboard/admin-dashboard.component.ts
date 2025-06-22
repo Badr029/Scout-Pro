@@ -10,6 +10,8 @@ import { RouterModule } from '@angular/router';
 import { ModalService } from '../services/modal.service';
 import { ModalComponent } from '../components/modal/modal.component';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { AdminService } from '../services/admin.service';
+import { HttpErrorResponse } from '@angular/common/http';
 
 interface ContactRequest {
   id: number;
@@ -185,6 +187,40 @@ interface VideoComment {
   };
 }
 
+interface Report {
+  id: number;
+  report_type: 'video' | 'user' | 'bug';
+  status: 'pending' | 'in_review' | 'resolved' | 'rejected';
+  reporter: {
+    first_name: string;
+    last_name: string;
+  };
+  created_at: string;
+  admin_notes?: string;
+  newStatus?: string;
+  newNotes?: string;
+  videoReport?: {
+    video: {
+      title: string;
+    };
+    reason: string;
+    description: string;
+  };
+  userReport?: {
+    reportedUser: {
+      first_name: string;
+      last_name: string;
+    };
+    reason: string;
+    description: string;
+  };
+  bugReport?: {
+    severity: string;
+    page_url: string;
+    description: string;
+  };
+}
+
 @Component({
   selector: 'app-admin-dashboard',
   standalone: true,
@@ -211,7 +247,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     totalFollows: 0
   };
 
-  currentSection: 'statistics' | 'contact-requests' | 'event-requests' | 'subscriptions' | 'user-management' | 'content-management' = 'statistics';
+  currentSection: 'statistics' | 'contact-requests' | 'event-requests' | 'subscriptions' | 'user-management' | 'content-management' | 'reports' = 'statistics';
   activeView: 'overview' | 'contact-requests' | 'event-requests' | 'subscriptions' = 'overview';
   contactRequests: ContactRequest[] = [];
   eventRequests: EventRequest[] = [];
@@ -294,6 +330,17 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   loadingVideoDetails = false;
   videoDetailsError: string | null = null;
 
+  // Reports management
+  reports: Report[] = [];
+  totalReports = 0;
+  reportFilters = {
+    type: '',
+    status: ''
+  };
+  currentPage = 1;
+  totalPages = 1;
+  reportsPerPage = 10;
+
   private readonly API_URL = environment.apiUrl;
 
   isMobile = window.innerWidth <= 768;
@@ -305,7 +352,8 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     private authService: AuthService,
     public modalService: ModalService,
     private viewContainerRef: ViewContainerRef,
-    private fb: FormBuilder
+    private fb: FormBuilder,
+    private adminService: AdminService
   ) {
     this.modalService.setContainer(this.viewContainerRef);
     window.addEventListener('resize', this.onResize.bind(this));
@@ -342,6 +390,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     this.loadSubscriptionStats();
     this.loadUsers();
     this.loadVideos();
+    this.loadReports();
 
     // Initialize event form
     this.eventForm = this.fb.group({
@@ -368,7 +417,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     window.removeEventListener('resize', this.onResize.bind(this));
   }
 
-  setSection(section: 'statistics' | 'contact-requests' | 'event-requests' | 'subscriptions' | 'user-management' | 'content-management') {
+  setSection(section: 'statistics' | 'contact-requests' | 'event-requests' | 'subscriptions' | 'user-management' | 'content-management' | 'reports') {
     this.currentSection = section;
     if (section === 'content-management') {
       this.loadVideos();
@@ -382,6 +431,8 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
       this.loadPlans();
       this.loadSubscriptions();
       this.loadPayments();
+    } else if (section === 'reports') {
+      this.loadReports();
     }
     if (this.isMobile) {
       this.isMenuOpen = false;
@@ -1601,5 +1652,114 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
         }
       });
     }
+  }
+
+  // Reports management
+  loadReports() {
+    console.log('Loading reports...', {
+      currentPage: this.currentPage,
+      reportFilters: this.reportFilters
+    });
+    
+    this.adminService.getReports(this.currentPage, this.reportFilters).subscribe({
+      next: (response) => {
+        console.log('Reports API response:', response);
+        if (response.status === 'success') {
+          // Handle both direct array and paginated data structure
+          if (response.data.data) {
+            // Paginated response
+            this.reports = response.data.data;
+            this.totalReports = response.data.total || response.data.data.length;
+          } else if (Array.isArray(response.data)) {
+            // Direct array response
+            this.reports = response.data;
+            this.totalReports = response.data.length;
+          } else {
+            // Single report or unexpected structure
+            this.reports = [response.data];
+            this.totalReports = 1;
+          }
+          
+          this.totalPages = Math.ceil(this.totalReports / this.reportsPerPage);
+          console.log('Reports loaded:', {
+            reports: this.reports,
+            totalReports: this.totalReports,
+            totalPages: this.totalPages
+          });
+        } else {
+          console.error('Failed to load reports:', response);
+          this.error = response.message || 'Failed to load reports';
+          setTimeout(() => {
+            this.error = null;
+          }, 5000);
+        }
+      },
+      error: (error) => {
+        console.error('Error loading reports:', error);
+        let errorMessage = 'Failed to load reports. Please try again.';
+        
+        if (error.status === 401) {
+          errorMessage = 'Authentication failed. Please log in again.';
+        } else if (error.status === 403) {
+          errorMessage = 'Access denied. Insufficient permissions.';
+        } else if (error.error?.message) {
+          errorMessage = error.error.message;
+        }
+        
+        this.error = errorMessage;
+        setTimeout(() => {
+          this.error = null;
+        }, 5000);
+      }
+    });
+  }
+
+  updateReportStatus(report: any) {
+    const newStatus = report.newStatus;
+    if (!newStatus) return;
+
+    this.adminService.updateReportStatus(report.id, {
+      status: newStatus,
+      admin_notes: report.admin_notes || undefined
+    }).subscribe({
+      next: () => {
+        report.status = newStatus;
+        report.editing = false;
+      },
+      error: (error) => {
+        console.error('Error updating report status:', error);
+      }
+    });
+  }
+
+  saveAdminNotes(report: Report) {
+    if (!report.newNotes?.trim()) return;
+
+    this.adminService.updateReportStatus(report.id, {
+      status: report.status,
+      admin_notes: report.newNotes
+    }).subscribe({
+      next: (response: any) => {
+        report.admin_notes = report.newNotes;
+        report.newNotes = '';
+        // Show success message
+      },
+      error: (error: HttpErrorResponse) => {
+        console.error('Error saving admin notes:', error);
+        // Handle error appropriately
+      }
+    });
+  }
+
+  changePage(page: number) {
+    if (page < 1 || page > this.totalPages) return;
+    this.currentPage = page;
+    this.loadReports();
+  }
+
+  // Method to handle filter changes
+  onReportFiltersChange() {
+    this.currentPage = 1; // Reset to first page when filters change
+    this.loadReports();
   }
 }

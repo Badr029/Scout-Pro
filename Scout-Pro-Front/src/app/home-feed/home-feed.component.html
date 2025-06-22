@@ -1,6 +1,9 @@
 <div class="app-container">
   <aside class="left-sidebar" [class.expanded]="sidebarExpanded" (mouseenter)="expandSidebar()" (mouseleave)="collapseSidebar()">
-    <div class="logo">{{ sidebarExpanded ? 'Scout Pro' : 'SP' }}</div>
+    <div class="logo-container">
+      <img src="assets/logos/ScoutPro_logo_header.png" alt="Scout Pro" class="logo-header">
+      <img src="assets/logos/ScoutPro_logo_footer.png" alt="Scout Pro Full" class="logo-footer" [class.show]="sidebarExpanded">
+    </div>
     <nav class="nav-links">
       <a href="#" (click)="scrollToFeedContent(); $event.preventDefault()" [class.active]="activeView === 'feed'">
         <i class="bi bi-house-fill"></i>
@@ -346,14 +349,19 @@
                 </span>
               </div>
             </div>
-            <button
-              class="follow-btn"
-              *ngIf="!post?.user?.isCurrentUser && post?.user?.user_type === 'player' && post?.user?.id !== currentUser?.id"
-              (click)="followPlayer(post?.user?.id)"
-              [class.following]="post?.user?.following || post?.user?.is_following">
-              <i class="bi bi-check2" *ngIf="post?.user?.following || post?.user?.is_following"></i>
-              {{ (post?.user?.following || post?.user?.is_following) ? 'Following' : 'Follow' }}
-            </button>
+            <div class="reel-actions-header" *ngIf="!post?.user?.isCurrentUser">
+              <button
+                class="follow-btn"
+                *ngIf="post?.user?.user_type === 'player' && post?.user?.id !== currentUser?.id"
+                (click)="followPlayer(post?.user?.id)"
+                [class.following]="post?.user?.following || post?.user?.is_following">
+                <i class="bi bi-check2" *ngIf="post?.user?.following || post?.user?.is_following"></i>
+                {{ (post?.user?.following || post?.user?.is_following) ? 'Following' : 'Follow' }}
+              </button>
+              <button class="report-btn" (click)="openReportModal('video', post?.id)">
+                <i class="bi bi-flag"></i>
+              </button>
+            </div>
           </div>
 
           <div class="reel-video">
@@ -942,4 +950,12 @@
 <!-- Mobile Overlay -->
 <div class="mobile-overlay" [class.show]="showRightPanel" (click)="closeRightPanel()"></div>
 
-
+<!-- Report Modal -->
+<app-report-modal
+  #reportModalRef
+  *ngIf="showReportModal"
+  [type]="reportType"
+  [itemId]="reportItemId"
+  (close)="closeReportModal()"
+  (submit)="handleReportSubmit($event)">
+</app-report-modal>

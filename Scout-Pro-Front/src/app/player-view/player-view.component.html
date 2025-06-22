@@ -61,6 +61,13 @@
           <span *ngIf="contactRequestInProgress">Sending Request...</span>
         </button>
       </div>
+      <!-- Report Button -->
+      <button class="btn btn-outline-danger report-btn"
+              *ngIf="playerData?.user_id !== currentUser?.id"
+              (click)="openReportModal('user', playerData.user_id)">
+        <i class="fas fa-flag"></i>
+        Report
+      </button>
     </div>
 
     <!-- Player Info -->
@@ -290,6 +297,9 @@
               {{ selectedVideo.comments_count || 0 }}
             </span>
           </button>
+          <button class="action-btn report-btn" (click)="openReportModal('video', selectedVideo.id)">
+            <i class="fas fa-flag"></i>
+          </button>
           <div class="video-stats" *ngIf="userProfile.membership === 'premium' || isScout">
             <div class="views-count">
               <i class="fas fa-eye"></i> {{ selectedVideo.views || 0 }}
@@ -340,3 +350,13 @@
     </div>
   </div>
 </div>
+
+<!-- Report Modal -->
+<app-report-modal
+  #reportModal
+  *ngIf="showReportModal"
+  [type]="reportType"
+  [itemId]="reportItemId"
+  (close)="closeReportModal()"
+  (submit)="handleReportSubmit($event)">
+</app-report-modal>

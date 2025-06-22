@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Traits\NotificationHelper;
 use App\Models\Comment;
+use App\Models\Report;
 
 class FeedController extends Controller
 {
@@ -153,24 +154,38 @@ class FeedController extends Controller
             return $video;
         });
 
-        // Get trending players (based on video views and likes)
+        // Get trending players (based on sum of video analytics: likes, comments, views)
         $trendingPlayers = User::where('user_type', 'player')
-            ->whereHas('videos', function ($query) {
-                $query->orderByDesc('views')
-                    ->orderByDesc('created_at');
-            })
-            ->with('player')
-            ->take(5)
+            ->whereHas('videos') // Only players who have uploaded videos
+            ->with(['player', 'videos.likes', 'videos.comments'])
             ->get()
             ->map(function ($user) {
+                // Calculate total analytics score for this player
+                $totalScore = 0;
+                foreach ($user->videos as $video) {
+                    $likesCount = $video->likes->count();
+                    $commentsCount = $video->comments->count();
+                    $viewsCount = $video->views ?? 0;
+                    $totalScore += ($likesCount + $commentsCount + $viewsCount);
+                }
+
                 return [
                     'id' => $user->id,
                     'name' => $user->first_name . ' ' . $user->last_name,
                     'position' => $user->player ? $user->player->position : null,
                     'region' => $user->player ? $user->player->current_city : null,
                     'profile_image' => $user->player && $user->player->profile_image ? url('storage/' . $user->player->profile_image) : null,
+                    'total_score' => $totalScore
                 ];
-            });
+            })
+            ->sortByDesc('total_score') // Sort by total analytics score descending
+            ->take(5) // Take top 5 trending players
+            ->map(function ($player) {
+                // Remove total_score from final output
+                unset($player['total_score']);
+                return $player;
+            })
+            ->values(); // Reset array keys
 
         // Get upcoming events
         $upcomingEvents = Event::where('date', '>=', now())
@@ -385,7 +400,7 @@ class FeedController extends Controller
             // Get results based on user type
             $results = [];
             if ($userType === 'scout') {
-                // Scouts only search for players
+                // Scouts can only search for players
                 $results = $playersQuery->get()->map(function($player) {
                     return [
                         'id' => $player->id,
@@ -403,7 +418,7 @@ class FeedController extends Controller
                         'membership' => $player->membership
                     ];
                 });
-            } else {
+            } else if ($userType === 'player') {
                 // Players can search for both players and scouts
                 $players = $playersQuery->get()->map(function($player) {
                     return [
@@ -1015,5 +1030,81 @@ public function playerviewprofile($user_id) {
             'message' => 'Comment added successfully',
             'comment' => $comment
         ]);
+    }
+
+    public function reportVideo(Request $request)
+    {
+        try {
+            $request->validate([
+                'video_id' => 'required|exists:videos,id',
+                'reason' => 'required|in:inappropriate_content,copyright_violation,spam,offensive_behavior,other',
+                'description' => 'required|string|max:1000'
+            ]);
+
+            $user = Auth::user();
+
+            // Create consolidated report
+            Report::create([
+                'report_type' => 'video',
+                'reporter_id' => $user->id,
+                'status' => 'pending',
+                'video_id' => $request->video_id,
+                'video_reason' => $request->reason,
+                'description' => $request->description
+            ]);
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Video reported successfully'
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error reporting video: ' . $e->getMessage());
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Error reporting video'
+            ], 500);
+        }
+    }
+
+    public function reportUser(Request $request)
+    {
+        try {
+            $request->validate([
+                'user_id' => 'required|exists:users,id',
+                'reason' => 'required|in:harassment,fake_profile,inappropriate_behavior,spam,bullying,hate_speech,scam_fraud,impersonation,other',
+                'description' => 'required|string|max:1000'
+            ]);
+
+            $reporter = Auth::user();
+
+            // Prevent self-reporting
+            if ($reporter->id === $request->user_id) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'You cannot report yourself'
+                ], 400);
+            }
+
+            // Create consolidated report
+            Report::create([
+                'report_type' => 'user',
+                'reporter_id' => $reporter->id,
+                'status' => 'pending',
+                'reported_user_id' => $request->user_id,
+                'user_reason' => $request->reason,
+                'description' => $request->description
+            ]);
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'User reported successfully'
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error reporting user: ' . $e->getMessage());
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Error reporting user'
+            ], 500);
+        }
     }
 }

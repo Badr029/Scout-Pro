@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Models\Player;
 use App\Models\Account;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Carbon\Carbon;
 
 class PlayerSeeder extends Seeder
@@ -17,6 +18,9 @@ class PlayerSeeder extends Seeder
      */
     public function run(): void
     {
+        // Create storage directories if they don't exist
+        Storage::disk('public')->makeDirectory('players/profile_images');
+
         $players = [
             [
                 'user' => [
@@ -30,7 +34,8 @@ class PlayerSeeder extends Seeder
                     'setup_completed' => true,
                 ],
                 'player' => [
-                    'profile_image' => 'players/wzf8JGAX2RwuKzEP2umtnA.jpg',
+                    'profile_image' => 'players/profile_images/wzf8JGAX2RwuKzEP2umtnA.jpg',
+                    'source_profile_image' => '/Profile_images/wzf8JGAX2RwuKzEP2umtnA.jpg',
                     'username' => 'marcus_johnson',
                     'first_name' => 'Marcus',
                     'last_name' => 'Johnson',
@@ -64,7 +69,8 @@ class PlayerSeeder extends Seeder
                     'setup_completed' => true,
                 ],
                 'player' => [
-                    'profile_image' => 'players/FxIugCHWIAAbBjv.jpg',
+                    'profile_image' => 'players/profile_images/FxIugCHWIAAbBjv.jpg',
+                    'source_profile_image' => '/Profile_images/FxIugCHWIAAbBjv.jpg',
                     'username' => 'diego_silva',
                     'first_name' => 'Diego',
                     'last_name' => 'Silva',
@@ -98,7 +104,8 @@ class PlayerSeeder extends Seeder
                     'setup_completed' => true,
                 ],
                 'player' => [
-                    'profile_image' => 'players/GOAL_-_Blank_WEB_-_Facebook_(9).jpg.webp',
+                    'profile_image' => 'players/profile_images/GOAL_-_Blank_WEB_-_Facebook_(9).jpg.webp',
+                    'source_profile_image' => '/Profile_images/GOAL_-_Blank_WEB_-_Facebook_(9).jpg.webp',
                     'username' => 'alex_thompson',
                     'first_name' => 'Alex',
                     'last_name' => 'Thompson',
@@ -132,7 +139,8 @@ class PlayerSeeder extends Seeder
                     'setup_completed' => true,
                 ],
                 'player' => [
-                    'profile_image' => 'players/2150742376.0.jpg',
+                    'profile_image' => 'players/profile_images/2150742376.0.jpg',
+                    'source_profile_image' => '/Profile_images/2150742376.0.jpg',
                     'username' => 'jordan_williams',
                     'first_name' => 'Jordan',
                     'last_name' => 'Williams',
@@ -153,6 +161,146 @@ class PlayerSeeder extends Seeder
                     'bio' => 'Solid defender who takes pride in keeping clean sheets. Strong in the air and a natural leader on the pitch.',
                     'membership' => 'free',
                 ]
+            ],
+            [
+                'user' => [
+                    'first_name' => 'Karim',
+                    'last_name' => 'Hassan',
+                    'username' => 'karim_hassan',
+                    'email' => 'karim.hassan@example.com',
+                    'password' => Hash::make('password123'),
+                    'user_type' => 'player',
+                    'email_verified_at' => now(),
+                    'setup_completed' => true,
+                ],
+                'player' => [
+                    'profile_image' => 'players/profile_images/images.jpg',
+                    'source_profile_image' => '/Profile_images/images.jpg',
+                    'username' => 'karim_hassan',
+                    'first_name' => 'Karim',
+                    'last_name' => 'Hassan',
+                    'DateofBirth' => Carbon::parse('2002-05-20'),
+                    'phone_number' => '+1234567894',
+                    'height' => 178,
+                    'weight' => 70,
+                    'preferred_foot' => 'Left',
+                    'position' => 'CAM - Attacking Midfielder',
+                    'secondary_position' => ['LW - Left Winger', 'CM - Central Midfielder'],
+                    'gender' => 'Male',
+                    'nationality' => 'Egyptian',
+                    'current_city' => 'Alexandria',
+                    'current_club' => 'Smouha SC',
+                    'previous_clubs' => ['Al Ittihad', 'Haras El Hodoud'],
+                    'playing_style' => 'Creative playmaker with excellent vision and passing ability',
+                    'transfer_status' => 'Available',
+                    'bio' => 'Technical midfielder with a eye for the final pass. Specializing in set-pieces and creating chances.',
+                    'membership' => 'premium',
+                ]
+            ],
+            [
+                'user' => [
+                    'first_name' => 'Omar',
+                    'last_name' => 'Fayed',
+                    'username' => 'omar_fayed',
+                    'email' => 'omar.fayed@example.com',
+                    'password' => Hash::make('password123'),
+                    'user_type' => 'player',
+                    'email_verified_at' => now(),
+                    'setup_completed' => true,
+                ],
+                'player' => [
+                    'profile_image' => 'players/profile_images/omar-fayed-of-egypt-during-the-2023-africa-cup-of-nations-u20-match-between-egypt-and-senegal.jpg',
+                    'source_profile_image' => '/Profile_images/omar-fayed-of-egypt-during-the-2023-africa-cup-of-nations-u20-match-between-egypt-and-senegal .jpg',
+                    'username' => 'omar_fayed',
+                    'first_name' => 'Omar',
+                    'last_name' => 'Fayed',
+                    'DateofBirth' => Carbon::parse('2003-08-12'),
+                    'phone_number' => '+1234567895',
+                    'height' => 182,
+                    'weight' => 75,
+                    'preferred_foot' => 'Right',
+                    'position' => 'CDM - Defensive Midfielder',
+                    'secondary_position' => ['CB - Center Back', 'CM - Central Midfielder'],
+                    'gender' => 'Male',
+                    'nationality' => 'Egyptian',
+                    'current_city' => 'Port Said',
+                    'current_club' => 'Al Masry',
+                    'previous_clubs' => ['Ismaily SC', 'El Daklyeh'],
+                    'playing_style' => 'Strong defensive midfielder with excellent positioning and tackling',
+                    'transfer_status' => 'Available',
+                    'bio' => 'Defensive specialist focusing on breaking up play and starting counter-attacks.',
+                    'membership' => 'free',
+                ]
+            ],
+            [
+                'user' => [
+                    'first_name' => 'Youssef',
+                    'last_name' => 'Mahmoud',
+                    'username' => 'youssef_mahmoud',
+                    'email' => 'youssef.mahmoud@example.com',
+                    'password' => Hash::make('password123'),
+                    'user_type' => 'player',
+                    'email_verified_at' => now(),
+                    'setup_completed' => true,
+                ],
+                'player' => [
+                    'profile_image' => 'players/profile_images/Travis-Akomeah-action-shot.jpg',
+                    'source_profile_image' => '/Profile_images/Travis-Akomeah-action-shot.jpg',
+                    'username' => 'youssef_mahmoud',
+                    'first_name' => 'Youssef',
+                    'last_name' => 'Mahmoud',
+                    'DateofBirth' => Carbon::parse('2001-12-03'),
+                    'phone_number' => '+1234567896',
+                    'height' => 188,
+                    'weight' => 82,
+                    'preferred_foot' => 'Right',
+                    'position' => 'LW - Left Winger',
+                    'secondary_position' => ['RW - Right Winger', 'LM - Left Midfielder'],
+                    'gender' => 'Male',
+                    'nationality' => 'Egyptian',
+                    'current_city' => 'Cairo',
+                    'current_club' => 'El Gouna FC',
+                    'previous_clubs' => ['Wadi Degla', 'El Dakhleya'],
+                    'playing_style' => 'Modern goalkeeper with excellent distribution and shot-stopping ability',
+                    'transfer_status' => 'Available',
+                    'bio' => 'Commanding goalkeeper with strong aerial ability and good communication skills.',
+                    'membership' => 'premium',
+                ]
+            ],
+            [
+                'user' => [
+                    'first_name' => 'Ahmed',
+                    'last_name' => 'Zaki',
+                    'username' => 'ahmed_zaki',
+                    'email' => 'ahmed.zaki@example.com',
+                    'password' => Hash::make('password123'),
+                    'user_type' => 'player',
+                    'email_verified_at' => now(),
+                    'setup_completed' => true,
+                ],
+                'player' => [
+                    'profile_image' => 'players/profile_images/AA1D3E4R.jpg',
+                    'source_profile_image' => '/Profile_images/AA1D3E4R.jpg',
+                    'username' => 'ahmed_zaki',
+                    'first_name' => 'Ahmed',
+                    'last_name' => 'Zaki',
+                    'DateofBirth' => Carbon::parse('2002-07-15'),
+                    'phone_number' => '+1234567897',
+                    'height' => 176,
+                    'weight' => 68,
+                    'preferred_foot' => 'Left',
+                    'position' => 'LB - Left Back',
+                    'secondary_position' => ['LWB - Left Wing Back', 'LM - Left Midfielder'],
+                    'gender' => 'Male',
+                    'nationality' => 'Egyptian',
+                    'current_city' => 'Giza',
+                    'current_club' => 'Ceramica Cleopatra FC',
+                    'previous_clubs' => ['Al Mokawloon', 'Tala\'ea El Gaish'],
+                    'playing_style' => 'Attack-minded fullback with excellent crossing and dribbling ability',
+                    'transfer_status' => 'Available',
+                    'bio' => 'Modern fullback who loves to contribute to attacks while maintaining defensive solidity.',
+                    'membership' => 'free',
+                ]
             ]
         ];
 
@@ -171,6 +319,25 @@ class PlayerSeeder extends Seeder
 
             // Create the player profile
             $playerData['player']['user_id'] = $user->id;
+
+            // Copy profile image from source to storage
+            $sourcePath = storage_path('app/private/public/Seeders/Players' . $playerData['player']['source_profile_image']);
+            $destinationPath = storage_path('app/public/' . $playerData['player']['profile_image']);
+
+            if (file_exists($sourcePath)) {
+                // Ensure the destination directory exists
+                if (!file_exists(dirname($destinationPath))) {
+                    mkdir(dirname($destinationPath), 0755, true);
+                }
+                copy($sourcePath, $destinationPath);
+                echo "Copied profile image for " . $user->first_name . " " . $user->last_name . "\n";
+            } else {
+                echo "Source profile image not found for " . $user->first_name . " " . $user->last_name . "\n";
+            }
+
+            // Remove source_profile_image as it's not a database field
+            unset($playerData['player']['source_profile_image']);
+
             Player::create($playerData['player']);
 
             echo "Created player: " . $user->first_name . " " . $user->last_name . " with account ID: " . $account->main_id . "\n";

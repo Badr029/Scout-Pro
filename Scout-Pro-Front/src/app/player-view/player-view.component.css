@@ -1215,3 +1215,27 @@ body {
 .contact-btn.rejected {
   background-color: #F44336;
 }
+
+.report-btn {
+  background: transparent;
+  border: 1px solid #dc3545;
+  color: #dc3545;
+}
+
+.report-btn:hover {
+  background: rgba(220, 53, 69, 0.1);
+  border-color: #c82333;
+  color: #c82333;
+}
+
+.action-btn.report-btn {
+  margin-left: auto;
+  color: #dc3545 !important;
+  border-color: #dc3545 !important;
+}
+
+.action-btn.report-btn:hover {
+  color: #c82333 !important;
+  border-color: #c82333 !important;
+  background: rgba(220, 53, 69, 0.1) !important;
+}

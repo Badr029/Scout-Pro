@@ -1,9 +1,11 @@
-import { Component, ViewEncapsulation, OnInit, OnDestroy } from '@angular/core';
+import { Component, ViewEncapsulation, OnInit, OnDestroy, ViewChild } from '@angular/core';
 import { Router } from '@angular/router';
 import { HttpClient, HttpHeaders, HttpEventType } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../auth.service';
+import { FeedService } from '../../services/feed.service';
+import { ReportModalComponent } from '../../shared/components/report-modal/report-modal.component';
 
 interface PlayerProfile {
   username: string;
@@ -63,7 +65,7 @@ interface Video {
 @Component({
   selector: 'app-profile',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, ReportModalComponent],
   templateUrl: './profile.component.html',
   styleUrls: ['./profile.component.css'],
   encapsulation: ViewEncapsulation.None
@@ -104,12 +106,20 @@ export class ProfileComponent implements OnInit, OnDestroy {
   selectedPostLikes: any[] = [];
   viewedVideos = new Set<number>();
   isPlayer = false;
-isPremiumPlayer = false;
+  isPremiumPlayer = false;
+
+  // Report modal
+  showReportModal = false;
+  reportType: 'video' | 'user' | 'bug' = 'bug';
+  reportItemId: number | null = null;
+
+  @ViewChild(ReportModalComponent) reportModal: ReportModalComponent | null = null;
 
   constructor(
     private router: Router,
     private http: HttpClient,
-    private authService: AuthService
+    private authService: AuthService,
+    private feedService: FeedService
   ) {}
 
   private updateMembershipStatus() {
@@ -790,6 +800,51 @@ isPremiumPlayer = false;
     document.removeEventListener('click', this.handleClickOutside);
   }
 
+  openReportModal(type: 'video' | 'user' | 'bug', itemId: number | null = null) {
+    this.reportType = type;
+    this.reportItemId = itemId;
+    this.showReportModal = true;
+  }
+
+  closeReportModal() {
+    this.showReportModal = false;
+    this.reportItemId = null;
+  }
+
+  handleReportSubmit(formData: any) {
+    // Only check for reportItemId if it's not a bug report
+    if (!this.reportItemId && this.reportType !== 'bug') {
+      this.reportModal?.showMessage('Invalid report data', 'error');
+      return;
+    }
+
+    this.feedService.submitReport({
+      type: this.reportType,
+      item_id: this.reportItemId || 0, // Use 0 for bug reports
+      reason: formData.reason,
+      description: formData.description,
+      browser_info: this.reportType === 'bug' ? formData.browser_info : undefined
+    }).subscribe({
+      next: () => {
+        this.reportModal?.showMessage('Report submitted successfully', 'success');
+      },
+      error: (error) => {
+        console.error('Report submission error:', error);
+        let errorMessage = 'Failed to submit report. Please try again later.';
+
+        if (error.status === 401) {
+          errorMessage = 'Authentication failed. Please log in again.';
+        } else if (error.status === 422) {
+          errorMessage = 'Invalid report data. Please check your input.';
+        } else if (error.error?.message) {
+          errorMessage = error.error.message;
+        }
+
+        this.reportModal?.showMessage(errorMessage, 'error');
+      }
+    });
+  }
+
   // Show the Add/Edit Bio modal
   showAddBioModal() {
     this.bioError = '';
@@ -1039,6 +1094,12 @@ isPremiumPlayer = false;
           console.error('Error incrementing video views:', error);
         }
       });
+  }
+
+  showAlert(message: string, type: 'success' | 'error') {
+    // You can implement this using your preferred alert/notification system
+    // For now, we'll use a simple alert
+    alert(`${type.toUpperCase()}: ${message}`);
   }
 }
 

@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "@angular/material": "^20.0.3",
     "chart.js": "^4.4.9"
   },
   "devDependencies": {

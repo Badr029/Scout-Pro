@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Models\Scout;
 use App\Models\Account;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Carbon\Carbon;
 
 class ScoutSeeder extends Seeder
@@ -17,6 +18,11 @@ class ScoutSeeder extends Seeder
      */
     public function run(): void
     {
+        // Create storage directories if they don't exist
+        Storage::disk('public')->makeDirectory('scouts/profile_image');
+        Storage::disk('public')->makeDirectory('scouts/id_proofs');
+        Storage::disk('public')->makeDirectory('scouts/certifications');
+
         $scouts = [
             [
                 'user' => [
@@ -30,7 +36,8 @@ class ScoutSeeder extends Seeder
                     'setup_completed' => true,
                 ],
                 'scout' => [
-                    'profile_image' => 'scouts/Scouts/Profile images/Abdulrahman Ahmed .png',
+                    'profile_image' => 'scouts/profile_image/Abdulrahman Ahmed .png',
+                    'source_profile_image' => '/Profile images/Abdulrahman Ahmed .png',
                     'username' => 'abdulrahman_ahmed',
                     'first_name' => 'Abdulrahman',
                     'last_name' => 'Ahmed',
@@ -45,8 +52,10 @@ class ScoutSeeder extends Seeder
                     'preferred_roles' => ['GK - Goalkeeper', 'CB - Center Back', 'CDM - Defensive Midfielder'],
                     'clubs_worked_with' => 'Al Ahly SC, Zamalek SC, Egyptian National Team',
                     'linkedin_url' => 'https://www.linkedin.com/in/abdulrahman-ahmed',
-                    'id_proof_path' => 'scouts/Scouts/IDs/Abdulrahman Ahmed .png',
-                    'certifications' => ['scouts/Scouts/Certificates/ChatGPT Image Jun 8, 2025, 06_09_08 PM.png'],
+                    'id_proof_path' => 'scouts/id_proofs/Abdulrahman Ahmed .png',
+                    'source_id_proof' => '/IDs/Abdulrahman Ahmed .png',
+                    'certifications' => ['scouts/certifications/Abdulrahman ahmed.png'],
+                    'source_certifications' => ['/Certificates/Abdulrahman ahmed.png'],
                     'registration_completed' => true,
                     'subscription_active' => true,
                     'subscription_expires_at' => Carbon::now()->addYear(),
@@ -64,7 +73,8 @@ class ScoutSeeder extends Seeder
                     'setup_completed' => true,
                 ],
                 'scout' => [
-                    'profile_image' => 'scouts/Scouts/Profile images/Khaled Mostafa .png',
+                    'profile_image' => 'scouts/profile_image/Khaled Mostafa .png',
+                    'source_profile_image' => '/Profile images/Khaled Mostafa .png',
                     'username' => 'khaled_mostafa',
                     'first_name' => 'Khaled',
                     'last_name' => 'Mostafa',
@@ -79,8 +89,10 @@ class ScoutSeeder extends Seeder
                     'preferred_roles' => ['ST - Striker', 'CF - Center Forward', 'RW - Right Winger', 'LW - Left Winger'],
                     'clubs_worked_with' => 'Zamalek SC, Al Ittihad Alexandria, Al Masry SC',
                     'linkedin_url' => 'https://www.linkedin.com/in/khaled-mostafa',
-                    'id_proof_path' => 'scouts/Scouts/IDs/Khaled Mostafa.png',
-                    'certifications' => ['scouts/Scouts/Certificates/ChatGPT Image Jun 8, 2025, 06_03_27 PM.png'],
+                    'id_proof_path' => 'scouts/id_proofs/Khaled Mostafa.png',
+                    'source_id_proof' => '/IDs/Khaled Mostafa.png',
+                    'certifications' => ['scouts/certifications/Khalid Mostafa.png'],
+                    'source_certifications' => ['/Certificates/Khalid Mostafa.png'],
                     'registration_completed' => true,
                     'subscription_active' => true,
                     'subscription_expires_at' => Carbon::now()->addMonths(6),
@@ -98,7 +110,8 @@ class ScoutSeeder extends Seeder
                     'setup_completed' => true,
                 ],
                 'scout' => [
-                    'profile_image' => 'scouts/Scouts/Profile images/Youssef Ismail.png',
+                    'profile_image' => 'scouts/profile_image/Youssef Ismail.png',
+                    'source_profile_image' => '/Profile images/Youssef Ismail.png',
                     'username' => 'youssef_ismail',
                     'first_name' => 'Youssef',
                     'last_name' => 'Ismail',
@@ -113,8 +126,10 @@ class ScoutSeeder extends Seeder
                     'preferred_roles' => ['CAM - Attacking Midfielder', 'CM - Central Midfielder', 'RM - Right Midfielder', 'LM - Left Midfielder'],
                     'clubs_worked_with' => 'Al Ahly SC, Egyptian National Team, Pyramids FC',
                     'linkedin_url' => 'https://www.linkedin.com/in/youssef-ismail',
-                    'id_proof_path' => 'scouts/Scouts/IDs/Youssef Ismail.png',
-                    'certifications' => ['scouts/Scouts/Certificates/ChatGPT Image Jun 8, 2025, 06_00_26 PM.png'],
+                    'id_proof_path' => 'scouts/id_proofs/Youssef Ismail.png',
+                    'source_id_proof' => '/IDs/Youssef Ismail.png',
+                    'certifications' => ['scouts/certifications/Youssif Ismail.png'],
+                    'source_certifications' => ['/Certificates/Youssif Ismail.png'],
                     'registration_completed' => true,
                     'subscription_active' => true,
                     'subscription_expires_at' => Carbon::now()->addYear(),
@@ -132,7 +147,8 @@ class ScoutSeeder extends Seeder
                     'setup_completed' => true,
                 ],
                 'scout' => [
-                    'profile_image' => 'scouts/Scouts/Profile images/khaled Hassan.png',
+                    'profile_image' => 'scouts/profile_image/khaled Hassan.png',
+                    'source_profile_image' => '/Profile images/khaled Hassan.png',
                     'username' => 'khaled_hassan',
                     'first_name' => 'Khaled',
                     'last_name' => 'Hassan',
@@ -147,8 +163,10 @@ class ScoutSeeder extends Seeder
                     'preferred_roles' => ['GK - Goalkeeper'],
                     'clubs_worked_with' => 'Ismaily SC, Al Ahly SC, Egyptian National Team, ENPPI SC',
                     'linkedin_url' => 'https://www.linkedin.com/in/khaled-hassan',
-                    'id_proof_path' => 'scouts/Scouts/IDs/khaled Hassan.png',
-                    'certifications' => ['scouts/Scouts/Certificates/ChatGPT Image Jun 8, 2025, 05_57_56 PM.png'],
+                    'id_proof_path' => 'scouts/id_proofs/khaled Hassan.png',
+                    'source_id_proof' => '/IDs/khaled Hassan.png',
+                    'certifications' => ['scouts/certifications/Khalid Hassan.png'],
+                    'source_certifications' => ['/Certificates/Khalid Hassan.png'],
                     'registration_completed' => true,
                     'subscription_active' => true,
                     'subscription_expires_at' => Carbon::now()->addMonths(9),
@@ -166,7 +184,8 @@ class ScoutSeeder extends Seeder
                     'setup_completed' => true,
                 ],
                 'scout' => [
-                    'profile_image' => 'scouts/Scouts/Profile images/Mostafa Hassan .png',
+                    'profile_image' => 'scouts/profile_image/Mostafa Hassan .png',
+                    'source_profile_image' => '/Profile images/Mostafa Hassan .png',
                     'username' => 'mostafa_hassan',
                     'first_name' => 'Mostafa',
                     'last_name' => 'Hassan',
@@ -181,8 +200,10 @@ class ScoutSeeder extends Seeder
                     'preferred_roles' => ['CB - Center Back', 'RB - Right Back', 'LB - Left Back', 'CDM - Defensive Midfielder'],
                     'clubs_worked_with' => 'Al Ahly SC, Future FC, National Bank SC, Ceramica Cleopatra FC',
                     'linkedin_url' => 'https://www.linkedin.com/in/mostafa-hassan',
-                    'id_proof_path' => 'scouts/Scouts/IDs/Mostafa Hassan .png',
-                    'certifications' => ['scouts/Scouts/Certificates/ChatGPT Image Jun 8, 2025, 06_10_40 PM.png'],
+                    'id_proof_path' => 'scouts/id_proofs/Mostafa Hassan .png',
+                    'source_id_proof' => '/IDs/Mostafa Hassan .png',
+                    'certifications' => ['scouts/certifications/Mostafa Hassan.png'],
+                    'source_certifications' => ['/Certificates/Mostafa Hassan.png'],
                     'registration_completed' => true,
                     'subscription_active' => true,
                     'subscription_expires_at' => Carbon::now()->subMonths(2),
@@ -205,6 +226,64 @@ class ScoutSeeder extends Seeder
 
             // Create the scout profile
             $scoutData['scout']['user_id'] = $user->id;
+
+            // Copy profile image from source to storage
+            $sourcePath = storage_path('app/private/public/Seeders/Scouts' . $scoutData['scout']['source_profile_image']);
+            $destinationPath = storage_path('app/public/' . $scoutData['scout']['profile_image']);
+            
+            if (file_exists($sourcePath)) {
+                // Ensure the destination directory exists
+                if (!file_exists(dirname($destinationPath))) {
+                    mkdir(dirname($destinationPath), 0755, true);
+                }
+                copy($sourcePath, $destinationPath);
+                echo "Copied profile image for " . $user->first_name . " " . $user->last_name . "\n";
+            } else {
+                echo "Source profile image not found for " . $user->first_name . " " . $user->last_name . ": " . $sourcePath . "\n";
+            }
+
+            // Copy ID proof from source to storage
+            $sourcePath = storage_path('app/private/public/Seeders/Scouts' . $scoutData['scout']['source_id_proof']);
+            $destinationPath = storage_path('app/public/' . $scoutData['scout']['id_proof_path']);
+            
+            if (file_exists($sourcePath)) {
+                // Ensure the destination directory exists
+                if (!file_exists(dirname($destinationPath))) {
+                    mkdir(dirname($destinationPath), 0755, true);
+                }
+                copy($sourcePath, $destinationPath);
+                echo "Copied ID proof for " . $user->first_name . " " . $user->last_name . "\n";
+            } else {
+                echo "Source ID proof not found for " . $user->first_name . " " . $user->last_name . ": " . $sourcePath . "\n";
+            }
+
+            // Copy certificates from source to storage
+            $certifications = [];
+            foreach ($scoutData['scout']['source_certifications'] as $index => $sourceCert) {
+                $sourcePath = storage_path('app/private/public/Seeders/Scouts' . $sourceCert);
+                $destinationPath = storage_path('app/public/' . $scoutData['scout']['certifications'][$index]);
+                
+                if (file_exists($sourcePath)) {
+                    // Ensure the destination directory exists
+                    if (!file_exists(dirname($destinationPath))) {
+                        mkdir(dirname($destinationPath), 0755, true);
+                    }
+                    copy($sourcePath, $destinationPath);
+                    $certifications[] = $scoutData['scout']['certifications'][$index];
+                    echo "Copied certificate for " . $user->first_name . " " . $user->last_name . "\n";
+                } else {
+                    echo "Source certificate not found for " . $user->first_name . " " . $user->last_name . ": " . $sourcePath . "\n";
+                }
+            }
+
+            // Update certifications array to only include successfully copied files
+            $scoutData['scout']['certifications'] = $certifications;
+
+            // Remove source fields as they're not database fields
+            unset($scoutData['scout']['source_profile_image']);
+            unset($scoutData['scout']['source_id_proof']);
+            unset($scoutData['scout']['source_certifications']);
+            
             Scout::create($scoutData['scout']);
 
             echo "Created scout: " . $user->first_name . " " . $user->last_name . " with account ID: " . $account->main_id . "\n";

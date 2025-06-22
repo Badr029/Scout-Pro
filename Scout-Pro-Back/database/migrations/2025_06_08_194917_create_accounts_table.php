@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('accounts', function (Blueprint $table) {
             $table->id('main_id');
             $table->string('email')->unique();
-            $table->string('password');
+            $table->string('password')->nullable(); // Allow null for social login
             $table->enum('role', ['user', 'admin']); // user for all users table entries, admin for admin table entries
             $table->boolean('is_active')->default(true);
             $table->timestamps();

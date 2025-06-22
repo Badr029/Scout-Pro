@@ -19,17 +19,19 @@ html, body {
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 20px;
+    padding: 30px;
 }
 
 .login-box {
-    background-color: #1e1e1e;
-    border-radius: 12px;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
-    padding: 40px;
-    width: 100%;
-    max-width: 420px;
-    border: 1px solid #333;
+  background-color: #1e1e1e;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  padding: 60px;
+  padding-top: 40px;
+  padding-bottom: 40px;
+  width: 550px;
+  /* max-width: 420px; */
+  border: 1px solid #333;
 }
 
 h2 {
@@ -357,4 +359,11 @@ label {
 /* Active state */
 .checkbox-container:active .checkmark {
   transform: scale(0.95);
+}
+.login-logo {
+  width: 300px;
+  margin-bottom: 20px;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
 }

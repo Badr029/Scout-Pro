@@ -44,7 +44,6 @@ class Account extends Authenticatable
      */
     protected $casts = [
         'is_active' => 'boolean',
-        'password' => 'hashed',
     ];
 
     /**

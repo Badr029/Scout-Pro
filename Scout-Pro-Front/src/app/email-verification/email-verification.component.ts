@@ -11,7 +11,7 @@ import { AuthService } from '../auth.service';
   templateUrl: './email-verification.component.html',
   styleUrls: [
     './email-verification.component.css',
-    '../shared/styles/auth-background.css'
+    '../shared/styles/auth-background.scss'
   ]
 })
 export class EmailVerificationComponent implements OnInit {

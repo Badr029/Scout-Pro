@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, HostListener } from '@angular/core';
+import { Component, OnInit, OnDestroy, HostListener, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
@@ -10,6 +10,8 @@ import { Subscription } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { SharedModule } from '../shared/shared.module';
 import { NotificationPanelComponent } from '../shared/components/notification-panel/notification-panel.component';
+import { FeedService } from '../services/feed.service';
+import { ReportModalComponent } from '../shared/components/report-modal/report-modal.component';
 
 const API_URL = environment.apiUrl;
 
@@ -102,7 +104,8 @@ interface EventItem {
     ReactiveFormsModule,
     RouterModule,
     SharedModule,
-    NotificationPanelComponent
+    NotificationPanelComponent,
+    ReportModalComponent
   ],
   templateUrl: './home-feed.component.html',
   styleUrl: './home-feed.component.css'
@@ -162,6 +165,8 @@ export class HomeFeedComponent implements OnInit, OnDestroy {
   premiumPlayers: any[] = [];
   private followStatusSubscription: Subscription;
   showNotificationPanel: boolean = false;
+  reportType: 'video' | 'user' | 'bug' = 'video';
+  reportItemId: number | null = null;
 
   // Filter Options
   ageRanges = [
@@ -278,12 +283,18 @@ export class HomeFeedComponent implements OnInit, OnDestroy {
   eventImagePreview: string | null = null;
   locationLink: string = '';
 
+  // Report modal
+  showReportModal = false;
+
+  @ViewChild('reportModalRef') reportModalRef: ReportModalComponent | null = null;
+
   constructor(
     private router: Router,
     private apiService: ApiService,
     private http: HttpClient,
     private authService: AuthService,
-    private fb: FormBuilder
+    private fb: FormBuilder,
+    private feedService: FeedService
   ) {
     console.log('HomeFeedComponent constructor');
     const userType = localStorage.getItem('user_type');
@@ -1268,9 +1279,11 @@ export class HomeFeedComponent implements OnInit, OnDestroy {
     }
   }
 
-  showNotification(message: string) {
+  showNotification(message: string, type: 'success' | 'error' = 'success') {
     this.notification = message;
-    setTimeout(() => this.notification = '', 3000);
+    setTimeout(() => {
+      this.notification = '';
+    }, 3000);
   }
 
   getAvatarUrl(name?: string): string {
@@ -1969,5 +1982,48 @@ export class HomeFeedComponent implements OnInit, OnDestroy {
       // Only collapse if no other panels are open
       this.collapseSidebar();
     }
+  }
+
+  // Report modal
+  openReportModal(type: 'video' | 'user' | 'bug', itemId: number | null = null) {
+    this.reportType = type;
+    this.reportItemId = itemId;
+    this.showReportModal = true;
+  }
+
+  closeReportModal() {
+    this.showReportModal = false;
+    this.reportItemId = null;
+  }
+
+  handleReportSubmit(formData: any) {
+    console.log('Submitting report:', { type: this.reportType, itemId: this.reportItemId, formData });
+
+    this.feedService.submitReport({
+      type: this.reportType,
+      item_id: this.reportItemId!,
+      reason: formData.reason,
+      description: formData.description,
+      browser_info: this.reportType === 'bug' ? formData.browser_info : undefined
+    }).subscribe({
+      next: (response) => {
+        console.log('Report submitted successfully:', response);
+        this.reportModalRef?.showMessage('Report submitted successfully', 'success');
+      },
+      error: (error) => {
+        console.error('Report submission error:', error);
+        let errorMessage = 'Failed to submit report. Please try again later.';
+
+        if (error.status === 401) {
+          errorMessage = 'Authentication failed. Please log in again.';
+        } else if (error.status === 422) {
+          errorMessage = 'Invalid report data. Please check your input.';
+        } else if (error.error?.message) {
+          errorMessage = error.error.message;
+        }
+
+        this.reportModalRef?.showMessage(errorMessage, 'error');
+      }
+    });
   }
 }

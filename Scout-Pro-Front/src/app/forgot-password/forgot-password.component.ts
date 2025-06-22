@@ -11,7 +11,7 @@ import { AuthService } from '../auth.service';
   templateUrl: './forgot-password.component.html',
   styleUrls: [
     './forgot-password.component.css',
-    '../shared/styles/auth-background.css'
+    '../shared/styles/auth-background.scss'
   ]
 })
 export class ForgotPasswordComponent {

@@ -1,0 +1,53 @@
+<div class="modal-overlay">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2>{{ type === 'video' ? 'Report Video' : type === 'user' ? 'Report User' : 'Report Bug' }}</h2>
+      <button class="close-btn" (click)="onClose()">
+        <i class="bi bi-x"></i>
+      </button>
+    </div>
+
+    <form [formGroup]="reportForm" (ngSubmit)="onSubmit()">
+      <div class="form-group">
+        <label for="reason">{{ type === 'bug' ? 'Severity' : 'Reason' }}</label>
+        <select id="reason" formControlName="reason">
+          <option value="">Select a {{ type === 'bug' ? 'severity level' : 'reason' }}</option>
+          <option *ngFor="let option of reasonOptions[type]" [value]="option.value">
+            {{ option.label }}
+          </option>
+        </select>
+        <div class="error-message" *ngIf="reportForm.get('reason')?.touched && reportForm.get('reason')?.invalid">
+          Please select a {{ type === 'bug' ? 'severity level' : 'reason' }}
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="description">Description</label>
+        <textarea
+          id="description"
+          formControlName="description"
+          rows="4"
+          placeholder="Please provide details about your report..."
+        ></textarea>
+        <div class="error-message" *ngIf="reportForm.get('description')?.touched && reportForm.get('description')?.invalid">
+          <span *ngIf="reportForm.get('description')?.errors?.['required']">
+            Please provide a description
+          </span>
+          <span *ngIf="reportForm.get('description')?.errors?.['maxlength']">
+            Description must be less than 1000 characters
+          </span>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button type="button" class="btn-secondary" (click)="onClose()">Cancel</button>
+        <button
+          type="submit"
+          class="btn-primary"
+          [disabled]="reportForm.invalid || submitting">
+          {{ submitting ? 'Submitting...' : 'Submit Report' }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
