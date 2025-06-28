@@ -50,4 +50,4 @@ composer.phar
 
 
 
-/config/services.php
+config/services.php
