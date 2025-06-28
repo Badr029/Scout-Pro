@@ -47,3 +47,6 @@ composer.phar
 *.sql
 *.sqlite
 .env.*.local
+
+# Ignore sensitive service configuration
+config/services.php
