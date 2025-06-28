@@ -50,4 +50,4 @@ Thumbs.db
 !.env.example
 
 
-src/app/app.config.ts
+/src/app/app.config.ts
