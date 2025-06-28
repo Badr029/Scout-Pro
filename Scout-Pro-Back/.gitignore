@@ -16,6 +16,7 @@ yarn-error.log
 /.idea
 /.vscode
 
+
 # Laravel specific
 /bootstrap/cache/*
 /storage/framework/cache/*
@@ -46,6 +47,3 @@ composer.phar
 *.sql
 *.sqlite
 .env.*.local
-
-# Ignore sensitive service configuration
-config/services.php

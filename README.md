@@ -530,23 +530,6 @@ For detailed API documentation, visit `/api/documentation` when running the appl
    - Verify JWT token configuration
    - Check API endpoint accessibility
 
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🙏 Acknowledgments
-
-- Laravel community for the excellent framework
-- Angular team for the powerful frontend framework
-- Contributors and beta testers
-- Football scouting professionals who provided insights
-
-## 📞 Support
-
-For support and questions:
-- Create an issue on GitHub
-- Email: support@scoutpro.com
-- Documentation: [docs.scoutpro.com](https://docs.scoutpro.com)
 
 ---
 
