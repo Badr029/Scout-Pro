@@ -15,7 +15,7 @@ yarn-error.log
 /.fleet
 /.idea
 /.vscode
-/config/session.php
+/config/.session
 
 # Laravel specific
 /bootstrap/cache/*
